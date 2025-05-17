@@ -12,7 +12,20 @@
           "package_name": "com.javier.mappster"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "156216937024-n691uqk6akbpqj8bq5e51vpafjg413ha.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.javier.mappster",
+            "certificate_hash": "7a383e48e2c2858dca6845aaf8de54cf940ad004"
+          }
+        },
+        {
+          "client_id": "156216937024-np0619iobt2rds49vrti2s99odtcqa4g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDALmxUMKSsaf8N5EkkmaEhWQqzrSAYMFw"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "156216937024-np0619iobt2rds49vrti2s99odtcqa4g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

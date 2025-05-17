@@ -1,11 +1,8 @@
 package com.javier.mappster.ui
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Whatshot
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +18,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -31,10 +26,11 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.javier.mappster.R
+import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.Spell
 import com.javier.mappster.viewmodel.SpellListViewModel
+import com.javier.mappster.viewmodel.provideSpellListViewModel
 
 @Composable
 private fun EmptySpellsMessage() {
@@ -48,14 +44,43 @@ private fun EmptySpellsMessage() {
     }
 }
 
+@Composable
+private fun LoadingIndicator() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Error") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpellListScreen(
-    viewModel: SpellListViewModel = viewModel(),
-    onSpellClick: (Spell) -> Unit
+    viewModel: SpellListViewModel = provideSpellListViewModel(LocalContext.current),
+    onSpellClick: (Spell) -> Unit,
+    onCreateSpellClick: () -> Unit
 ) {
     val spells by viewModel.spells.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Scaffold(
         topBar = {
@@ -63,18 +88,40 @@ fun SpellListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
             ) {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChanged = viewModel::onSearchQueryChanged
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChanged = viewModel::onSearchQueryChanged,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onCreateSpellClick) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Crear hechizo"
+                        )
+                    }
+                }
             }
         }
     ) { paddingValues ->
         when {
+            isLoading -> LoadingIndicator()
+            error != null -> ErrorMessage(error!!, onDismiss = { viewModel.clearError() })
             spells.isEmpty() -> EmptySpellsMessage()
-            else -> SpellListContent(spells = spells, paddingValues = paddingValues, onSpellClick = onSpellClick)
+            else -> SpellListContent(
+                spells = spells,
+                paddingValues = paddingValues,
+                onSpellClick = onSpellClick,
+                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell.name) },
+                onToggleVisibilityClick = { spell, isPublic ->
+                    viewModel.updateSpellVisibility(spell.name, isPublic)
+                }
+            )
         }
     }
 }
@@ -83,15 +130,26 @@ fun SpellListScreen(
 private fun SpellListContent(
     spells: List<Spell>,
     paddingValues: PaddingValues,
-    onSpellClick: (Spell) -> Unit  //Añadido
+    onSpellClick: (Spell) -> Unit,
+    onDeleteSpellClick: (Spell) -> Unit,
+    onToggleVisibilityClick: (Spell, Boolean) -> Unit
 ) {
-
     LazyColumn(
-        contentPadding = paddingValues,
-        modifier = Modifier.padding(horizontal = 8.dp)
+        contentPadding = PaddingValues(
+            start = 8.dp,
+            end = 8.dp,
+            top = paddingValues.calculateTopPadding(),
+            bottom = paddingValues.calculateBottomPadding() + 16.dp
+        ),
+        modifier = Modifier.fillMaxSize()
     ) {
         items(spells) { spell ->
-            SpellListItem(spell = spell, onClick = { onSpellClick(spell) })
+            SpellListItem(
+                spell = spell,
+                onClick = { onSpellClick(spell) },
+                onDeleteClick = { onDeleteSpellClick(spell) },
+                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) }
+            )
         }
     }
 }
@@ -110,12 +168,13 @@ private fun SearchBar(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Buscar",
-                modifier = Modifier.size(20.dp))
+                modifier = Modifier.size(20.dp)
+            )
         },
         placeholder = { Text("Buscar hechizos...") },
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp),
+            .height(64.dp),
         colors = TextFieldDefaults.textFieldColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
             focusedIndicatorColor = Color.Transparent,
@@ -123,21 +182,78 @@ private fun SearchBar(
         ),
         textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
         singleLine = true,
-        shape = RoundedCornerShape(12.dp))
+        shape = RoundedCornerShape(12.dp)
+    )
 }
 
 @Composable
-private fun SpellListItem(spell: Spell,
-                          onClick: (Spell) -> Unit ) {
+private fun SpellListItem(
+    spell: Spell,
+    onClick: (Spell) -> Unit,
+    onDeleteClick: (Spell) -> Unit,
+    onToggleVisibilityClick: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    val authManager = remember { AuthManager(context) }
+    val currentUserId = authManager.getCurrentUserId()
+    val canModify = spell.custom && spell.userId == currentUserId
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showVisibilityDialog by remember { mutableStateOf(false) }
+    var pendingVisibility by remember { mutableStateOf(spell.public) }
 
-    // Configura el proveedor de Google Fonts
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Estás seguro de que quieres borrar el hechizo \"${spell.name}\"?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteClick(spell)
+                    showDeleteDialog = false
+                }) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (showVisibilityDialog) {
+        AlertDialog(
+            onDismissRequest = { showVisibilityDialog = false },
+            title = { Text("Confirmar cambio de visibilidad") },
+            text = {
+                Text(
+                    "¿Estás seguro de que quieres hacer el hechizo \"${spell.name}\" " +
+                            "${if (pendingVisibility) "público" else "privado"}?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onToggleVisibilityClick(pendingVisibility)
+                    showVisibilityDialog = false
+                }) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVisibilityDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
         providerPackage = "com.google.android.gms",
         certificates = R.array.com_google_android_gms_fonts_certs
     )
 
-    // Define la familia de fuentes que quieres usar
     val medievalSharpFontFamily = FontFamily(
         Font(
             googleFont = GoogleFont("MedievalSharp"),
@@ -186,7 +302,7 @@ private fun SpellListItem(spell: Spell,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clickable { onClick(spell) } //Añadido
+            .clickable { onClick(spell) }
             .border(
                 width = 2.dp,
                 color = schoolData.color.copy(alpha = 0.8f),
@@ -206,14 +322,56 @@ private fun SpellListItem(spell: Spell,
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            Text(
-                text = spell.name,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.1.sp,
-                    fontFamily = medievalSharpFontFamily
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = spell.name,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.1.sp,
+                        fontFamily = medievalSharpFontFamily
+                    ),
+                    modifier = Modifier.weight(1f)
                 )
-            )
+                if (spell.custom && !canModify) {
+                    Icon(
+                        imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
+                        contentDescription = if (spell.public) "Público" else "Privado",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                if (canModify) {
+                    IconButton(
+                        onClick = {
+                            pendingVisibility = !spell.public
+                            showVisibilityDialog = true
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
+                            contentDescription = if (spell.public) "Hacer privado" else "Hacer público",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Borrar hechizo",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

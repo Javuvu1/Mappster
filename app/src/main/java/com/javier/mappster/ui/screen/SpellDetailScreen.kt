@@ -1,140 +1,30 @@
-package com.javier.mappster.ui.screen
+package com.javier.mappster.ui.screens
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.CallMerge
+import androidx.compose.material.icons.filled.Coronavirus
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Masks
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.javier.mappster.ui.navigation.SpellDetailDestination
+import com.javier.mappster.model.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpellDetailScreen(
-    spellDetails: SpellDetailDestination,
-    onBackClick: () -> Unit
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(spellDetails.spellName) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize()
-        ) {
-            // Tarjeta con la información básica
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // Nombre del hechizo
-                    Text(
-                        text = spellDetails.spellName,
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    // Escuela y nivel
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    ) {
-                        Text(
-                            text = "Escuela: ",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = getSchoolName(spellDetails.spellSchool),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    ) {
-                        Text(
-                            text = "Nivel: ",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (spellDetails.spellLevel == 0) "Truco"
-                            else "Nivel ${spellDetails.spellLevel}",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-
-                    // Fuente
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Fuente: ",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = getSourceName(spellDetails.spellSource),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontStyle = FontStyle.Italic
-                        )
-                    }
-                }
-            }
-
-            // Aquí puedes añadir más secciones con otros detalles del hechizo
-        }
-    }
-}
-
-// Función de ayuda para obtener el nombre completo de la escuela
-private fun getSchoolName(schoolCode: String): String {
-    return when (schoolCode.uppercase()) {
-        "A" -> "Abjuración"
-        "C" -> "Conjuración"
-        "D" -> "Adivinación"
-        "E" -> "Encantamiento"
-        "V" -> "Evocación"
-        "I" -> "Ilusión"
-        "N" -> "Nigromancia"
-        "T" -> "Transmutación"
-        else -> schoolCode
-    }
-}
-
-// Función de ayuda para obtener el nombre completo de la fuente
-private fun getSourceName(sourceCode: String): String {
+fun SpellDetailScreen(spell: Spell) {
     val sourceMap = mapOf(
         "AAG" to "Astral Adventurer's Guide",
         "AI" to "Aquisitions Incorporated",
@@ -155,5 +45,111 @@ private fun getSourceName(sourceCode: String): String {
         "TDCSR" to "Tal'Dorei Campaign Setting",
         "XGE" to "Xanathar's Guide to Everything"
     )
-    return sourceMap[sourceCode.uppercase()] ?: sourceCode
+
+    val schoolData = when (spell.school.uppercase()) {
+        "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
+        "C" -> SchoolData("Conjuración", Color(0xFF9C27B0), Icons.Default.CallMerge)
+        "D" -> SchoolData("Adivinación", Color(0xFF00ACC1), Icons.Default.Visibility)
+        "E" -> SchoolData("Encantamiento", Color(0xFFE91E63), Icons.Default.Favorite)
+        "V" -> SchoolData("Evocación", Color(0xFFFF5722), Icons.Default.Whatshot)
+        "I" -> SchoolData("Ilusión", Color(0xFF7C4DFF), Icons.Default.Masks)
+        "N" -> SchoolData("Nigromancia", Color(0xFF607D8B), Icons.Default.Coronavirus)
+        "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
+        else -> SchoolData(spell.school, Color.Gray, Icons.Default.AutoFixHigh)
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = spell.name) },
+                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = schoolData.color)
+            )
+        }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
+            item {
+                Text("Nivel: ${spell.level}", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = schoolData.icon, contentDescription = "School Icon", tint = schoolData.color)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Escuela: ${schoolData.name}", style = MaterialTheme.typography.bodyLarge)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text("Fuente: ${sourceMap[spell.source] ?: spell.source}", style = MaterialTheme.typography.bodyLarge)
+                Text("Página: ${spell.page}", style = MaterialTheme.typography.bodyLarge)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Componentes
+                val componentsList = buildList {
+                    if (spell.components.v == true) add("Verbal")
+                    if (spell.components.s == true) add("Somático")
+                    if (spell.components.r == true) add("Ritual")
+                    if (!spell.components.m.isNullOrBlank()) add("Material: ${spell.components.m}")
+                }
+                if (componentsList.isNotEmpty()) {
+                    Text("Componentes: ${componentsList.joinToString()}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Tiempo y duración
+                Text("Tiempo de lanzamiento: ${spell.time.joinToString { "${it.number} ${it.unit}" }}", style = MaterialTheme.typography.bodyLarge)
+
+                spell.duration.forEach { duration ->
+                    Text("Duración: ${duration.type}", style = MaterialTheme.typography.bodyLarge)
+                    duration.duration?.let {
+                        Text("Duración detallada: ${it.amount} ${it.type}", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    if (duration.concentration) {
+                        Text("Concentración: Sí", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    if (duration.ends.isNotEmpty()) {
+                        Text("Finaliza en: ${duration.ends.joinToString()}", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Descripción:", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Entries (solo strings)
+            items(spell.entries.filterIsInstance<String>()) { entry ->
+                Text(text = "• $entry", style = MaterialTheme.typography.bodyLarge)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // EntriesHigherLevel
+            if (spell.entriesHigherLevel.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Hechizos a nivel superior:", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                items(spell.entriesHigherLevel) { entryHigherLevel ->
+                    Text("Tipo: ${entryHigherLevel.type}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Nombre: ${entryHigherLevel.name}", style = MaterialTheme.typography.bodyMedium)
+                    entryHigherLevel.entries.forEach { entry ->
+                        Text(text = "• $entry", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
+    }
 }
+
+data class SchoolData(
+    val name: String,
+    val color: Color,
+    val icon: ImageVector
+)

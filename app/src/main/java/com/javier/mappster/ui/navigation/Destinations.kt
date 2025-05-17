@@ -1,15 +1,8 @@
-package com.javier.mappster.ui.navigation
+package com.javier.mappster.navigation
 
-import kotlinx.serialization.Serializable
-
-
-@Serializable
-object SpellListDestination
-
-@Serializable
-data class SpellDetailDestination(
-    val spellName: String,
-    val spellSchool: String,
-    val spellLevel: Int,
-    val spellSource: String
-)
+object Destinations {
+    const val LOGIN = "login"
+    const val SPELL_LIST = "lista"
+    const val SPELL_DETAIL = "detalle"
+    const val CREATE_SPELL = "crear_hechizo"
+}

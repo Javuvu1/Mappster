@@ -1,33 +1,60 @@
-package com.javier.mappster.ui.navigation
+package com.javier.mappster.navigation
 
-import androidx.navigation.NavGraphBuilder
+import android.annotation.SuppressLint
+import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
+import androidx.navigation.navArgument
+import com.javier.mappster.ui.CreateSpellScreen
+import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.SpellListScreen
-import com.javier.mappster.ui.screen.SpellDetailScreen
+import com.javier.mappster.ui.screens.SpellDetailScreen
+import com.javier.mappster.viewmodel.provideSpellListViewModel
+import androidx.compose.ui.platform.LocalContext
 
-fun NavGraphBuilder.appNavGraph(navController: NavHostController) {
-    composable<SpellListDestination> {
-        SpellListScreen(
-            onSpellClick = { spell ->
-                navController.navigate(
-                    SpellDetailDestination(
-                        spellName = spell.name,
-                        spellSchool = spell.school,
-                        spellLevel = spell.level,
-                        spellSource = spell.source
-                    )
-                )
+@SuppressLint("StateFlowValueCalledInComposition")
+@Composable
+fun NavGraph(navController: NavHostController) {
+    val viewModel = provideSpellListViewModel(LocalContext.current)
+
+    NavHost(navController = navController, startDestination = Destinations.LOGIN) {
+        composable(Destinations.LOGIN) {
+            LoginScreen(navController = navController)
+        }
+        composable(Destinations.SPELL_LIST) {
+            SpellListScreen(
+                viewModel = viewModel,
+                onSpellClick = { spell ->
+                    val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                    navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
+                },
+                onCreateSpellClick = {
+                    navController.navigate(Destinations.CREATE_SPELL)
+                }
+            )
+        }
+        composable(
+            route = "${Destinations.SPELL_DETAIL}/{spellName}",
+            arguments = listOf(navArgument("spellName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val spellName = backStackEntry.arguments?.getString("spellName")?.let {
+                java.net.URLDecoder.decode(it, "UTF-8")
             }
-        )
-    }
+            val spell = viewModel.spells.value.find { it.name == spellName }
 
-    composable<SpellDetailDestination> {
-        val args = it.toRoute<SpellDetailDestination>()
-        SpellDetailScreen(
-            spellDetails = args,
-            onBackClick = { navController.popBackStack() }
-        )
+            spell?.let {
+                SpellDetailScreen(spell = it)
+            }
+        }
+        composable(Destinations.CREATE_SPELL) {
+            CreateSpellScreen(
+                onSpellCreatedWithRefresh = {
+                    viewModel.refreshSpells()
+                    navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+                }
+            )
+        }
     }
 }

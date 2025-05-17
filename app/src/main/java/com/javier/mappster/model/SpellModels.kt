@@ -1,6 +1,7 @@
 package com.javier.mappster.model
 
 import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.Serializable
 
 data class Spells(
     val spell: List<Spell> = emptyList()
@@ -42,7 +43,6 @@ data class Spell(
     val savingThrow: List<String> = emptyList(),
     val spellAttack: List<String> = emptyList(),
     val abilityCheck: List<String> = emptyList(),
-    //val scalingLevelDice: ScalingLevelDice? = null,
 
     // Damage & Conditions
     val damageInflict: List<String> = emptyList(),
@@ -57,7 +57,14 @@ data class Spell(
     val subschools: List<String> = emptyList(),
     val reprintedAs: List<String> = emptyList(),
     val additionalSources: List<AdditionalSource> = emptyList(),
-    val otherSources: List<OtherSource> = emptyList()
+    val otherSources: List<OtherSource> = emptyList(),
+
+    // Custom field added by script
+    @PropertyName("custom")
+    private val _custom: Boolean? = null,
+    val userId: String? = null,
+    @PropertyName("public")
+    private val _public: Boolean? = null
 ) {
     val srd: Boolean
         get() = when (_srd) {
@@ -65,78 +72,77 @@ data class Spell(
             is String -> _srd.equals("true", ignoreCase = true)
             else -> true
         }
+
+    val custom: Boolean
+        get() = _custom ?: false
+
+    val public: Boolean
+        get() = _public ?: false
 }
 
-/* ===== Submodels (se mantienen igual) ===== */
+/* ===== Submodels ===== */
+@Serializable
 data class Components(
-    val v: Boolean = false,
-    val s: Boolean = false,
-    val r: Boolean = false,
-    val m: Any? = null
+    val v: Boolean? = null,
+    val s: Boolean? = null,
+    val r: Boolean? = null,
+    val m: String? = null
 )
 
-data class M(
-    val text: String = "",
-    val cost: Int? = null,
-    val consume: Boolean = false
-)
-
+@Serializable
 data class Time(
     val number: Int = 0,
-    val unit: String = "",  // "action", "hour", etc.
+    val unit: String = "",
     val condition: String? = null
 )
 
+@Serializable
 data class Duration(
-    val type: String = "",           // "timed", "instant", etc.
-    val duration: DurationX? = null, // Details
+    val type: String = "",
+    val duration: DurationX? = null,
     val concentration: Boolean = false,
     val ends: List<String> = emptyList()
 )
 
+@Serializable
 data class DurationX(
-    val type: String = "",  // "hour", "day", etc.
+    val type: String = "",
     val amount: Int = 0,
     val upTo: Boolean = false
 )
 
+@Serializable
 data class Range(
-    val type: String = "",  // "point", "radius", etc.
+    val type: String = "",
     val distance: Distance = Distance()
 )
 
+@Serializable
 data class Distance(
-    val type: String = "",  // "feet", "mile", "self", etc.
+    val type: String = "",
     val amount: Int? = null
 )
 
-data class ScalingLevelDice(
-    val label: String = "",
-    val scaling: Map<String, String> = emptyMap()  // Mapa dinámico para los niveles
-) {
-    // Propiedades computadas para acceder fácilmente a los niveles comunes
-    val level1: String? get() = scaling["1"]
-    val level5: String? get() = scaling["5"]
-    val level11: String? get() = scaling["11"]
-    val level17: String? get() = scaling["17"]
-}
-
+@Serializable
 data class EntriesHigherLevel(
     val type: String = "",
     val name: String = "",
     val entries: List<String> = emptyList()
 )
 
+@Serializable
 data class AdditionalSource(
     val source: String = "",
     val page: Int = 0
 )
 
+@Serializable
 data class OtherSource(
     val source: String = "",
     val page: Int = 0
 )
 
+@Serializable
 data class Meta(
     val ritual: Boolean = false
 )

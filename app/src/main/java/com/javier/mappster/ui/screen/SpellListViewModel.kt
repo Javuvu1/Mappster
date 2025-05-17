@@ -1,7 +1,13 @@
 package com.javier.mappster.viewmodel
 
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.Spell
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SpellListViewModel(
-    private val firestoreManager: FirestoreManager = FirestoreManager()
+    private val firestoreManager: FirestoreManager = FirestoreManager(),
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     // Estados
@@ -30,17 +37,29 @@ class SpellListViewModel(
     val error: StateFlow<String?> = _error
 
     init {
-        loadSpells()
-        setupSearch()
+        viewModelScope.launch {
+            authManager.userStateFlow().collect { userId ->
+                if (userId == null) {
+                    _error.value = "Usuario no autenticado. Por favor, inicia sesión."
+                    _allSpells.value = emptyList()
+                    _filteredSpells.value = emptyList()
+                    _isLoading.value = false
+                } else {
+                    _error.value = null
+                    loadSpells(userId)
+                    setupSearch()
+                }
+            }
+        }
     }
 
-    private fun loadSpells() {
+    private fun loadSpells(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
             try {
-                _allSpells.value = firestoreManager.getSpells()
+                _allSpells.value = firestoreManager.getSpells(userId)
                 _filteredSpells.value = _allSpells.value
             } catch (e: Exception) {
                 _error.value = "Error al cargar hechizos: ${e.localizedMessage}"
@@ -51,13 +70,20 @@ class SpellListViewModel(
         }
     }
 
+    fun refreshSpells() {
+        val userId = authManager.getCurrentUserId()
+        if (userId != null) {
+            loadSpells(userId)
+        }
+    }
+
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
     }
 
     private fun setupSearch() {
         _searchQuery
-            .debounce(300) // Espera 300ms tras el último cambio
+            .debounce(300)
             .onEach { query ->
                 _filteredSpells.update { _ ->
                     if (query.isEmpty()) {
@@ -72,7 +98,60 @@ class SpellListViewModel(
             .launchIn(viewModelScope)
     }
 
+    fun deleteSpell(spellName: String) {
+        viewModelScope.launch {
+            val success = firestoreManager.deleteSpell(spellName)
+            if (success) {
+                _allSpells.update { spells -> spells.filter { it.name != spellName } }
+                _filteredSpells.update { spells -> spells.filter { it.name != spellName } }
+            } else {
+                _error.value = "Error al borrar el hechizo: $spellName"
+            }
+        }
+    }
+
+    fun updateSpellVisibility(spellName: String, public: Boolean) {
+        viewModelScope.launch {
+            val success = firestoreManager.updateSpellVisibility(spellName, public)
+            if (success) {
+                _allSpells.update { spells ->
+                    spells.map { spell ->
+                        if (spell.name == spellName) spell.copy(_public = public)
+                        else spell
+                    }
+                }
+                _filteredSpells.update { spells ->
+                    spells.map { spell ->
+                        if (spell.name == spellName) spell.copy(_public = public)
+                        else spell
+                    }
+                }
+            } else {
+                _error.value = "Error al actualizar la visibilidad del hechizo: $spellName"
+            }
+        }
+    }
+
     fun clearError() {
         _error.value = null
+    }
+}
+
+@Composable
+fun provideSpellListViewModel(context: Context): SpellListViewModel {
+    val authManager = remember { AuthManager(context) }
+    return viewModel(factory = SpellListViewModelFactory(firestoreManager = FirestoreManager(), authManager = authManager))
+}
+
+class SpellListViewModelFactory(
+    private val firestoreManager: FirestoreManager,
+    private val authManager: AuthManager
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SpellListViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return SpellListViewModel(firestoreManager, authManager) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

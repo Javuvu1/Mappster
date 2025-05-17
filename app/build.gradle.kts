@@ -47,7 +47,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10" // compatible con Compose BOM 2024.04.01
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
 
     packaging {
@@ -58,7 +58,7 @@ android {
 }
 
 dependencies {
-    // Compose BOM (estable y compatible)
+    // Compose BOM
     implementation(platform("androidx.compose:compose-bom:2024.04.01"))
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.04.01"))
 
@@ -78,7 +78,6 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.ui.text.google.fonts)
 
-
     // Room
     implementation(libs.androidx.room.runtime.android)
 
@@ -86,10 +85,12 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.play.services.base)
     implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.play.services.auth)
+    implementation(libs.kotlinx.coroutines.play.services)
 
-    //Serialization y Navegacion
-    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-
+    // Serialization y Navegación
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.navigation.compose)
 
     // Desugaring
@@ -102,8 +103,6 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-
-
 }
 
 configurations.all {
