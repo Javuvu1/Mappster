@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.javier.mappster.ui.CreateSpellScreen
+import com.javier.mappster.ui.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.SpellListScreen
 import com.javier.mappster.ui.screens.SpellDetailScreen
@@ -32,6 +33,10 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onCreateSpellClick = {
                     navController.navigate(Destinations.CREATE_SPELL)
+                },
+                onEditSpellClick = { spell ->
+                    val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                    navController.navigate("${Destinations.EDIT_SPELL.replace("{spellName}", encodedName)}")
                 }
             )
         }
@@ -43,10 +48,9 @@ fun NavGraph(navController: NavHostController) {
                 java.net.URLDecoder.decode(it, "UTF-8")
             }
             val spell = viewModel.spells.value.find { it.name == spellName }
-
             spell?.let {
                 SpellDetailScreen(spell = it)
-            }
+            } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
         }
         composable(Destinations.CREATE_SPELL) {
             CreateSpellScreen(
@@ -55,6 +59,24 @@ fun NavGraph(navController: NavHostController) {
                     navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
                 }
             )
+        }
+        composable(
+            route = Destinations.EDIT_SPELL,
+            arguments = listOf(navArgument("spellName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val spellName = backStackEntry.arguments?.getString("spellName")?.let {
+                java.net.URLDecoder.decode(it, "UTF-8")
+            }
+            val spell = viewModel.spells.value.find { it.name == spellName }
+            spell?.let {
+                EditSpellScreen(
+                    spell = it,
+                    viewModel = viewModel,
+                    onSpellUpdated = {
+                        navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+                    }
+                )
+            } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
         }
     }
 }

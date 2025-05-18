@@ -7,13 +7,13 @@ import kotlinx.coroutines.tasks.await
 
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
-    private val spellsCollection = "spells"
+    private val spellsCollection = db.collection("spells")
 
     suspend fun getSpells(userId: String? = null): List<Spell> {
         if (userId == null) {
             Log.e("FirestoreManager", "User ID is null, fetching only non-custom spells")
             try {
-                val nonCustomQuery = db.collection(spellsCollection)
+                val nonCustomQuery = spellsCollection
                     .whereEqualTo("custom", false)
                     .get()
                     .await()
@@ -21,7 +21,7 @@ class FirestoreManager {
                     it.toObject(Spell::class.java)?.also { spell ->
                         Log.d("FirestoreManager", "Parsed non-custom spell: ${spell.name}, custom=${spell.custom}, userId=${spell.userId}, public=${spell.public}")
                     }
-                }.sortedBy { it.name.lowercase() }
+                }.sortedBy { it.name.trim().lowercase() }
                 Log.d("FirestoreManager", "Fetched ${spells.size} non-custom spells: ${spells.map { it.name }}")
                 return spells
             } catch (e: Exception) {
@@ -32,14 +32,14 @@ class FirestoreManager {
 
         return try {
             // Consulta 1: Hechizos no personalizados
-            val nonCustomQuery = db.collection(spellsCollection)
+            val nonCustomQuery = spellsCollection
                 .whereEqualTo("custom", false)
             // Consulta 2: Hechizos personalizados del usuario
-            val userCustomQuery = db.collection(spellsCollection)
+            val userCustomQuery = spellsCollection
                 .whereEqualTo("custom", true)
                 .whereEqualTo("userId", userId)
             // Consulta 3: Hechizos personalizados públicos
-            val publicCustomQuery = db.collection(spellsCollection)
+            val publicCustomQuery = spellsCollection
                 .whereEqualTo("custom", true)
                 .whereEqualTo("public", true)
 
@@ -74,49 +74,52 @@ class FirestoreManager {
                         null
                     }
                 }
-            }.distinctBy { it.name }.sortedBy { it.name.lowercase() }
+            }.distinctBy { it.name }.sortedBy { it.name.trim().lowercase() }
 
-            Log.d("FirestoreManager", "Fetched ${spells.size} spells from $spellsCollection: ${spells.map { it.name }}")
+            Log.d("FirestoreManager", "Fetched ${spells.size} spells from spells collection: ${spells.map { it.name }}")
             spells
         } catch (e: Exception) {
-            Log.e("FirestoreManager", "Error fetching spells from $spellsCollection: ${e.message}", e)
+            Log.e("FirestoreManager", "Error fetching spells from spells collection: ${e.message}", e)
             emptyList()
         }
     }
 
     suspend fun createSpell(spell: Spell): Boolean {
         return try {
-            db.collection(spellsCollection)
-                .document(spell.name)
-                .set(spell)
-                .await()
-            Log.d("FirestoreManager", "Spell created successfully: ${spell.name}, data: ${spell.javaClass.declaredFields.associate { it.apply { isAccessible = true }.name to it.get(spell) }}")
+            val document = spellsCollection.document(spell.name)
+            document.get().await().let { doc ->
+                if (doc.exists()) {
+                    Log.d("FirestoreManager", "Spell ${spell.name} already exists")
+                    return false
+                }
+            }
+            document.set(spell).await()
+            Log.d("FirestoreManager", "Spell created successfully: ${spell.name}, data: $spell")
             true
         } catch (e: Exception) {
-            Log.e("FirestoreManager", "Error creating spell ${spell.name}: ${e.message}, stacktrace: ${e.stackTraceToString()}")
-            // Verificar si el hechizo se creó a pesar del error
-            val exists = try {
-                db.collection(spellsCollection)
-                    .document(spell.name)
-                    .get()
-                    .await()
-                    .exists()
-            } catch (e2: Exception) {
-                Log.e("FirestoreManager", "Error checking if spell ${spell.name} exists: ${e2.message}")
-                false
+            Log.e("FirestoreManager", "Error creating spell ${spell.name}: ${e.message}", e)
+            spellsCollection.document(spell.name).get().await().let { doc ->
+                Log.d("FirestoreManager", "Spell ${spell.name} exists after error: ${doc.exists()}")
+                return doc.exists()
             }
-            Log.d("FirestoreManager", "Spell ${spell.name} exists after error: $exists")
-            exists
+        }
+    }
+
+    suspend fun updateSpell(spell: Spell): Boolean {
+        return try {
+            spellsCollection.document(spell.name).set(spell).await()
+            Log.d("FirestoreManager", "Spell updated successfully: ${spell.name}, data: $spell")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error updating spell ${spell.name}: ${e.message}", e)
+            false
         }
     }
 
     suspend fun deleteSpell(spellName: String): Boolean {
         return try {
-            db.collection(spellsCollection)
-                .document(spellName)
-                .delete()
-                .await()
-            Log.d("FirestoreManager", "Spell deleted: $spellName")
+            spellsCollection.document(spellName).delete().await()
+            Log.d("FirestoreManager", "Spell deleted successfully: $spellName")
             true
         } catch (e: Exception) {
             Log.e("FirestoreManager", "Error deleting spell $spellName: ${e.message}", e)
@@ -126,8 +129,7 @@ class FirestoreManager {
 
     suspend fun updateSpellVisibility(spellName: String, public: Boolean): Boolean {
         return try {
-            db.collection(spellsCollection)
-                .document(spellName)
+            spellsCollection.document(spellName)
                 .update("public", public)
                 .await()
             Log.d("FirestoreManager", "Spell $spellName visibility updated to public=$public")

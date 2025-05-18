@@ -75,7 +75,8 @@ private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
 fun SpellListScreen(
     viewModel: SpellListViewModel = provideSpellListViewModel(LocalContext.current),
     onSpellClick: (Spell) -> Unit,
-    onCreateSpellClick: () -> Unit
+    onCreateSpellClick: () -> Unit,
+    onEditSpellClick: (Spell) -> Unit
 ) {
     val spells by viewModel.spells.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -120,7 +121,8 @@ fun SpellListScreen(
                 onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell.name) },
                 onToggleVisibilityClick = { spell, isPublic ->
                     viewModel.updateSpellVisibility(spell.name, isPublic)
-                }
+                },
+                onEditSpellClick = onEditSpellClick
             )
         }
     }
@@ -132,7 +134,8 @@ private fun SpellListContent(
     paddingValues: PaddingValues,
     onSpellClick: (Spell) -> Unit,
     onDeleteSpellClick: (Spell) -> Unit,
-    onToggleVisibilityClick: (Spell, Boolean) -> Unit
+    onToggleVisibilityClick: (Spell, Boolean) -> Unit,
+    onEditSpellClick: (Spell) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(
@@ -148,7 +151,8 @@ private fun SpellListContent(
                 spell = spell,
                 onClick = { onSpellClick(spell) },
                 onDeleteClick = { onDeleteSpellClick(spell) },
-                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) }
+                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) },
+                onEditClick = { onEditSpellClick(spell) }
             )
         }
     }
@@ -191,7 +195,8 @@ private fun SpellListItem(
     spell: Spell,
     onClick: (Spell) -> Unit,
     onDeleteClick: (Spell) -> Unit,
-    onToggleVisibilityClick: (Boolean) -> Unit
+    onToggleVisibilityClick: (Boolean) -> Unit,
+    onEditClick: (Spell) -> Unit
 ) {
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
@@ -360,6 +365,17 @@ private fun SpellListItem(
                         )
                     }
                     IconButton(
+                        onClick = { onEditClick(spell) },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar hechizo",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    IconButton(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier.size(24.dp)
                     ) {
@@ -424,18 +440,15 @@ private fun SpellListItem(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                spell.source?.let { sourceCode ->
-                    val fullSource = sourceMap[sourceCode.uppercase()] ?: sourceCode
-                    Text(
-                        text = fullSource,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            fontStyle = FontStyle.Italic
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = sourceMap[spell.source.uppercase()] ?: spell.source,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontStyle = FontStyle.Italic
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
