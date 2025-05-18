@@ -26,6 +26,7 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.javier.mappster.R
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.Spell
@@ -76,7 +77,8 @@ fun SpellListScreen(
     viewModel: SpellListViewModel = provideSpellListViewModel(LocalContext.current),
     onSpellClick: (Spell) -> Unit,
     onCreateSpellClick: () -> Unit,
-    onEditSpellClick: (Spell) -> Unit
+    onEditSpellClick: (Spell) -> Unit,
+    navController: NavHostController
 ) {
     val spells by viewModel.spells.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -108,6 +110,9 @@ fun SpellListScreen(
                     }
                 }
             }
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
         when {

@@ -10,7 +10,10 @@ import androidx.navigation.navArgument
 import com.javier.mappster.ui.CreateSpellScreen
 import com.javier.mappster.ui.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
+import com.javier.mappster.ui.MonsterListScreen
+import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.SpellListScreen
+import com.javier.mappster.ui.CustomSpellListsScreen
 import com.javier.mappster.ui.screens.SpellDetailScreen
 import com.javier.mappster.viewmodel.provideSpellListViewModel
 import androidx.compose.ui.platform.LocalContext
@@ -37,7 +40,8 @@ fun NavGraph(navController: NavHostController) {
                 onEditSpellClick = { spell ->
                     val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
                     navController.navigate("${Destinations.EDIT_SPELL.replace("{spellName}", encodedName)}")
-                }
+                },
+                navController = navController
             )
         }
         composable(
@@ -77,6 +81,15 @@ fun NavGraph(navController: NavHostController) {
                     }
                 )
             } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+        }
+        composable(Destinations.CUSTOM_SPELL_LISTS) {
+            CustomSpellListsScreen(navController = navController)
+        }
+        composable(Destinations.MONSTER_LIST) {
+            MonsterListScreen(navController = navController)
+        }
+        composable(Destinations.CUSTOM_MONSTER_LISTS) {
+            CustomMonsterListsScreen(navController = navController)
         }
     }
 }
