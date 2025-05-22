@@ -1,8 +1,7 @@
-package com.javier.mappster.ui
+package com.javier.mappster.ui.screen.spellList
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,10 +39,8 @@ import com.javier.mappster.R
 import com.javier.mappster.model.Spell
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.normalizeSpellName
-import com.javier.mappster.viewmodel.SpellListManagerViewModel
-import com.javier.mappster.viewmodel.SpellListViewModel
-import com.javier.mappster.viewmodel.provideSpellListManagerViewModel
-import com.javier.mappster.viewmodel.provideSpellListViewModel
+import com.javier.mappster.ui.screen.spells.SpellListViewModel
+import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 
 @Composable
 private fun EmptySpellsMessage() {
@@ -149,7 +146,7 @@ fun CreateSpellListScreen(
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
             ) {
-                SearchBar(
+                com.javier.mappster.ui.screen.spells.SearchBar(
                     query = searchQuery,
                     onQueryChanged = viewModel::onSearchQueryChanged,
                     modifier = Modifier.fillMaxWidth()

@@ -8,17 +8,18 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.javier.mappster.ui.CreateSpellListScreen
-import com.javier.mappster.ui.CreateSpellScreen
+import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
+import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.CustomMonsterListsScreen
-import com.javier.mappster.ui.CustomSpellListsScreen
-import com.javier.mappster.ui.EditSpellScreen
+import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
+import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.MonsterListScreen
-import com.javier.mappster.ui.SpellListScreen
-import com.javier.mappster.ui.SpellListViewScreen
-import com.javier.mappster.ui.screens.SpellDetailScreen
-import com.javier.mappster.viewmodel.provideSpellListViewModel
+import com.javier.mappster.ui.screen.spells.SpellListScreen
+import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
+import com.javier.mappster.ui.screen.spells.SpellDetailScreen
+import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
+import java.net.URLEncoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
@@ -33,14 +34,14 @@ fun NavGraph(navController: NavHostController) {
             SpellListScreen(
                 viewModel = viewModel,
                 onSpellClick = { spell ->
-                    val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                    val encodedName = URLEncoder.encode(spell.name, "UTF-8")
                     navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
                 },
                 onCreateSpellClick = {
                     navController.navigate(Destinations.CREATE_SPELL)
                 },
                 onEditSpellClick = { spell ->
-                    val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                    val encodedName = URLEncoder.encode(spell.name, "UTF-8")
                     navController.navigate("${Destinations.EDIT_SPELL.replace("{spellName}", encodedName)}")
                 },
                 navController = navController

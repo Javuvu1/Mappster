@@ -8,16 +8,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.javier.mappster.ui.screen.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MonsterListScreen(navController: NavHostController) {
+fun CustomMonsterListsScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Monstruos") },
+                title = { Text("Listas de Monstruos") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -35,7 +35,7 @@ fun MonsterListScreen(navController: NavHostController) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Pantalla de Monstruos - En desarrollo",
+                text = "Pantalla de Listas de Monstruos - En desarrollo",
                 style = MaterialTheme.typography.bodyLarge
             )
         }

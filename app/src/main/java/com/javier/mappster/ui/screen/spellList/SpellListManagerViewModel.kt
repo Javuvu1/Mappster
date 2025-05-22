@@ -1,4 +1,4 @@
-package com.javier.mappster.viewmodel
+package com.javier.mappster.ui.screen.spellList
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -1,4 +1,4 @@
-package com.javier.mappster.ui
+package com.javier.mappster.ui.screen
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List

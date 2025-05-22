@@ -1,4 +1,4 @@
-package com.javier.mappster.ui
+package com.javier.mappster.ui.screen.spells
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

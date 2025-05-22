@@ -1,4 +1,4 @@
-package com.javier.mappster.ui
+package com.javier.mappster.ui.screen.spells
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,8 +15,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.Spell
-import com.javier.mappster.viewmodel.SpellListViewModel
-import com.javier.mappster.viewmodel.provideSpellListViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -1,6 +1,5 @@
-package com.javier.mappster.ui
+package com.javier.mappster.ui.screen.spellList
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,8 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.SpellList
-import com.javier.mappster.viewmodel.SpellListManagerViewModel
-import com.javier.mappster.viewmodel.provideSpellListManagerViewModel
+import com.javier.mappster.ui.screen.BottomNavigationBar
 
 @Composable
 private fun EmptySpellListsMessage() {
