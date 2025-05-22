@@ -2,21 +2,23 @@ package com.javier.mappster.navigation
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.javier.mappster.ui.CreateSpellListScreen
 import com.javier.mappster.ui.CreateSpellScreen
+import com.javier.mappster.ui.CustomMonsterListsScreen
+import com.javier.mappster.ui.CustomSpellListsScreen
 import com.javier.mappster.ui.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.MonsterListScreen
-import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.SpellListScreen
-import com.javier.mappster.ui.CustomSpellListsScreen
+import com.javier.mappster.ui.SpellListViewScreen
 import com.javier.mappster.ui.screens.SpellDetailScreen
 import com.javier.mappster.viewmodel.provideSpellListViewModel
-import androidx.compose.ui.platform.LocalContext
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
@@ -90,6 +92,22 @@ fun NavGraph(navController: NavHostController) {
         }
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
             CustomMonsterListsScreen(navController = navController)
+        }
+        composable("create_spell_list") {
+            CreateSpellListScreen(
+                viewModel = viewModel,
+                navController = navController
+            )
+        }
+        composable(
+            route = "spell_list_view/{listId}",
+            arguments = listOf(navArgument("listId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            SpellListViewScreen(
+                listId = backStackEntry.arguments?.getString("listId") ?: "",
+                viewModel = viewModel,
+                navController = navController
+            )
         }
     }
 }

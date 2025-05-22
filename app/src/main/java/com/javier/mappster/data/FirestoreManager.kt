@@ -3,12 +3,14 @@ package com.javier.mappster.data
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.javier.mappster.model.Spell
+import com.javier.mappster.model.SpellList
 import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.tasks.await
 
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
     private val spellsCollection = db.collection("spells")
+    private val spellListsCollection = db.collection("spellLists")
 
     suspend fun getSpells(userId: String? = null): List<Spell> {
         if (userId == null) {
@@ -32,19 +34,15 @@ class FirestoreManager {
         }
 
         return try {
-            // Consulta 1: Hechizos no personalizados
             val nonCustomQuery = spellsCollection
                 .whereEqualTo("custom", false)
-            // Consulta 2: Hechizos personalizados del usuario
             val userCustomQuery = spellsCollection
                 .whereEqualTo("custom", true)
                 .whereEqualTo("userId", userId)
-            // Consulta 3: Hechizos personalizados públicos
             val publicCustomQuery = spellsCollection
                 .whereEqualTo("custom", true)
                 .whereEqualTo("public", true)
 
-            // Ejecutar consultas en paralelo
             val results = listOf(
                 nonCustomQuery.get().also { Log.d("FirestoreManager", "Executing nonCustomQuery") },
                 userCustomQuery.get().also { Log.d("FirestoreManager", "Executing userCustomQuery for userId=$userId") },
@@ -63,7 +61,6 @@ class FirestoreManager {
                 }
             }
 
-            // Combinar resultados, eliminar duplicados y ordenar alfabéticamente
             val spells = results.flatMap { snapshot ->
                 snapshot.documents.mapNotNull { document ->
                     try {
@@ -143,6 +140,72 @@ class FirestoreManager {
         } catch (e: Exception) {
             Log.e("FirestoreManager", "Error updating visibility for spell $spellName: ${e.message}", e)
             false
+        }
+    }
+
+    suspend fun getSpellLists(userId: String): List<SpellList> {
+        return try {
+            val query = spellListsCollection
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            val spellLists = query.documents.mapNotNull {
+                it.toObject(SpellList::class.java)?.also { list ->
+                    Log.d("FirestoreManager", "Parsed spell list: ${list.name}, id=${list.id}, userId=${list.userId}, spellIds=${list.spellIds}")
+                }
+            }.sortedBy { it.name.trim().lowercase() }
+            Log.d("FirestoreManager", "Fetched ${spellLists.size} spell lists: ${spellLists.map { it.name }}")
+            spellLists
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error fetching spell lists: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    suspend fun createSpellList(spellList: SpellList): Boolean {
+        return try {
+            val document = spellListsCollection.document()
+            val spellListWithId = spellList.copy(id = document.id)
+            document.set(spellListWithId).await()
+            Log.d("FirestoreManager", "Spell list created successfully: ${spellList.name}, id: ${document.id}")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error creating spell list ${spellList.name}: ${e.message}", e)
+            false
+        }
+    }
+
+    suspend fun deleteSpellList(listId: String): Boolean {
+        return try {
+            spellListsCollection.document(listId).delete().await()
+            Log.d("FirestoreManager", "Spell list deleted successfully: $listId")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error deleting spell list $listId: ${e.message}", e)
+            false
+        }
+    }
+
+    suspend fun getSpellsByIds(spellIds: List<String>): List<Spell> {
+        if (spellIds.isEmpty()) return emptyList()
+        return try {
+            val spells = mutableListOf<Spell>()
+            // Firestore tiene un límite de 10 elementos en "in" queries, así que dividimos en lotes
+            spellIds.chunked(10).forEach { batch ->
+                val query = spellsCollection
+                    .whereIn("__name__", batch)
+                    .get()
+                    .await()
+                spells.addAll(query.documents.mapNotNull {
+                    it.toObject(Spell::class.java)?.also { spell ->
+                        Log.d("FirestoreManager", "Parsed spell from ID: ${spell.name}, id=${it.id}")
+                    }
+                })
+            }
+            spells.sortedBy { it.name.trim().lowercase() }
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error fetching spells by IDs: ${e.message}", e)
+            emptyList()
         }
     }
 }
