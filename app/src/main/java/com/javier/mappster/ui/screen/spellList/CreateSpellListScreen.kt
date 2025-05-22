@@ -36,11 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.javier.mappster.R
+import com.javier.mappster.model.SchoolData
 import com.javier.mappster.model.Spell
 import com.javier.mappster.navigation.Destinations
-import com.javier.mappster.utils.normalizeSpellName
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
+import com.javier.mappster.utils.normalizeSpellName
 
 @Composable
 private fun EmptySpellsMessage() {
@@ -84,9 +85,9 @@ private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
 @Composable
 fun CreateSpellListScreen(
     viewModel: SpellListViewModel = provideSpellListViewModel(LocalContext.current),
-    spellListManagerViewModel: SpellListManagerViewModel = provideSpellListManagerViewModel(LocalContext.current),
     navController: NavHostController
 ) {
+    val spellListManagerViewModel = provideSpellListManagerViewModel(LocalContext.current)
     val spells by viewModel.spells.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -111,17 +112,14 @@ fun CreateSpellListScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    if (listName.isBlank()) {
-                        spellListManagerViewModel.createSpellList("Lista sin nombre", selectedSpells.keys.toList())
-                    } else {
-                        spellListManagerViewModel.createSpellList(listName, selectedSpells.keys.toList())
-                    }
+                    val name = if (listName.isBlank()) "Lista sin nombre" else listName
+                    spellListManagerViewModel.createSpellList(name, selectedSpells.keys.toList())
                     navController.popBackStack(Destinations.CUSTOM_SPELL_LISTS, inclusive = false)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                enabled = selectedSpells.isNotEmpty()
+                enabled = selectedSpells.isNotEmpty() && !isLoading
             ) {
                 Text("Guardar Lista")
             }
@@ -160,7 +158,7 @@ fun CreateSpellListScreen(
                     spells = spells,
                     selectedSpells = selectedSpells,
                     onSpellSelected = { spell, isSelected ->
-                        val spellId = if (spell.custom) normalizeSpellName(spell.name) else spell.name
+                        val spellId = normalizeSpellName(spell.name)
                         if (isSelected) selectedSpells[spellId] = true
                         else selectedSpells.remove(spellId)
                     }
@@ -183,9 +181,7 @@ private fun SpellListContent(
         items(spells) { spell ->
             SpellListItem(
                 spell = spell,
-                isSelected = selectedSpells.containsKey(
-                    if (spell.custom) normalizeSpellName(spell.name) else spell.name
-                ),
+                isSelected = selectedSpells.containsKey(normalizeSpellName(spell.name)),
                 onSelectedChange = { isSelected -> onSpellSelected(spell, isSelected) }
             )
         }
@@ -359,9 +355,3 @@ private fun SpellListItem(
         }
     }
 }
-
-private data class SchoolData(
-    val name: String,
-    val color: Color,
-    val icon: ImageVector
-)

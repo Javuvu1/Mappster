@@ -60,12 +60,7 @@ fun NavGraph(navController: NavHostController) {
             } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
         }
         composable(Destinations.CREATE_SPELL) {
-            CreateSpellScreen(
-                onSpellCreatedWithRefresh = {
-                    viewModel.refreshSpells()
-                    navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
-                }
-            )
+            CreateSpellScreen(navController = navController)
         }
         composable(
             route = Destinations.EDIT_SPELL,

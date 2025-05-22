@@ -1,6 +1,7 @@
 package com.javier.mappster.data
 
 import android.util.Log
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SpellList
@@ -104,7 +105,7 @@ class FirestoreManager {
     }
 
     private fun getSpellId(spell: Spell): String {
-        return if (spell.custom) normalizeSpellName(spell.name) else spell.name
+        return normalizeSpellName(spell.name)
     }
 
     suspend fun updateSpell(spell: Spell): Boolean {
@@ -162,6 +163,25 @@ class FirestoreManager {
         }
     }
 
+    suspend fun getSpellListById(listId: String): SpellList? {
+        return try {
+            val snapshot = spellListsCollection
+                .document(listId)
+                .get()
+                .await()
+            val spellList = snapshot.toObject(SpellList::class.java)
+            spellList?.also {
+                Log.d("FirestoreManager", "Fetched spell list: ${it.name}, id=${it.id}, userId=${it.userId}, spellIds=${it.spellIds}")
+            } ?: run {
+                Log.d("FirestoreManager", "Spell list with id $listId not found")
+            }
+            spellList
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error fetching spell list $listId: ${e.message}", e)
+            null
+        }
+    }
+
     suspend fun createSpellList(spellList: SpellList): Boolean {
         return try {
             val document = spellListsCollection.document()
@@ -193,7 +213,7 @@ class FirestoreManager {
             // Firestore tiene un límite de 10 elementos en "in" queries, así que dividimos en lotes
             spellIds.chunked(10).forEach { batch ->
                 val query = spellsCollection
-                    .whereIn("__name__", batch)
+                    .whereIn(FieldPath.documentId(), batch)
                     .get()
                     .await()
                 spells.addAll(query.documents.mapNotNull {

@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -35,17 +36,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.google.firebase.firestore.FirebaseFirestore
 import com.javier.mappster.R
+import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SpellList
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
+import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.launch
-import com.javier.mappster.model.SchoolData
-import com.javier.mappster.ui.screen.BottomNavigationBar
-import kotlinx.coroutines.tasks.await
 import java.net.URLEncoder
 
 @Composable
@@ -72,6 +71,20 @@ private fun LoadingIndicator() {
     }
 }
 
+@Composable
+private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Error") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpellListViewScreen(
@@ -80,23 +93,31 @@ fun SpellListViewScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
+    val authManager = remember { AuthManager(context) }
     val firestoreManager = remember { FirestoreManager() }
-    var spellList by remember { mutableStateOf<SpellList?>(null) }
-    var spells by remember { mutableStateOf<List<Spell>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
+    var spellList by remember { mutableStateOf<SpellList?>(null) }
+    val spells by viewModel.spells.collectAsState()
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(listId) {
         coroutineScope.launch {
             try {
-                val db = FirebaseFirestore.getInstance()
-                val listSnapshot = db.collection("spellLists").document(listId).get().await()
-                spellList = listSnapshot.toObject(SpellList::class.java)
-                if (spellList != null) {
-                    spells = firestoreManager.getSpellsByIds(spellList!!.spellIds)
+                val userId = authManager.getCurrentUserId() ?: run {
+                    error = "Usuario no autenticado"
+                    isLoading = false
+                    return@launch
+                }
+                val list = firestoreManager.getSpellListById(listId)
+                spellList = list
+                if (list == null || list.userId != userId) {
+                    error = "Lista no encontrada o no autorizada"
+                    isLoading = false
+                    return@launch
                 }
             } catch (e: Exception) {
-                // Manejar error si es necesario
+                error = "Error al cargar la lista: ${e.message}"
             } finally {
                 isLoading = false
             }
@@ -106,7 +127,7 @@ fun SpellListViewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(spellList?.name ?: "Lista de Hechizos") },
+                title = { Text(spellList?.name ?: "Cargando...") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -118,20 +139,31 @@ fun SpellListViewScreen(
             )
         },
         bottomBar = {
-            BottomNavigationBar(navController = navController)
+            com.javier.mappster.ui.screen.BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
         when {
             isLoading -> LoadingIndicator()
-            spellList == null || spells.isEmpty() -> EmptySpellsMessage()
-            else -> SpellListContent(
-                spells = spells,
-                paddingValues = paddingValues,
-                onSpellClick = { spell ->
-                    val encodedName = URLEncoder.encode(spell.name, "UTF-8")
-                    navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
+            error != null -> ErrorMessage(error!!, onDismiss = { error = null })
+            spellList == null -> EmptySpellsMessage()
+            spellList!!.spellIds.isEmpty() -> EmptySpellsMessage()
+            else -> {
+                val listSpells = spells.filter { spell ->
+                    spellList!!.spellIds.contains(normalizeSpellName(spell.name))
                 }
-            )
+                if (listSpells.isEmpty()) {
+                    EmptySpellsMessage()
+                } else {
+                    SpellListContent(
+                        spells = listSpells,
+                        paddingValues = paddingValues,
+                        onSpellClick = { spell ->
+                            val encodedName = URLEncoder.encode(spell.name, "UTF-8")
+                            navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -318,3 +350,9 @@ private fun SpellListItem(
         }
     }
 }
+
+private data class SchoolData(
+    val name: String,
+    val color: Color,
+    val icon: ImageVector
+)

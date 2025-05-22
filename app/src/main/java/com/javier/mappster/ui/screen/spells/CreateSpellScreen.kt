@@ -7,29 +7,56 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.*
+import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.normalizeSpellName
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
+@Composable
+private fun LoadingIndicator() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Error") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateSpellScreen(
-    onSpellCreatedWithRefresh: () -> Unit
+    navController: NavHostController
 ) {
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
     val firestoreManager = remember { FirestoreManager() }
     val coroutineScope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Estados del formulario
     var name by remember { mutableStateOf("") }
     var level by remember { mutableStateOf("0") }
     var school by remember { mutableStateOf("A") }
@@ -66,260 +93,16 @@ fun CreateSpellScreen(
             TopAppBar(
                 title = { Text("Crear Hechizo") },
                 navigationIcon = {
-                    IconButton(onClick = { onSpellCreatedWithRefresh() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nombre") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            var levelExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = levelExpanded,
-                onExpandedChange = { levelExpanded = !levelExpanded }
-            ) {
-                OutlinedTextField(
-                    value = levelOptions[level.toInt()],
-                    onValueChange = {},
-                    label = { Text("Nivel") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = levelExpanded,
-                    onDismissRequest = { levelExpanded = false }
-                ) {
-                    levelOptions.forEachIndexed { index, option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                level = index.toString()
-                                levelExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            var schoolExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = schoolExpanded,
-                onExpandedChange = { schoolExpanded = !schoolExpanded }
-            ) {
-                OutlinedTextField(
-                    value = schoolOptions.find { it.first == school }?.second ?: "",
-                    onValueChange = {},
-                    label = { Text("Escuela") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = schoolExpanded,
-                    onDismissRequest = { schoolExpanded = false }
-                ) {
-                    schoolOptions.forEach { (code, name) ->
-                        DropdownMenuItem(
-                            text = { Text(name) },
-                            onClick = {
-                                school = code
-                                schoolExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            OutlinedTextField(
-                value = source,
-                onValueChange = { source = it },
-                label = { Text("Fuente (opcional)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Descripción") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp),
-                maxLines = 5
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Checkbox(
-                    checked = verbal,
-                    onCheckedChange = { verbal = it },
-                    modifier = Modifier.weight(1f)
-                )
-                Text("Verbal", modifier = Modifier.weight(2f))
-                Checkbox(
-                    checked = somatic,
-                    onCheckedChange = { somatic = it },
-                    modifier = Modifier.weight(1f)
-                )
-                Text("Somático", modifier = Modifier.weight(2f))
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Checkbox(
-                    checked = material,
-                    onCheckedChange = { material = it },
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = materialText,
-                    onValueChange = { materialText = it },
-                    label = { Text("Material") },
-                    modifier = Modifier.weight(4f),
-                    enabled = material
-                )
-            }
-
-            var timeUnitExpanded by remember { mutableStateOf(false) }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = timeNumber,
-                    onValueChange = { timeNumber = it.filter { it.isDigit() } },
-                    label = { Text("Tiempo") },
-                    modifier = Modifier.weight(1f)
-                )
-                ExposedDropdownMenuBox(
-                    expanded = timeUnitExpanded,
-                    onExpandedChange = { timeUnitExpanded = !timeUnitExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = timeUnit,
-                        onValueChange = {},
-                        label = { Text("Unidad") },
-                        readOnly = true,
-                        modifier = Modifier
-                            .weight(2f)
-                            .menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = timeUnitExpanded,
-                        onDismissRequest = { timeUnitExpanded = false }
-                    ) {
-                        timeUnitOptions.forEach { unit ->
-                            DropdownMenuItem(
-                                text = { Text(unit) },
-                                onClick = {
-                                    timeUnit = unit
-                                    timeUnitExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            var durationExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = durationExpanded,
-                onExpandedChange = { durationExpanded = !durationExpanded }
-            ) {
-                OutlinedTextField(
-                    value = durationType,
-                    onValueChange = {},
-                    label = { Text("Duración") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = durationExpanded,
-                    onDismissRequest = { durationExpanded = false }
-                ) {
-                    durationTypeOptions.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(type) },
-                            onClick = {
-                                durationType = type
-                                durationExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            if (durationType == "timed") {
-                OutlinedTextField(
-                    value = durationAmount,
-                    onValueChange = { durationAmount = it.filter { it.isDigit() } },
-                    label = { Text("Cantidad (minutos)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            var rangeExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = rangeExpanded,
-                onExpandedChange = { rangeExpanded = !rangeExpanded }
-            ) {
-                OutlinedTextField(
-                    value = rangeType,
-                    onValueChange = {},
-                    label = { Text("Rango") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = rangeExpanded,
-                    onDismissRequest = { rangeExpanded = false }
-                ) {
-                    rangeTypeOptions.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(type) },
-                            onClick = {
-                                rangeType = type
-                                rangeExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            if (rangeType == "ranged") {
-                OutlinedTextField(
-                    value = rangeAmount,
-                    onValueChange = { rangeAmount = it.filter { it.isDigit() } },
-                    label = { Text("Distancia (pies)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
+        },
+        bottomBar = {
             Button(
                 onClick = {
                     if (name.isBlank() || description.isBlank()) {
@@ -395,30 +178,284 @@ fun CreateSpellScreen(
                         _public = false
                     )
 
+                    isLoading = true
                     coroutineScope.launch {
-                        withContext(Dispatchers.IO) {
+                        try {
                             val success = firestoreManager.createSpell(normalizedId, spell)
-                            withContext(Dispatchers.Main) {
-                                if (success) {
-                                    onSpellCreatedWithRefresh()
-                                } else {
-                                    errorMessage = "Error al crear el hechizo, pero puede haberse guardado. Verifica en la lista."
-                                }
+                            if (success) {
+                                navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+                            } else {
+                                errorMessage = "Error al crear el hechizo, puede que ya exista."
                             }
+                        } catch (e: Exception) {
+                            errorMessage = "Error al crear el hechizo: ${e.message}"
+                        } finally {
+                            isLoading = false
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = !isLoading
             ) {
                 Text("Crear Hechizo")
             }
-
-            errorMessage?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
+        }
+    ) { paddingValues ->
+        if (isLoading) {
+            LoadingIndicator()
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre") },
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                var levelExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = levelExpanded,
+                    onExpandedChange = { levelExpanded = !levelExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = levelOptions[level.toInt()],
+                        onValueChange = {},
+                        label = { Text("Nivel") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = levelExpanded,
+                        onDismissRequest = { levelExpanded = false }
+                    ) {
+                        levelOptions.forEachIndexed { index, option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    level = index.toString()
+                                    levelExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                var schoolExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = schoolExpanded,
+                    onExpandedChange = { schoolExpanded = !schoolExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = schoolOptions.find { it.first == school }?.second ?: "",
+                        onValueChange = {},
+                        label = { Text("Escuela") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = schoolExpanded,
+                        onDismissRequest = { schoolExpanded = false }
+                    ) {
+                        schoolOptions.forEach { (code, name) ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    school = code
+                                    schoolExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = source,
+                    onValueChange = { source = it },
+                    label = { Text("Fuente (opcional)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    maxLines = 5
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = verbal,
+                        onCheckedChange = { verbal = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("Verbal", modifier = Modifier.weight(2f))
+                    Checkbox(
+                        checked = somatic,
+                        onCheckedChange = { somatic = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("Somático", modifier = Modifier.weight(2f))
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = material,
+                        onCheckedChange = { material = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = materialText,
+                        onValueChange = { materialText = it },
+                        label = { Text("Material") },
+                        modifier = Modifier.weight(4f),
+                        enabled = material
+                    )
+                }
+
+                var timeUnitExpanded by remember { mutableStateOf(false) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = timeNumber,
+                        onValueChange = { timeNumber = it.filter { it.isDigit() } },
+                        label = { Text("Tiempo") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ExposedDropdownMenuBox(
+                        expanded = timeUnitExpanded,
+                        onExpandedChange = { timeUnitExpanded = !timeUnitExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = timeUnit,
+                            onValueChange = {},
+                            label = { Text("Unidad") },
+                            readOnly = true,
+                            modifier = Modifier
+                                .weight(2f)
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = timeUnitExpanded,
+                            onDismissRequest = { timeUnitExpanded = false }
+                        ) {
+                            timeUnitOptions.forEach { unit ->
+                                DropdownMenuItem(
+                                    text = { Text(unit) },
+                                    onClick = {
+                                        timeUnit = unit
+                                        timeUnitExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                var durationExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = durationExpanded,
+                    onExpandedChange = { durationExpanded = !durationExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = durationType,
+                        onValueChange = {},
+                        label = { Text("Duración") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = durationExpanded,
+                        onDismissRequest = { durationExpanded = false }
+                    ) {
+                        durationTypeOptions.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    durationType = type
+                                    durationExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (durationType == "timed") {
+                    OutlinedTextField(
+                        value = durationAmount,
+                        onValueChange = { durationAmount = it.filter { it.isDigit() } },
+                        label = { Text("Cantidad (minutos)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                var rangeExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = rangeExpanded,
+                    onExpandedChange = { rangeExpanded = !rangeExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = rangeType,
+                        onValueChange = {},
+                        label = { Text("Rango") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = rangeExpanded,
+                        onDismissRequest = { rangeExpanded = false }
+                    ) {
+                        rangeTypeOptions.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    rangeType = type
+                                    rangeExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (rangeType == "ranged") {
+                    OutlinedTextField(
+                        value = rangeAmount,
+                        onValueChange = { rangeAmount = it.filter { it.isDigit() } },
+                        label = { Text("Distancia (pies)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (errorMessage != null) {
+                    ErrorMessage(errorMessage!!, onDismiss = { errorMessage = null })
+                }
             }
         }
     }
