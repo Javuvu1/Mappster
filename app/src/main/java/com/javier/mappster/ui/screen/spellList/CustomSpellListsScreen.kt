@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.SpellList
 import com.javier.mappster.ui.screen.BottomNavigationBar
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Composable
 private fun EmptySpellListsMessage() {
@@ -96,7 +99,13 @@ fun CustomSpellListsScreen(
                 onListClick = { listId ->
                     navController.navigate("spell_list_view/$listId")
                 },
-                onDeleteClick = { listId -> viewModel.deleteSpellList(listId) }
+                onDeleteClick = { listId -> viewModel.deleteSpellList(listId) },
+                onEditClick = { spellList ->
+                    val spellIdsJson = Json.encodeToString(spellList.spellIds)
+                    navController.navigate(
+                        "create_spell_list/${spellList.id}/${spellList.name}/$spellIdsJson"
+                    )
+                }
             )
         }
     }
@@ -107,7 +116,8 @@ private fun SpellListsContent(
     spellLists: List<SpellList>,
     paddingValues: PaddingValues,
     onListClick: (String) -> Unit,
-    onDeleteClick: (String) -> Unit
+    onDeleteClick: (String) -> Unit,
+    onEditClick: (SpellList) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(
@@ -122,7 +132,8 @@ private fun SpellListsContent(
             SpellListItem(
                 spellList = spellList,
                 onClick = { onListClick(spellList.id) },
-                onDeleteClick = { onDeleteClick(spellList.id) }
+                onDeleteClick = { onDeleteClick(spellList.id) },
+                onEditClick = { onEditClick(spellList) }
             )
         }
     }
@@ -132,7 +143,8 @@ private fun SpellListsContent(
 private fun SpellListItem(
     spellList: SpellList,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -179,6 +191,13 @@ private fun SpellListItem(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = onEditClick) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar lista",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             IconButton(onClick = { showDeleteDialog = true }) {
                 Icon(
                     imageVector = Icons.Default.Delete,

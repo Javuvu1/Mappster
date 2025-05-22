@@ -195,6 +195,17 @@ class FirestoreManager {
         }
     }
 
+    suspend fun updateSpellList(spellList: SpellList): Boolean {
+        return try {
+            spellListsCollection.document(spellList.id).set(spellList).await()
+            Log.d("FirestoreManager", "Spell list updated successfully: ${spellList.name}, id: ${spellList.id}")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error updating spell list ${spellList.name}: ${e.message}", e)
+            false
+        }
+    }
+
     suspend fun deleteSpellList(listId: String): Boolean {
         return try {
             spellListsCollection.document(listId).delete().await()

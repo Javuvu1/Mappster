@@ -19,6 +19,8 @@ import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -89,10 +91,24 @@ fun NavGraph(navController: NavHostController) {
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
             CustomMonsterListsScreen(navController = navController)
         }
-        composable("create_spell_list") {
+        composable(
+            route = "create_spell_list/{listId}/{listName}/{spellIds}",
+            arguments = listOf(
+                navArgument("listId") { type = NavType.StringType; nullable = true },
+                navArgument("listName") { type = NavType.StringType; nullable = true },
+                navArgument("spellIds") { type = NavType.StringType; nullable = true }
+            )
+        ) { backStackEntry ->
+            val listId = backStackEntry.arguments?.getString("listId")
+            val listName = backStackEntry.arguments?.getString("listName")
+            val spellIdsJson = backStackEntry.arguments?.getString("spellIds")
+            val spellIds = spellIdsJson?.let { Json.decodeFromString<List<String>>(it) }
             CreateSpellListScreen(
                 viewModel = viewModel,
-                navController = navController
+                navController = navController,
+                listId = listId,
+                listName = listName,
+                spellIds = spellIds
             )
         }
         composable(

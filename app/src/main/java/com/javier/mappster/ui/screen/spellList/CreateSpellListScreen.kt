@@ -86,20 +86,27 @@ private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
 @Composable
 fun CreateSpellListScreen(
     viewModel: SpellListViewModel = provideSpellListViewModel(LocalContext.current),
-    navController: NavHostController
+    navController: NavHostController,
+    listId: String? = null,
+    listName: String? = null,
+    spellIds: List<String>? = null
 ) {
     val spellListManagerViewModel = provideSpellListManagerViewModel(LocalContext.current)
     val spells by viewModel.spells.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    var listName by remember { mutableStateOf("") }
-    val selectedSpells = remember { mutableStateMapOf<String, Boolean>() }
+    var listNameState by remember { mutableStateOf(listName ?: "") }
+    val selectedSpells = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            spellIds?.forEach { spellId -> put(spellId, true) }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Crear Lista de Hechizos") },
+                title = { Text(if (listId == null) "Crear Lista de Hechizos" else "Editar Lista de Hechizos") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -113,8 +120,12 @@ fun CreateSpellListScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    val name = if (listName.isBlank()) "Lista sin nombre" else listName
-                    spellListManagerViewModel.createSpellList(name, selectedSpells.keys.toList())
+                    val name = if (listNameState.isBlank()) "Lista sin nombre" else listNameState
+                    if (listId == null) {
+                        spellListManagerViewModel.createSpellList(name, selectedSpells.keys.toList())
+                    } else {
+                        spellListManagerViewModel.updateSpellList(listId, name, selectedSpells.keys.toList())
+                    }
                     navController.popBackStack(Destinations.CUSTOM_SPELL_LISTS, inclusive = false)
                 },
                 modifier = Modifier
@@ -122,7 +133,7 @@ fun CreateSpellListScreen(
                     .padding(16.dp),
                 enabled = selectedSpells.isNotEmpty() && !isLoading
             ) {
-                Text("Guardar Lista")
+                Text(if (listId == null) "Guardar Lista" else "Actualizar Lista")
             }
         }
     ) { paddingValues ->
@@ -132,8 +143,8 @@ fun CreateSpellListScreen(
                 .padding(paddingValues)
         ) {
             OutlinedTextField(
-                value = listName,
-                onValueChange = { listName = it },
+                value = listNameState,
+                onValueChange = { listNameState = it },
                 label = { Text("Nombre de la lista") },
                 modifier = Modifier
                     .fillMaxWidth()

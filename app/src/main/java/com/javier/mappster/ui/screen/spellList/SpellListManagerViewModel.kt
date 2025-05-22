@@ -58,6 +58,22 @@ class SpellListManagerViewModel(
         }
     }
 
+    fun updateSpellList(listId: String, name: String, spellIds: List<String>) {
+        viewModelScope.launch {
+            val userId = authManager.getCurrentUserId() ?: run {
+                _error.value = "Usuario no autenticado"
+                return@launch
+            }
+            val spellList = SpellList(id = listId, name = name, userId = userId, spellIds = spellIds)
+            val success = firestoreManager.updateSpellList(spellList)
+            if (success) {
+                refreshSpellLists()
+            } else {
+                _error.value = "Error al actualizar la lista de hechizos"
+            }
+        }
+    }
+
     fun deleteSpellList(listId: String) {
         viewModelScope.launch {
             val success = firestoreManager.deleteSpellList(listId)
