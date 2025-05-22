@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.*
+import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -332,6 +333,12 @@ fun CreateSpellScreen(
                         return@Button
                     }
 
+                    val normalizedId = normalizeSpellName(name)
+                    if (normalizedId.isBlank()) {
+                        errorMessage = "El nombre del hechizo no es válido"
+                        return@Button
+                    }
+
                     val spell = Spell(
                         name = name,
                         level = level.toInt(),
@@ -390,7 +397,7 @@ fun CreateSpellScreen(
 
                     coroutineScope.launch {
                         withContext(Dispatchers.IO) {
-                            val success = firestoreManager.createSpell(spell)
+                            val success = firestoreManager.createSpell(normalizedId, spell)
                             withContext(Dispatchers.Main) {
                                 if (success) {
                                     onSpellCreatedWithRefresh()

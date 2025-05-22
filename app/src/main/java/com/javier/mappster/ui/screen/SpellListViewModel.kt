@@ -1,12 +1,12 @@
 package com.javier.mappster.viewmodel
 
 import android.content.Context
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.Spell
+import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,9 +70,10 @@ class SpellListViewModel(
         _error.value = null
     }
 
-    fun deleteSpell(spellName: String) {
+    fun deleteSpell(spell: Spell) {
         viewModelScope.launch {
-            val success = firestoreManager.deleteSpell(spellName)
+            val id = if (spell.custom) normalizeSpellName(spell.name) else spell.name
+            val success = firestoreManager.deleteSpell(id)
             if (success) {
                 refreshSpells()
             } else {
@@ -81,9 +82,10 @@ class SpellListViewModel(
         }
     }
 
-    fun updateSpellVisibility(spellName: String, public: Boolean) {
+    fun updateSpellVisibility(spell: Spell, public: Boolean) {
         viewModelScope.launch {
-            val success = firestoreManager.updateSpellVisibility(spellName, public)
+            val id = if (spell.custom) normalizeSpellName(spell.name) else spell.name
+            val success = firestoreManager.updateSpellVisibility(id, public)
             if (success) {
                 refreshSpells()
             } else {

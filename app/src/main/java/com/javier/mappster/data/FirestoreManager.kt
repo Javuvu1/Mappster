@@ -3,6 +3,7 @@ package com.javier.mappster.data
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.javier.mappster.model.Spell
+import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.tasks.await
 
 class FirestoreManager {
@@ -84,31 +85,36 @@ class FirestoreManager {
         }
     }
 
-    suspend fun createSpell(spell: Spell): Boolean {
+    suspend fun createSpell(id: String, spell: Spell): Boolean {
         return try {
-            val document = spellsCollection.document(spell.name)
+            val document = spellsCollection.document(id)
             document.get().await().let { doc ->
                 if (doc.exists()) {
-                    Log.d("FirestoreManager", "Spell ${spell.name} already exists")
+                    Log.d("FirestoreManager", "Spell with ID $id already exists")
                     return false
                 }
             }
             document.set(spell).await()
-            Log.d("FirestoreManager", "Spell created successfully: ${spell.name}, data: $spell")
+            Log.d("FirestoreManager", "Spell created successfully: ${spell.name}, ID: $id, data: $spell")
             true
         } catch (e: Exception) {
-            Log.e("FirestoreManager", "Error creating spell ${spell.name}: ${e.message}", e)
-            spellsCollection.document(spell.name).get().await().let { doc ->
-                Log.d("FirestoreManager", "Spell ${spell.name} exists after error: ${doc.exists()}")
+            Log.e("FirestoreManager", "Error creating spell ${spell.name} with ID $id: ${e.message}", e)
+            spellsCollection.document(id).get().await().let { doc ->
+                Log.d("FirestoreManager", "Spell with ID $id exists after error: ${doc.exists()}")
                 return doc.exists()
             }
         }
     }
 
+    private fun getSpellId(spell: Spell): String {
+        return if (spell.custom) normalizeSpellName(spell.name) else spell.name
+    }
+
     suspend fun updateSpell(spell: Spell): Boolean {
         return try {
-            spellsCollection.document(spell.name).set(spell).await()
-            Log.d("FirestoreManager", "Spell updated successfully: ${spell.name}, data: $spell")
+            val id = getSpellId(spell)
+            spellsCollection.document(id).set(spell).await()
+            Log.d("FirestoreManager", "Spell updated successfully: ${spell.name}, ID: $id, data: $spell")
             true
         } catch (e: Exception) {
             Log.e("FirestoreManager", "Error updating spell ${spell.name}: ${e.message}", e)

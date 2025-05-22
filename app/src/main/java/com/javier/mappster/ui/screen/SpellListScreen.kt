@@ -123,9 +123,9 @@ fun SpellListScreen(
                 spells = spells,
                 paddingValues = paddingValues,
                 onSpellClick = onSpellClick,
-                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell.name) },
+                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) }, // Corregido: pasa spell
                 onToggleVisibilityClick = { spell, isPublic ->
-                    viewModel.updateSpellVisibility(spell.name, isPublic)
+                    viewModel.updateSpellVisibility(spell, isPublic) // Corregido: pasa spell
                 },
                 onEditSpellClick = onEditSpellClick
             )
@@ -155,8 +155,8 @@ private fun SpellListContent(
             SpellListItem(
                 spell = spell,
                 onClick = { onSpellClick(spell) },
-                onDeleteClick = { onDeleteSpellClick(spell) },
-                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) },
+                onDeleteClick = { onDeleteSpellClick(spell) }, // Corregido: pasa spell
+                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) }, // Corregido: pasa spell
                 onEditClick = { onEditSpellClick(spell) }
             )
         }
@@ -218,7 +218,7 @@ private fun SpellListItem(
             text = { Text("¿Estás seguro de que quieres borrar el hechizo \"${spell.name}\"?") },
             confirmButton = {
                 TextButton(onClick = {
-                    onDeleteClick(spell)
+                    onDeleteClick(spell) // Corregido: pasa spell
                     showDeleteDialog = false
                 }) {
                     Text("Confirmar")
@@ -244,7 +244,7 @@ private fun SpellListItem(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    onToggleVisibilityClick(pendingVisibility)
+                    onToggleVisibilityClick(pendingVisibility) // Corregido: pasa pendingVisibility
                     showVisibilityDialog = false
                 }) {
                     Text("Confirmar")
