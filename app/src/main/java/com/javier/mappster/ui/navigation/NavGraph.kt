@@ -91,6 +91,12 @@ fun NavGraph(navController: NavHostController) {
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
             CustomMonsterListsScreen(navController = navController)
         }
+        composable("create_spell_list") {
+            CreateSpellListScreen(
+                viewModel = viewModel,
+                navController = navController
+            )
+        }
         composable(
             route = "create_spell_list/{listId}/{listName}/{spellIds}",
             arguments = listOf(
