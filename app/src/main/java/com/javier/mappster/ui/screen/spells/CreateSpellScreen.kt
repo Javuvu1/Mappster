@@ -72,6 +72,13 @@ fun CreateSpellScreen(
     var durationAmount by remember { mutableStateOf("") }
     var rangeType by remember { mutableStateOf("self") }
     var rangeAmount by remember { mutableStateOf("") }
+    var rangeAreaType by remember { mutableStateOf("") }
+    var classList by remember { mutableStateOf("") }
+    var subclassList by remember { mutableStateOf("") }
+    var feats by remember { mutableStateOf("") }
+    var backgrounds by remember { mutableStateOf("") }
+    var races by remember { mutableStateOf("") }
+    var optionalFeatures by remember { mutableStateOf("") }
 
     val schoolOptions = listOf(
         "A" to "Abjuración",
@@ -122,6 +129,43 @@ fun CreateSpellScreen(
                         return@Button
                     }
 
+                    // Parse classList (e.g., "Sorcerer,Wizard")
+                    val classEntries = classList.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
+                        ClassEntry(name = it, source = "Custom")
+                    }
+
+                    // Parse subclassList (e.g., "Cleric:Arcana Domain,Fighter:Eldritch Knight")
+                    val subclassEntries = subclassList.split(",").map { it.trim() }.filter { it.isNotBlank() }.mapNotNull {
+                        val parts = it.split(":")
+                        if (parts.size == 2) {
+                            SubclassEntry(
+                                classEntry = ClassEntry(name = parts[0], source = "Custom"),
+                                subclass = SubclassDetail(name = parts[1], source = "Custom")
+                            )
+                        } else null
+                    }
+
+                    // Parse feats, backgrounds, races, optionalFeatures
+                    val featList = feats.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
+                        Feat(name = it, source = "Custom")
+                    }
+                    val backgroundList = backgrounds.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
+                        Background(name = it, source = "Custom")
+                    }
+                    val raceList = races.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
+                        Race(name = it, source = "Custom")
+                    }
+                    val optionalFeatureList = optionalFeatures.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
+                        OptionalFeature(name = it, source = "Custom", featureType = listOf("Custom"))
+                    }
+
+                    // Parse rangeAreaType for areaTags
+                    val areaTags = if (rangeType == "ranged" && rangeAreaType.isNotBlank()) {
+                        listOf(rangeAreaType.trim())
+                    } else {
+                        emptyList()
+                    }
+
                     val spell = Spell(
                         name = name,
                         level = level.toInt(),
@@ -152,7 +196,7 @@ fun CreateSpellScreen(
                                 amount = rangeAmount.toIntOrNull()
                             )
                         ),
-                        areaTags = emptyList(),
+                        areaTags = areaTags,
                         meta = Meta(),
                         miscTags = emptyList(),
                         hasFluff = false,
@@ -173,6 +217,11 @@ fun CreateSpellScreen(
                         reprintedAs = emptyList(),
                         additionalSources = emptyList(),
                         otherSources = emptyList(),
+                        classes = Classes(fromClassList = classEntries, fromSubclass = subclassEntries),
+                        feats = featList,
+                        backgrounds = backgroundList,
+                        races = raceList,
+                        optionalFeatures = optionalFeatureList,
                         userId = userId,
                         _custom = true,
                         _public = false
@@ -451,7 +500,62 @@ fun CreateSpellScreen(
                         label = { Text("Distancia (pies)") },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    OutlinedTextField(
+                        value = rangeAreaType,
+                        onValueChange = { rangeAreaType = it },
+                        label = { Text("Tipo de Área (opcional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Ej: cono, línea, radio, etc.") }
+                    )
                 }
+
+                OutlinedTextField(
+                    value = classList,
+                    onValueChange = { classList = it },
+                    label = { Text("Clases (opcional, separadas por comas)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej: Sorcerer,Wizard") }
+                )
+
+                OutlinedTextField(
+                    value = subclassList,
+                    onValueChange = { subclassList = it },
+                    label = { Text("Subclases (opcional, formato Clase:Subclase)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej: Cleric:Arcana Domain,Fighter:Eldritch Knight") }
+                )
+
+                OutlinedTextField(
+                    value = feats,
+                    onValueChange = { feats = it },
+                    label = { Text("Hazañas (opcional, separadas por comas)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej: Magic Initiate,Artificer Initiate") }
+                )
+
+                OutlinedTextField(
+                    value = backgrounds,
+                    onValueChange = { backgrounds = it },
+                    label = { Text("Trasfondos (opcional, separadas por comas)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej: Simic Scientist,Sage") }
+                )
+
+                OutlinedTextField(
+                    value = races,
+                    onValueChange = { races = it },
+                    label = { Text("Razas (opcional, separadas por comas)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej: Elf (High),Genasi (Water)") }
+                )
+
+                OutlinedTextField(
+                    value = optionalFeatures,
+                    onValueChange = { optionalFeatures = it },
+                    label = { Text("Características Opcionales (opcional, separadas por comas)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej: Pact of the Tome") }
+                )
 
                 if (errorMessage != null) {
                     ErrorMessage(errorMessage!!, onDismiss = { errorMessage = null })

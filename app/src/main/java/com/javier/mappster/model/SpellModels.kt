@@ -7,6 +7,7 @@ data class Spells(
     val spell: List<Spell> = emptyList()
 )
 
+@Serializable
 data class Spell(
     // Basic Information
     val name: String = "",
@@ -14,9 +15,6 @@ data class Spell(
     val school: String = "",
     val source: String = "",
     val page: Int = 0,
-
-    @PropertyName("srd")
-    private val _srd: Any? = null,
 
     val basicRules: Boolean = false,
 
@@ -38,7 +36,7 @@ data class Spell(
     val hasFluffImages: Boolean = false,
 
     // Game Mechanics
-    val entries: List<Any> = emptyList(),
+    val entries: List<String> = emptyList(),
     val entriesHigherLevel: List<EntriesHigherLevel> = emptyList(),
     val savingThrow: List<String> = emptyList(),
     val spellAttack: List<String> = emptyList(),
@@ -59,6 +57,13 @@ data class Spell(
     val additionalSources: List<AdditionalSource> = emptyList(),
     val otherSources: List<OtherSource> = emptyList(),
 
+    // New Fields
+    val classes: Classes = Classes(),
+    val feats: List<Feat> = emptyList(),
+    val backgrounds: List<Background> = emptyList(),
+    val races: List<Race> = emptyList(),
+    val optionalFeatures: List<OptionalFeature> = emptyList(),
+
     // Custom field added by script
     @PropertyName("custom")
     private val _custom: Boolean? = null,
@@ -66,13 +71,6 @@ data class Spell(
     @PropertyName("public")
     private val _public: Boolean? = null
 ) {
-    val srd: Boolean
-        get() = when (_srd) {
-            is Boolean -> _srd
-            is String -> _srd.equals("true", ignoreCase = true)
-            else -> true
-        }
-
     val custom: Boolean
         get() = _custom ?: false
 
@@ -145,4 +143,58 @@ data class OtherSource(
 @Serializable
 data class Meta(
     val ritual: Boolean = false
+)
+
+/* ===== New Submodels for Classes, Feats, Backgrounds, Races, Optional Features ===== */
+@Serializable
+data class Classes(
+    val fromClassList: List<ClassEntry> = emptyList(),
+    val fromSubclass: List<SubclassEntry> = emptyList()
+)
+
+@Serializable
+data class ClassEntry(
+    val name: String = "",
+    val source: String = ""
+)
+
+@Serializable
+data class SubclassEntry(
+    @PropertyName("class")
+    val classEntry: ClassEntry = ClassEntry(),
+    val subclass: SubclassDetail = SubclassDetail()
+)
+
+@Serializable
+data class SubclassDetail(
+    val name: String = "",
+    val shortName: String? = null,
+    val source: String = ""
+)
+
+@Serializable
+data class Feat(
+    val name: String = "",
+    val source: String = ""
+)
+
+@Serializable
+data class Background(
+    val name: String = "",
+    val source: String = ""
+)
+
+@Serializable
+data class Race(
+    val name: String = "",
+    val source: String = "",
+    val baseName: String? = null,
+    val baseSource: String? = null
+)
+
+@Serializable
+data class OptionalFeature(
+    val name: String = "",
+    val source: String = "",
+    val featureType: List<String> = emptyList()
 )

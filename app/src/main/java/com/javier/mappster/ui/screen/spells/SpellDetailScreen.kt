@@ -87,6 +87,12 @@ fun SpellDetailScreen(spell: Spell) {
                 Text("Página: ${spell.page}", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Ritual
+                if (spell.meta.ritual) {
+                    Text("Ritual: Sí", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 // Componentes
                 val componentsList = buildList {
                     if (spell.components.v == true) add("Verbal")
@@ -99,9 +105,11 @@ fun SpellDetailScreen(spell: Spell) {
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Tiempo y duración
+                // Tiempo de lanzamiento
                 Text("Tiempo de lanzamiento: ${spell.time.joinToString { "${it.number} ${it.unit}" }}", style = MaterialTheme.typography.bodyLarge)
+                Spacer(modifier = Modifier.height(8.dp))
 
+                // Duración
                 spell.duration.forEach { duration ->
                     Text("Duración: ${duration.type}", style = MaterialTheme.typography.bodyLarge)
                     duration.duration?.let {
@@ -114,15 +122,67 @@ fun SpellDetailScreen(spell: Spell) {
                         Text("Finaliza en: ${duration.ends.joinToString()}", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // Rango y Área
+                Text("Rango: ${spell.range.type}${spell.range.distance.amount?.let { " ($it ${spell.range.distance.type})" } ?: ""}", style = MaterialTheme.typography.bodyLarge)
+                if (spell.areaTags.isNotEmpty()) {
+                    Text("Área: ${spell.areaTags.joinToString()}", style = MaterialTheme.typography.bodyLarge)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Tiradas de salvación
+                if (spell.savingThrow.isNotEmpty()) {
+                    Text("Tiradas de salvación: ${spell.savingThrow.joinToString()}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Ataque de hechizo
+                if (spell.spellAttack.isNotEmpty()) {
+                    Text("Ataque de hechizo: ${spell.spellAttack.joinToString()}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Clases
+                if (spell.classes.fromClassList.isNotEmpty()) {
+                    Text("Clases: ${spell.classes.fromClassList.joinToString { it.name }}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (spell.classes.fromSubclass.isNotEmpty()) {
+                    Text("Subclases: ${spell.classes.fromSubclass.joinToString { "${it.classEntry.name}: ${it.subclass.name}" }}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Hazañas
+                if (spell.feats.isNotEmpty()) {
+                    Text("Hazañas: ${spell.feats.joinToString { it.name }}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Trasfondos
+                if (spell.backgrounds.isNotEmpty()) {
+                    Text("Trasfondos: ${spell.backgrounds.joinToString { it.name }}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Razas
+                if (spell.races.isNotEmpty()) {
+                    Text("Razas: ${spell.races.joinToString { it.name + (it.baseName?.let { base -> " ($base)" } ?: "") }}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Características opcionales
+                if (spell.optionalFeatures.isNotEmpty()) {
+                    Text("Características opcionales: ${spell.optionalFeatures.joinToString { it.name }}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 Text("Descripción:", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Entries (solo strings)
-            items(spell.entries.filterIsInstance<String>()) { entry ->
+            // Entries
+            items(spell.entries) { entry ->
                 Text(text = "• $entry", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(8.dp))
             }
