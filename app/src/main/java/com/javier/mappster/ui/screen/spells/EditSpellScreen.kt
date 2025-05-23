@@ -157,7 +157,7 @@ fun EditSpellScreen(
                         val success = firestoreManager.updateSpell(updatedSpell)
                         isLoading = false
                         if (success) {
-                            viewModel.refreshSpells()
+                            viewModel.refreshSpellsPublic()
                             onSpellUpdated()
                         } else {
                             errorMessage = "Error al actualizar el hechizo"

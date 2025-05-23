@@ -10,6 +10,7 @@ import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class SpellListViewModel(
@@ -29,21 +30,36 @@ class SpellListViewModel(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
-        refreshSpells()
+        viewModelScope.launch {
+            authManager.userStateFlow().collectLatest { userId ->
+                if (userId != null) {
+                    refreshSpells(userId)
+                } else {
+                    _spells.value = emptyList()
+                    _isLoading.value = false
+                }
+            }
+        }
     }
 
-    fun refreshSpells() {
+    private suspend fun refreshSpells(userId: String) {
+        _isLoading.value = true
+        try {
+            val spells = firestoreManager.getSpells(userId)
+            _spells.value = spells.filter {
+                it.name.contains(_searchQuery.value, ignoreCase = true)
+            }.sortedBy { it.name.lowercase() }
+        } catch (e: Exception) {
+            _error.value = "Error al cargar hechizos: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    fun refreshSpellsPublic() {
         viewModelScope.launch {
             val userId = authManager.getCurrentUserId() ?: return@launch
-            _isLoading.value = true
-            try {
-                val spells = firestoreManager.getSpells(userId)
-                _spells.value = spells // Ya ordenados alfabéticamente por FirestoreManager
-            } catch (e: Exception) {
-                _error.value = "Error al cargar hechizos: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+            refreshSpells(userId)
         }
     }
 
@@ -51,18 +67,7 @@ class SpellListViewModel(
         _searchQuery.value = query
         viewModelScope.launch {
             val userId = authManager.getCurrentUserId() ?: return@launch
-            _isLoading.value = true
-            try {
-                val spells = firestoreManager.getSpells(userId)
-                _spells.value = spells
-                    .filter { it.name.contains(query, ignoreCase = true) }
-                    // Mantener orden alfabético después del filtro
-                    .sortedBy { it.name.lowercase() }
-            } catch (e: Exception) {
-                _error.value = "Error al buscar hechizos: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+            refreshSpells(userId)
         }
     }
 
@@ -75,7 +80,8 @@ class SpellListViewModel(
             val id = if (spell.custom) normalizeSpellName(spell.name) else spell.name
             val success = firestoreManager.deleteSpell(id)
             if (success) {
-                refreshSpells()
+                val userId = authManager.getCurrentUserId() ?: return@launch
+                refreshSpells(userId)
             } else {
                 _error.value = "Error al eliminar el hechizo"
             }
@@ -87,7 +93,8 @@ class SpellListViewModel(
             val id = if (spell.custom) normalizeSpellName(spell.name) else spell.name
             val success = firestoreManager.updateSpellVisibility(id, public)
             if (success) {
-                refreshSpells()
+                val userId = authManager.getCurrentUserId() ?: return@launch
+                refreshSpells(userId)
             } else {
                 _error.value = "Error al actualizar la visibilidad"
             }

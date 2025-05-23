@@ -35,6 +35,15 @@ fun LoginScreen(navController: NavHostController) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Verificar si el usuario ya está autenticado
+    LaunchedEffect(Unit) {
+        if (authManager.isUserSignedIn()) {
+            navController.navigate(Destinations.SPELL_LIST) {
+                popUpTo(Destinations.LOGIN) { inclusive = true }
+            }
+        }
+    }
+
     // Animación para la entrada de elementos
     val transition = updateTransition(targetState = true, label = "LoginAnimation")
     val alpha by transition.animateFloat(
@@ -126,7 +135,7 @@ fun LoginScreen(navController: NavHostController) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    // Placeholder para el icono de Google (puedes usar una librería como Compose Icons)
+                    // Placeholder para el icono de Google
                     Text(
                         text = "G",
                         fontSize = 24.sp,
@@ -166,7 +175,7 @@ fun LoginScreen(navController: NavHostController) {
                 }
             }
 
-            // Indicador de carga (opcional, integrado en el botón)
+            // Indicador de carga
             if (isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))
                 CircularProgressIndicator(
