@@ -5,23 +5,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.PlaylistPlay
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.javier.mappster.data.AuthManager
 import com.javier.mappster.navigation.Destinations
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
+    val context = LocalContext.current
+    val authManager = remember { AuthManager(context) }
+
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface
@@ -67,6 +73,19 @@ fun BottomNavigationBar(navController: NavHostController) {
             onClick = {
                 navController.navigate(Destinations.CUSTOM_MONSTER_LISTS) {
                     popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                    launchSingleTop = true
+                }
+            }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Salir") },
+            label = { Text("Salir") },
+            selected = currentRoute == Destinations.LOGIN,
+            onClick = {
+                authManager.signOut()
+                navController.navigate(Destinations.LOGIN) {
+                    // Limpiar todo el back stack
+                    popUpTo(0) { inclusive = true }
                     launchSingleTop = true
                 }
             }

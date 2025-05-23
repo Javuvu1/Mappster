@@ -1,6 +1,7 @@
 package com.javier.mappster.ui
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
@@ -42,6 +43,11 @@ fun LoginScreen(navController: NavHostController) {
                 popUpTo(Destinations.LOGIN) { inclusive = true }
             }
         }
+    }
+
+    // Manejar el botón de retroceso para cerrar la app
+    BackHandler {
+        (context as? Activity)?.finish()
     }
 
     // Animación para la entrada de elementos
