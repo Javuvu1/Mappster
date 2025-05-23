@@ -29,7 +29,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     val authManager = remember { AuthManager.getInstance(context) }
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color(0xFF0D47A1), // Azul oscuro
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
