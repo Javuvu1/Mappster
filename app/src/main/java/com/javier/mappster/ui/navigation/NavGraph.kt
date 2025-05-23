@@ -2,12 +2,15 @@ package com.javier.mappster.navigation
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.javier.mappster.data.AuthManager
+import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.CustomMonsterListsScreen
@@ -18,6 +21,7 @@ import com.javier.mappster.ui.MonsterListScreen
 import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
+import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -26,7 +30,8 @@ import java.net.URLEncoder
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun NavGraph(navController: NavHostController) {
-    val viewModel = provideSpellListViewModel(LocalContext.current)
+    val context = LocalContext.current
+    val viewModel = provideSpellListViewModel(context)
 
     NavHost(navController = navController, startDestination = Destinations.LOGIN) {
         composable(Destinations.LOGIN) {
@@ -127,5 +132,14 @@ fun NavGraph(navController: NavHostController) {
                 navController = navController
             )
         }
+    }
+}
+
+@Composable
+fun provideSpellListViewModel(context: android.content.Context): SpellListViewModel {
+    val authManager = AuthManager.getInstance(context)
+    val firestoreManager = FirestoreManager()
+    return remember {
+        SpellListViewModel(authManager, firestoreManager)
     }
 }

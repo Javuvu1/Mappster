@@ -93,7 +93,7 @@ fun SpellListViewScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
-    val authManager = remember { AuthManager(context) }
+    val authManager = remember { AuthManager.getInstance(context) }
     val firestoreManager = remember { FirestoreManager() }
     val coroutineScope = rememberCoroutineScope()
     var spellList by remember { mutableStateOf<SpellList?>(null) }

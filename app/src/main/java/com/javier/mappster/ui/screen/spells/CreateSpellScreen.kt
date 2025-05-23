@@ -51,7 +51,7 @@ fun CreateSpellScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
-    val authManager = remember { AuthManager(context) }
+    val authManager = remember { AuthManager.getInstance(context) }
     val firestoreManager = remember { FirestoreManager() }
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }

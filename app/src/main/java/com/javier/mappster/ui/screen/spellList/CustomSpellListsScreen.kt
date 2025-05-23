@@ -42,7 +42,9 @@ private fun LoadingIndicator() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(
+            modifier = Modifier.size(48.dp)
+        )
     }
 }
 
@@ -128,7 +130,7 @@ private fun SpellListsContent(
         ),
         modifier = Modifier.fillMaxSize()
     ) {
-        items(spellLists) { spellList ->
+        items(spellLists, key = { it.id }) { spellList ->
             SpellListItem(
                 spellList = spellList,
                 onClick = { onListClick(spellList.id) },

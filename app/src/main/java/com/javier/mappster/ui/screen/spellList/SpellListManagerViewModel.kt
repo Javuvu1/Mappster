@@ -1,5 +1,7 @@
 package com.javier.mappster.ui.screen.spellList
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javier.mappster.data.AuthManager
@@ -8,6 +10,7 @@ import com.javier.mappster.model.SpellList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class SpellListManagerViewModel(
@@ -17,28 +20,37 @@ class SpellListManagerViewModel(
     private val _spellLists = MutableStateFlow<List<SpellList>>(emptyList())
     val spellLists: StateFlow<List<SpellList>> = _spellLists.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
+    private val _isLoading = MutableStateFlow(true) // Iniciar en true
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
-        refreshSpellLists()
+        viewModelScope.launch {
+            authManager.userStateFlow().collectLatest { userId ->
+                if (userId != null) {
+                    refreshSpellLists(userId)
+                } else {
+                    _spellLists.value = emptyList()
+                    _isLoading.value = false
+                    _error.value = null
+                }
+            }
+        }
     }
 
-    fun refreshSpellLists() {
-        viewModelScope.launch {
-            val userId = authManager.getCurrentUserId() ?: return@launch
-            _isLoading.value = true
-            try {
-                val spellLists = firestoreManager.getSpellLists(userId)
-                _spellLists.value = spellLists
-            } catch (e: Exception) {
-                _error.value = "Error al cargar listas de hechizos: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+    private suspend fun refreshSpellLists(userId: String) {
+        _isLoading.value = true
+        try {
+            val spellLists = firestoreManager.getSpellLists(userId)
+            _spellLists.value = spellLists
+            _error.value = null
+        } catch (e: Exception) {
+            _error.value = "Error al cargar listas de hechizos: ${e.message}"
+            _spellLists.value = emptyList()
+        } finally {
+            _isLoading.value = false
         }
     }
 
@@ -51,7 +63,7 @@ class SpellListManagerViewModel(
             val spellList = SpellList(name = name, userId = userId, spellIds = spellIds)
             val success = firestoreManager.createSpellList(spellList)
             if (success) {
-                refreshSpellLists()
+                refreshSpellLists(userId)
             } else {
                 _error.value = "Error al crear la lista de hechizos"
             }
@@ -67,7 +79,7 @@ class SpellListManagerViewModel(
             val spellList = SpellList(id = listId, name = name, userId = userId, spellIds = spellIds)
             val success = firestoreManager.updateSpellList(spellList)
             if (success) {
-                refreshSpellLists()
+                refreshSpellLists(userId)
             } else {
                 _error.value = "Error al actualizar la lista de hechizos"
             }
@@ -78,7 +90,8 @@ class SpellListManagerViewModel(
         viewModelScope.launch {
             val success = firestoreManager.deleteSpellList(listId)
             if (success) {
-                refreshSpellLists()
+                val userId = authManager.getCurrentUserId() ?: return@launch
+                refreshSpellLists(userId)
             } else {
                 _error.value = "Error al eliminar la lista de hechizos"
             }
@@ -90,8 +103,11 @@ class SpellListManagerViewModel(
     }
 }
 
+@Composable
 fun provideSpellListManagerViewModel(context: android.content.Context): SpellListManagerViewModel {
-    val authManager = AuthManager(context)
+    val authManager = AuthManager.getInstance(context)
     val firestoreManager = FirestoreManager()
-    return SpellListManagerViewModel(authManager, firestoreManager)
+    return remember {
+        SpellListManagerViewModel(authManager, firestoreManager)
+    }
 }

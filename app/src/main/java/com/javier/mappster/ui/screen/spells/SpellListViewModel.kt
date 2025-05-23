@@ -1,6 +1,7 @@
 package com.javier.mappster.ui.screen.spells
 
-import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javier.mappster.data.AuthManager
@@ -102,8 +103,11 @@ class SpellListViewModel(
     }
 }
 
-fun provideSpellListViewModel(context: Context): SpellListViewModel {
-    val authManager = AuthManager(context)
+@Composable
+fun provideSpellListViewModel(context: android.content.Context): SpellListViewModel {
+    val authManager = AuthManager.getInstance(context)
     val firestoreManager = FirestoreManager()
-    return SpellListViewModel(authManager, firestoreManager)
+    return remember {
+        SpellListViewModel(authManager, firestoreManager)
+    }
 }

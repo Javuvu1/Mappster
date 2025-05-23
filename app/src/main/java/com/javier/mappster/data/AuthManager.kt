@@ -12,9 +12,10 @@ import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
 
-class AuthManager(private val context: Context) {
+class AuthManager private constructor(private val context: Context) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val googleSignInClient: GoogleSignInClient
 
@@ -24,6 +25,17 @@ class AuthManager(private val context: Context) {
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(context, gso)
+    }
+
+    companion object {
+        @Volatile
+        private var instance: AuthManager? = null
+
+        fun getInstance(context: Context): AuthManager {
+            return instance ?: synchronized(this) {
+                instance ?: AuthManager(context.applicationContext).also { instance = it }
+            }
+        }
     }
 
     fun isUserSignedIn(): Boolean {
@@ -75,5 +87,5 @@ class AuthManager(private val context: Context) {
             auth.removeAuthStateListener(authStateListener)
             Log.d("AuthManager", "AuthStateListener removed")
         }
-    }
+    }.distinctUntilChanged()
 }

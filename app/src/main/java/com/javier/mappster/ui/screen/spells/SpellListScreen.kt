@@ -122,9 +122,9 @@ fun SpellListScreen(
                 spells = spells,
                 paddingValues = paddingValues,
                 onSpellClick = onSpellClick,
-                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) }, // Corregido: pasa spell
+                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) },
                 onToggleVisibilityClick = { spell, isPublic ->
-                    viewModel.updateSpellVisibility(spell, isPublic) // Corregido: pasa spell
+                    viewModel.updateSpellVisibility(spell, isPublic)
                 },
                 onEditSpellClick = onEditSpellClick
             )
@@ -154,8 +154,8 @@ private fun SpellListContent(
             SpellListItem(
                 spell = spell,
                 onClick = { onSpellClick(spell) },
-                onDeleteClick = { onDeleteSpellClick(spell) }, // Corregido: pasa spell
-                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) }, // Corregido: pasa spell
+                onDeleteClick = { onDeleteSpellClick(spell) },
+                onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) },
                 onEditClick = { onEditSpellClick(spell) }
             )
         }
@@ -203,7 +203,7 @@ private fun SpellListItem(
     onEditClick: (Spell) -> Unit
 ) {
     val context = LocalContext.current
-    val authManager = remember { AuthManager(context) }
+    val authManager = remember { AuthManager.getInstance(context) }
     val currentUserId = authManager.getCurrentUserId()
     val canModify = spell.custom && spell.userId == currentUserId
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -217,7 +217,7 @@ private fun SpellListItem(
             text = { Text("¿Estás seguro de que quieres borrar el hechizo \"${spell.name}\"?") },
             confirmButton = {
                 TextButton(onClick = {
-                    onDeleteClick(spell) // Corregido: pasa spell
+                    onDeleteClick(spell)
                     showDeleteDialog = false
                 }) {
                     Text("Confirmar")
@@ -243,7 +243,7 @@ private fun SpellListItem(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    onToggleVisibilityClick(pendingVisibility) // Corregido: pasa pendingVisibility
+                    onToggleVisibilityClick(pendingVisibility)
                     showVisibilityDialog = false
                 }) {
                     Text("Confirmar")
