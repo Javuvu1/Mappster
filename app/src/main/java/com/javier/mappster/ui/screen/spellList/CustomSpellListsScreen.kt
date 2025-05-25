@@ -27,10 +27,14 @@ private fun EmptySpellListsMessage() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text("No tienes listas de hechizos")
+        Text(
+            text = "No tienes listas de hechizos",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -39,11 +43,12 @@ private fun LoadingIndicator() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -52,11 +57,11 @@ private fun LoadingIndicator() {
 private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Error") },
-        text = { Text(message) },
+        title = { Text("Error", style = MaterialTheme.typography.titleLarge) },
+        text = { Text(message, style = MaterialTheme.typography.bodyMedium) },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("OK")
+                Text("OK", style = MaterialTheme.typography.labelLarge)
             }
         }
     )
@@ -75,20 +80,22 @@ fun CustomSpellListsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Listas de Hechizos") },
+                title = { Text("Mis Listas de Hechizos") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        bottomBar = {
-            BottomNavigationBar(navController = navController)
-        },
+        bottomBar = { BottomNavigationBar(navController) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("create_spell_list") },
-                content = { Icon(Icons.Default.Add, contentDescription = "Crear lista") }
-            )
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Crear lista")
+            }
         }
     ) { paddingValues ->
         when {
@@ -98,15 +105,11 @@ fun CustomSpellListsScreen(
             else -> SpellListsContent(
                 spellLists = spellLists,
                 paddingValues = paddingValues,
-                onListClick = { listId ->
-                    navController.navigate("spell_list_view/$listId")
-                },
-                onDeleteClick = { listId -> viewModel.deleteSpellList(listId) },
+                onListClick = { navController.navigate("spell_list_view/$it") },
+                onDeleteClick = viewModel::deleteSpellList,
                 onEditClick = { spellList ->
                     val spellIdsJson = Json.encodeToString(spellList.spellIds)
-                    navController.navigate(
-                        "create_spell_list/${spellList.id}/${spellList.name}/$spellIdsJson"
-                    )
+                    navController.navigate("create_spell_list/${spellList.id}/${spellList.name}/$spellIdsJson")
                 }
             )
         }
@@ -123,11 +126,12 @@ private fun SpellListsContent(
 ) {
     LazyColumn(
         contentPadding = PaddingValues(
-            start = 8.dp,
-            end = 8.dp,
-            top = paddingValues.calculateTopPadding(),
-            bottom = paddingValues.calculateBottomPadding() + 16.dp
+            top = paddingValues.calculateTopPadding() + 8.dp,
+            bottom = paddingValues.calculateBottomPadding() + 16.dp,
+            start = 12.dp,
+            end = 12.dp
         ),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         items(spellLists, key = { it.id }) { spellList ->
@@ -153,14 +157,14 @@ private fun SpellListItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Confirmar eliminación") },
-            text = { Text("¿Estás seguro de que quieres borrar la lista \"${spellList.name}\"?") },
+            title = { Text("Eliminar lista") },
+            text = { Text("¿Seguro que deseas eliminar \"${spellList.name}\"?") },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteClick()
                     showDeleteDialog = false
                 }) {
-                    Text("Confirmar")
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -171,41 +175,31 @@ private fun SpellListItem(
         )
     }
 
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clickable { onClick() }
-            .shadow(elevation = 2.dp, shape = RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(12.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = spellList.name,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(onClick = onEditClick) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Editar lista",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
             }
             IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Borrar lista",
-                    tint = MaterialTheme.colorScheme.error
-                )
+                Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
             }
         }
     }

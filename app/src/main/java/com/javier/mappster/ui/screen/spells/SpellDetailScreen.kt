@@ -6,16 +6,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.javier.mappster.model.*
 
@@ -28,6 +33,90 @@ private fun SectionTitle(title: String, icon: ImageVector, tint: Color) {
         Icon(imageVector = icon, contentDescription = null, tint = tint)
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = title, style = MaterialTheme.typography.titleLarge)
+    }
+}
+
+// Datos de la tirada de dados
+data class DiceRollData(
+    val numDice: Int,
+    val dieSides: Int,
+    val bonus: Int? = null
+)
+
+// Construye un AnnotatedString con partes clicables para los daños
+fun buildDamageAnnotatedString(
+    text: String,
+    diceDataList: MutableList<DiceRollData>
+): AnnotatedString {
+    val pattern = Regex("\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}")
+    val matches = pattern.findAll(text).toList()
+    diceDataList.clear()
+    matches.forEach { match ->
+        val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
+        val parts = damage.split("+")
+        if (parts.size == 1) {
+            val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
+            diceDataList.add(DiceRollData(numDice, dieSides))
+        } else {
+            val (dicePart, bonusPart) = parts
+            val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
+            val bonus = bonusPart.toInt()
+            diceDataList.add(DiceRollData(numDice, dieSides, bonus))
+        }
+    }
+
+    return buildAnnotatedString {
+        var lastIndex = 0
+        matches.forEachIndexed { index, matchResult ->
+            val start = matchResult.range.first
+            val end = matchResult.range.last + 1
+            val damageText = matchResult.groupValues[1].replace("\\s+".toRegex(), "")
+
+            append(text.substring(lastIndex, start))
+            pushStringAnnotation(tag = "damage", annotation = index.toString())
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(damageText)
+            }
+            pop()
+            lastIndex = end
+        }
+        append(text.substring(lastIndex))
+    }
+}
+
+// Función para realizar la tirada de dados y devolver un desglose
+fun rollDice(dice: DiceRollData): Pair<List<Int>, Int> {
+    val rolls = (1..dice.numDice).map { (1..dice.dieSides).random() }
+    val total = rolls.sum() + (dice.bonus ?: 0)
+    return rolls to total
+}
+
+// Construye el texto del desglose con colores para máximo y mínimo
+fun buildDiceRollBreakdown(
+    rolls: List<Int>,
+    dieSides: Int,
+    bonus: Int?,
+    defaultColor: Color
+): AnnotatedString {
+    return buildAnnotatedString {
+        rolls.forEachIndexed { index, roll ->
+            val color = when {
+                roll == dieSides -> Color.Green // Máximo
+                roll == 1 -> Color.Red // Mínimo
+                else -> defaultColor // Normal
+            }
+            withStyle(style = SpanStyle(color = color)) {
+                append(roll.toString())
+            }
+            if (index < rolls.size - 1 || bonus != null) {
+                append(" + ")
+            }
+        }
+        if (bonus != null) {
+            withStyle(style = SpanStyle(color = defaultColor)) {
+                append(bonus.toString())
+            }
+        }
     }
 }
 
@@ -66,6 +155,11 @@ fun SpellDetailScreen(spell: Spell) {
         "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
         else -> SchoolData(spell.school, Color.Gray, Icons.Default.AutoFixHigh)
     }
+
+    var showDiceRollDialog by remember { mutableStateOf(false) }
+    var diceRollDetails by remember { mutableStateOf<List<Int>>(emptyList()) }
+    var diceRollTotal by remember { mutableStateOf(0) }
+    var currentDiceData by remember { mutableStateOf<DiceRollData?>(null) }
 
     Scaffold(
         topBar = {
@@ -157,14 +251,31 @@ fun SpellDetailScreen(spell: Spell) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Descripción", Icons.Default.Description, schoolData.color)
                         spell.entries.forEach { entry ->
+                            val diceDataList = remember { mutableListOf<DiceRollData>() }
+                            val annotatedText = remember(entry) {
+                                buildDamageAnnotatedString(entry, diceDataList)
+                            }
+
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(vertical = 2.dp)
                             ) {
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = entry,
-                                    style = MaterialTheme.typography.bodyLarge
+                                ClickableText(
+                                    text = annotatedText,
+                                    onClick = { offset ->
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val index = annotation.item.toInt()
+                                                val diceData = diceDataList[index]
+                                                val (rolls, total) = rollDice(diceData)
+                                                currentDiceData = diceData
+                                                diceRollDetails = rolls
+                                                diceRollTotal = total
+                                                showDiceRollDialog = true
+                                            }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                 )
                             }
                         }
@@ -203,14 +314,31 @@ fun SpellDetailScreen(spell: Spell) {
                             SectionTitle("A nivel superior", Icons.Default.Upgrade, schoolData.color)
                             spell.entriesHigherLevel.forEach { entryHigherLevel ->
                                 entryHigherLevel.entries.forEach { entry ->
+                                    val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                    val annotatedText = remember(entry) {
+                                        buildDamageAnnotatedString(entry, diceDataList)
+                                    }
+
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.padding(vertical = 2.dp)
                                     ) {
                                         Spacer(modifier = Modifier.width(12.dp))
-                                        Text(
-                                            text = entry,
-                                            style = MaterialTheme.typography.bodyLarge
+                                        ClickableText(
+                                            text = annotatedText,
+                                            onClick = { offset ->
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        val index = annotation.item.toInt()
+                                                        val diceData = diceDataList[index]
+                                                        val (rolls, total) = rollDice(diceData)
+                                                        currentDiceData = diceData
+                                                        diceRollDetails = rolls
+                                                        diceRollTotal = total
+                                                        showDiceRollDialog = true
+                                                    }
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                         )
                                     }
                                 }
@@ -220,6 +348,51 @@ fun SpellDetailScreen(spell: Spell) {
                     }
                 }
             }
+        }
+
+        // Diálogo para mostrar el resultado de la tirada con desglose
+        if (showDiceRollDialog && currentDiceData != null) {
+            AlertDialog(
+                onDismissRequest = { showDiceRollDialog = false },
+                title = { Text("Resultado de la tirada") },
+                text = {
+                    Column {
+                        Text(
+                            text = "Tirada: ${currentDiceData!!.numDice}d${currentDiceData!!.dieSides}" +
+                                    (currentDiceData!!.bonus?.let { " + $it" } ?: ""),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Desglose: ",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = buildDiceRollBreakdown(
+                                rolls = diceRollDetails,
+                                dieSides = currentDiceData!!.dieSides,
+                                bonus = currentDiceData!!.bonus,
+                                defaultColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Total: $diceRollTotal",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showDiceRollDialog = false }) {
+                        Text("Cerrar")
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
