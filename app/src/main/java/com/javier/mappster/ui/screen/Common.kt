@@ -11,8 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +26,7 @@ import com.javier.mappster.navigation.Destinations
 fun BottomNavigationBar(navController: NavHostController) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     NavigationBar(
         containerColor = Color(0xFF0D47A1), // Azul oscuro
@@ -90,12 +90,54 @@ fun BottomNavigationBar(navController: NavHostController) {
             label = { Text("C.Sesión") },
             selected = currentRoute == Destinations.LOGIN,
             onClick = {
-                authManager.signOut()
-                navController.navigate(Destinations.LOGIN) {
-                    popUpTo(0) { inclusive = true }
-                    launchSingleTop = true
-                }
+                showLogoutDialog = true
             }
+        )
+    }
+
+    // Diálogo de confirmación para cerrar sesión
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "Confirmar",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Estás seguro de que quieres cerrar sesión?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        authManager.signOut()
+                        navController.navigate(Destinations.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                        showLogoutDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF0D47A1))
+                ) {
+                    Text("Sí")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF0D47A1))
+                ) {
+                    Text("No")
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }
