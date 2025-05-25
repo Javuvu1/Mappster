@@ -43,25 +43,37 @@ data class DiceRollData(
     val bonus: Int? = null
 )
 
-// Construye un AnnotatedString con partes clicables para los daños
+// Construye un AnnotatedString con partes clicables para los daños y dados
 fun buildDamageAnnotatedString(
     text: String,
     diceDataList: MutableList<DiceRollData>
 ): AnnotatedString {
-    val pattern = Regex("\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}")
+    // Patrón para detectar tanto {@damage 1d4+1} como {@dice 2d6} y {@dice d20}
+    val pattern = Regex("\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|\\{@dice\\s*(\\d*d\\d+)\\}")
     val matches = pattern.findAll(text).toList()
     diceDataList.clear()
+
     matches.forEach { match ->
-        val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
-        val parts = damage.split("+")
-        if (parts.size == 1) {
-            val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
-            diceDataList.add(DiceRollData(numDice, dieSides))
+        if (match.value.startsWith("{@damage")) {
+            // Caso {@damage 1d4+1} o {@damage 8d8}
+            val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
+            val parts = damage.split("+")
+            if (parts.size == 1) {
+                val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
+                diceDataList.add(DiceRollData(numDice, dieSides))
+            } else {
+                val (dicePart, bonusPart) = parts
+                val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
+                val bonus = bonusPart.toInt()
+                diceDataList.add(DiceRollData(numDice, dieSides, bonus))
+            }
         } else {
-            val (dicePart, bonusPart) = parts
-            val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
-            val bonus = bonusPart.toInt()
-            diceDataList.add(DiceRollData(numDice, dieSides, bonus))
+            // Caso {@dice 2d6} o {@dice d20}
+            val dice = match.groupValues[2].replace("\\s+".toRegex(), "") // Captura el grupo 2 (por ejemplo, "2d6" o "d20")
+            val parts = dice.split("d")
+            val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt() // Si no hay número (como en "d20"), asumimos 1 dado
+            val dieSides = parts[1].toInt()
+            diceDataList.add(DiceRollData(numDice, dieSides))
         }
     }
 
@@ -70,12 +82,18 @@ fun buildDamageAnnotatedString(
         matches.forEachIndexed { index, matchResult ->
             val start = matchResult.range.first
             val end = matchResult.range.last + 1
-            val damageText = matchResult.groupValues[1].replace("\\s+".toRegex(), "")
+
+            // Determinar el texto a mostrar
+            val displayText = if (matchResult.value.startsWith("{@damage")) {
+                matchResult.groupValues[1].replace("\\s+".toRegex(), "") // Para {@damage 1d4+1} -> "1d4+1"
+            } else {
+                matchResult.groupValues[2].replace("\\s+".toRegex(), "") // Para {@dice 2d6} -> "2d6", o {@dice d20} -> "d20"
+            }
 
             append(text.substring(lastIndex, start))
             pushStringAnnotation(tag = "damage", annotation = index.toString())
             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                append(damageText)
+                append(displayText)
             }
             pop()
             lastIndex = end
