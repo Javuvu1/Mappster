@@ -40,7 +40,8 @@ private fun SectionTitle(title: String, icon: ImageVector, tint: Color) {
 data class DiceRollData(
     val numDice: Int,
     val dieSides: Int,
-    val bonus: Int? = null
+    val bonus: Int? = null,
+    val type: String = "damage" // "damage", "dice", "scaledice", "scaledamage"
 )
 
 // Construye un AnnotatedString con partes clicables para los daños y dados
@@ -48,32 +49,43 @@ fun buildDamageAnnotatedString(
     text: String,
     diceDataList: MutableList<DiceRollData>
 ): AnnotatedString {
-    // Patrón para detectar tanto {@damage 1d4+1} como {@dice 2d6} y {@dice d20}
-    val pattern = Regex("\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|\\{@dice\\s*(\\d*d\\d+)\\}")
+    // Patrón para detectar {@damage}, {@dice}, {@scaledice}, y {@scaledamage}
+    val pattern = Regex(
+        "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" + // Para {@damage 1d4+1} o {@damage 8d8}
+                "\\{@dice\\s*(\\d*d\\d+)\\}|" + // Para {@dice 2d6} o {@dice d20}
+                "\\{@scaledice\\s*(\\d+d\\d+)(?:\\|.*?)*\\}|" + // Para {@scaledice 1d8|1-9|1d8}
+                "\\{@scaledamage\\s*(\\d+d\\d+)(?:\\|.*?)*\\}" // Para {@scaledamage 3d6|1-9|1d6}
+    )
     val matches = pattern.findAll(text).toList()
     diceDataList.clear()
 
     matches.forEach { match ->
         if (match.value.startsWith("{@damage")) {
-            // Caso {@damage 1d4+1} o {@damage 8d8}
             val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
             val parts = damage.split("+")
             if (parts.size == 1) {
                 val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
-                diceDataList.add(DiceRollData(numDice, dieSides))
+                diceDataList.add(DiceRollData(numDice, dieSides, type = "damage"))
             } else {
                 val (dicePart, bonusPart) = parts
                 val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
                 val bonus = bonusPart.toInt()
-                diceDataList.add(DiceRollData(numDice, dieSides, bonus))
+                diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
             }
-        } else {
-            // Caso {@dice 2d6} o {@dice d20}
-            val dice = match.groupValues[2].replace("\\s+".toRegex(), "") // Captura el grupo 2 (por ejemplo, "2d6" o "d20")
+        } else if (match.value.startsWith("{@dice")) {
+            val dice = match.groupValues[2].replace("\\s+".toRegex(), "")
             val parts = dice.split("d")
-            val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt() // Si no hay número (como en "d20"), asumimos 1 dado
+            val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt()
             val dieSides = parts[1].toInt()
-            diceDataList.add(DiceRollData(numDice, dieSides))
+            diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
+        } else if (match.value.startsWith("{@scaledice")) {
+            val dice = match.groupValues[3].replace("\\s+".toRegex(), "")
+            val (numDice, dieSides) = dice.split("d").map { it.toInt() }
+            diceDataList.add(DiceRollData(numDice, dieSides, type = "scaledice"))
+        } else if (match.value.startsWith("{@scaledamage")) {
+            val dice = match.groupValues[4].replace("\\s+".toRegex(), "")
+            val (numDice, dieSides) = dice.split("d").map { it.toInt() }
+            diceDataList.add(DiceRollData(numDice, dieSides, type = "scaledamage"))
         }
     }
 
@@ -84,10 +96,12 @@ fun buildDamageAnnotatedString(
             val end = matchResult.range.last + 1
 
             // Determinar el texto a mostrar
-            val displayText = if (matchResult.value.startsWith("{@damage")) {
-                matchResult.groupValues[1].replace("\\s+".toRegex(), "") // Para {@damage 1d4+1} -> "1d4+1"
-            } else {
-                matchResult.groupValues[2].replace("\\s+".toRegex(), "") // Para {@dice 2d6} -> "2d6", o {@dice d20} -> "d20"
+            val displayText = when {
+                matchResult.value.startsWith("{@damage") -> matchResult.groupValues[1].replace("\\s+".toRegex(), "")
+                matchResult.value.startsWith("{@dice") -> matchResult.groupValues[2].replace("\\s+".toRegex(), "")
+                matchResult.value.startsWith("{@scaledice") -> matchResult.groupValues[3].replace("\\s+.toRegex()", "")
+                matchResult.value.startsWith("{@scaledamage") -> matchResult.groupValues[4].replace("\\s+.toRegex()", "")
+                else -> ""
             }
 
             append(text.substring(lastIndex, start))
@@ -103,8 +117,16 @@ fun buildDamageAnnotatedString(
 }
 
 // Función para realizar la tirada de dados y devolver un desglose
-fun rollDice(dice: DiceRollData): Pair<List<Int>, Int> {
-    val rolls = (1..dice.numDice).map { (1..dice.dieSides).random() }
+fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
+    val baseNumDice = dice.numDice
+    val scaledNumDice = if (dice.type == "scaledice" || dice.type == "scaledamage") {
+        // Escala el número de dados según el nivel del slot (nivel del slot - 1)
+        val levelAdjustment = maxOf(0, slotLevel - 1)
+        baseNumDice * levelAdjustment
+    } else {
+        baseNumDice
+    }
+    val rolls = (1..scaledNumDice).map { (1..dice.dieSides).random() }
     val total = rolls.sum() + (dice.bonus ?: 0)
     return rolls to total
 }
@@ -286,7 +308,7 @@ fun SpellDetailScreen(spell: Spell) {
                                             .firstOrNull()?.let { annotation ->
                                                 val index = annotation.item.toInt()
                                                 val diceData = diceDataList[index]
-                                                val (rolls, total) = rollDice(diceData)
+                                                val (rolls, total) = rollDice(diceData, spell.level)
                                                 currentDiceData = diceData
                                                 diceRollDetails = rolls
                                                 diceRollTotal = total
@@ -349,7 +371,7 @@ fun SpellDetailScreen(spell: Spell) {
                                                     .firstOrNull()?.let { annotation ->
                                                         val index = annotation.item.toInt()
                                                         val diceData = diceDataList[index]
-                                                        val (rolls, total) = rollDice(diceData)
+                                                        val (rolls, total) = rollDice(diceData, spell.level)
                                                         currentDiceData = diceData
                                                         diceRollDetails = rolls
                                                         diceRollTotal = total
