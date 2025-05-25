@@ -60,7 +60,9 @@ data class DiceRollData(
     val numDice: Int,
     val dieSides: Int,
     val bonus: Int? = null,
-    val type: String = "damage" // "damage", "dice", "scaledice", "scaledamage"
+    val type: String = "damage", // "damage", "dice", "scaledice", "scaledamage"
+    val scaledDie: String? = null, // Último valor de los dados escalados (ej. "1d6")
+    val levelRange: String? = null // Rango de niveles para escalar (ej. "3-9")
 )
 
 // Construye un AnnotatedString con partes clicables para los daños, dados y condiciones
@@ -72,8 +74,8 @@ fun buildDamageAnnotatedString(
     val pattern = Regex(
         "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" + // Para {@damage 1d4+1} o {@damage 8d8}
                 "\\{@dice\\s*(\\d*d\\d+)\\}|" + // Para {@dice 2d6} o {@dice d20}
-                "\\{@scaledice\\s*(\\d+d\\d+)(?:\\|.*?)*\\}|" + // Para {@scaledice 1d8|1-9|1d8}
-                "\\{@scaledamage\\s*(\\d+d\\d+)(?:\\|.*?)*\\}|" + // Para {@scaledamage 3d6|1-9|1d6}
+                "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" + // Para {@scaledice 8d6|3-9|1d6}
+                "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" + // Para {@scaledamage 8d6|3-9|1d6}
                 "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}" // Para {@condition <estado>}
     )
     val matches = pattern.findAll(text).toList()
@@ -93,19 +95,23 @@ fun buildDamageAnnotatedString(
                 diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
             }
         } else if (match.value.startsWith("{@dice")) {
-            val dice = match.groupValues[2].replace("\\s+.toRegex()", "")
+            val dice = match.groupValues[2].replace("\\s+".toRegex(), "")
             val parts = dice.split("d")
             val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt()
             val dieSides = parts[1].toInt()
             diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
         } else if (match.value.startsWith("{@scaledice")) {
-            val dice = match.groupValues[3].replace("\\s+.toRegex()", "")
-            val (numDice, dieSides) = dice.split("d").map { it.toInt() }
-            diceDataList.add(DiceRollData(numDice, dieSides, type = "scaledice"))
+            val initialDice = match.groupValues[3].replace("\\s+".toRegex(), "")
+            val levelRange = match.groupValues[4]
+            val scaledDie = match.groupValues[5].replace("\\s+".toRegex(), "")
+            val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
+            diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledice", scaledDie = scaledDie, levelRange = levelRange))
         } else if (match.value.startsWith("{@scaledamage")) {
-            val dice = match.groupValues[4].replace("\\s+.toRegex()", "")
-            val (numDice, dieSides) = dice.split("d").map { it.toInt() }
-            diceDataList.add(DiceRollData(numDice, dieSides, type = "scaledamage"))
+            val initialDice = match.groupValues[6].replace("\\s+".toRegex(), "")
+            val levelRange = match.groupValues[7]
+            val scaledDie = match.groupValues[8].replace("\\s+".toRegex(), "")
+            val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
+            diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledamage", scaledDie = scaledDie, levelRange = levelRange))
         } else if (match.value.startsWith("{@condition")) {
             // No añadimos a diceDataList, solo procesamos el texto de la condición
         }
@@ -119,12 +125,18 @@ fun buildDamageAnnotatedString(
 
             // Determinar el texto a mostrar
             val displayText = when {
-                matchResult.value.startsWith("{@damage") -> matchResult.groupValues[1].replace("\\s+.toRegex()", "")
-                matchResult.value.startsWith("{@dice") -> matchResult.groupValues[2].replace("\\s+.toRegex()", "")
-                matchResult.value.startsWith("{@scaledice") -> matchResult.groupValues[3].replace("\\s+.toRegex()", "")
-                matchResult.value.startsWith("{@scaledamage") -> matchResult.groupValues[4].replace("\\s+.toRegex()", "")
+                matchResult.value.startsWith("{@damage") -> matchResult.groupValues[1].replace("\\s+".toRegex(), "")
+                matchResult.value.startsWith("{@dice") -> matchResult.groupValues[2].replace("\\s+".toRegex(), "")
+                matchResult.value.startsWith("{@scaledice") -> {
+                    val scaledDie = matchResult.groupValues[5].replace("\\s+".toRegex(), "")
+                    scaledDie
+                }
+                matchResult.value.startsWith("{@scaledamage") -> {
+                    val scaledDie = matchResult.groupValues[8].replace("\\s+".toRegex(), "")
+                    scaledDie
+                }
                 matchResult.value.startsWith("{@condition") -> {
-                    val condition = matchResult.groupValues[5]
+                    val condition = matchResult.groupValues[9]
                     when (condition) {
                         "deafened||deaf" -> "deafened"
                         "blinded||blind" -> "blinded"
@@ -136,7 +148,7 @@ fun buildDamageAnnotatedString(
 
             append(text.substring(lastIndex, start))
             if (matchResult.value.startsWith("{@condition")) {
-                pushStringAnnotation(tag = "condition", annotation = matchResult.groupValues[5]) // Almacena el estado original
+                pushStringAnnotation(tag = "condition", annotation = matchResult.groupValues[9])
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                     append(displayText)
                 }
@@ -158,13 +170,22 @@ fun buildDamageAnnotatedString(
 fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
     val baseNumDice = dice.numDice
     val scaledNumDice = if (dice.type == "scaledice" || dice.type == "scaledamage") {
-        // Escala el número de dados según el nivel del slot (nivel del slot - 1)
-        val levelAdjustment = maxOf(0, slotLevel - 1)
-        baseNumDice * levelAdjustment
+        // Extraer el rango de niveles (ej. "3-9")
+        val levelRange = dice.levelRange?.split("-")?.map { it.toInt() } ?: listOf(1, 9)
+        val minLevel = levelRange[0]
+        val maxLevel = levelRange[1]
+        // Escalar solo si el nivel del slot está dentro del rango
+        if (slotLevel in minLevel..maxLevel) {
+            val levelAdjustment = slotLevel - minLevel + 1
+            baseNumDice * levelAdjustment
+        } else {
+            baseNumDice
+        }
     } else {
         baseNumDice
     }
-    val rolls = (1..scaledNumDice).map { (1..dice.dieSides).random() }
+    val dieSides = dice.dieSides
+    val rolls = (1..scaledNumDice).map { (1..dieSides).random() }
     val total = rolls.sum() + (dice.bonus ?: 0)
     return rolls to total
 }
