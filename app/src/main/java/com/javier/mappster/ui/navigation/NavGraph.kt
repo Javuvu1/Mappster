@@ -11,13 +11,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
+import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
 import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
-import com.javier.mappster.ui.MonsterListScreen
+import com.javier.mappster.ui.screen.MonsterListScreen
 import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
@@ -32,6 +33,7 @@ import java.net.URLEncoder
 fun NavGraph(navController: NavHostController) {
     val context = LocalContext.current
     val viewModel = provideSpellListViewModel(context)
+    val dataManager = remember { LocalDataManager(context) }
 
     NavHost(navController = navController, startDestination = Destinations.LOGIN) {
         composable(Destinations.LOGIN) {
@@ -91,7 +93,10 @@ fun NavGraph(navController: NavHostController) {
             CustomSpellListsScreen(navController = navController)
         }
         composable(Destinations.MONSTER_LIST) {
-            MonsterListScreen(navController = navController)
+            MonsterListScreen(
+                navController = navController,
+                dataManager = dataManager
+            )
         }
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
             CustomMonsterListsScreen(navController = navController)

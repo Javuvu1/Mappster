@@ -9,5 +9,4 @@ object Destinations {
     const val CUSTOM_SPELL_LISTS = "custom_spell_lists"
     const val MONSTER_LIST = "monster_list"
     const val CUSTOM_MONSTER_LISTS = "custom_monster_lists"
-    const val CREATE_SPELL_LIST = "create_spell_list"
 }

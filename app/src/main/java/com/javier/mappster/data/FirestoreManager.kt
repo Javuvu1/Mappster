@@ -1,12 +1,18 @@
 package com.javier.mappster.data
 
 import android.util.Log
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
+import com.javier.mappster.model.Monster
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SpellList
 import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.tasks.await
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
@@ -214,29 +220,6 @@ class FirestoreManager {
         } catch (e: Exception) {
             Log.e("FirestoreManager", "Error deleting spell list $listId: ${e.message}", e)
             false
-        }
-    }
-
-    suspend fun getSpellsByIds(spellIds: List<String>): List<Spell> {
-        if (spellIds.isEmpty()) return emptyList()
-        return try {
-            val spells = mutableListOf<Spell>()
-            // Firestore tiene un límite de 10 elementos en "in" queries, así que dividimos en lotes
-            spellIds.chunked(10).forEach { batch ->
-                val query = spellsCollection
-                    .whereIn(FieldPath.documentId(), batch)
-                    .get()
-                    .await()
-                spells.addAll(query.documents.mapNotNull {
-                    it.toObject(Spell::class.java)?.also { spell ->
-                        Log.d("FirestoreManager", "Parsed spell from ID: ${spell.name}, id=${it.id}")
-                    }
-                })
-            }
-            spells.sortedBy { it.name.trim().lowercase() }
-        } catch (e: Exception) {
-            Log.e("FirestoreManager", "Error fetching spells by IDs: ${e.message}", e)
-            emptyList()
         }
     }
 }

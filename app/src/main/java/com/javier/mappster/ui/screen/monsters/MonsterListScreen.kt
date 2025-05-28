@@ -1,43 +1,54 @@
-package com.javier.mappster.ui
+package com.javier.mappster.ui.screen
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.javier.mappster.ui.screen.BottomNavigationBar
+import com.javier.mappster.data.LocalDataManager
+import com.javier.mappster.viewmodel.MonsterListViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MonsterListScreen(navController: NavHostController) {
+fun MonsterListScreen(
+    navController: NavHostController,
+    dataManager: LocalDataManager
+) {
+    val viewModel: MonsterListViewModel = viewModel {
+        MonsterListViewModel(dataManager)
+    }
+    val monsters = viewModel.monsters.collectAsState().value
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Monstruos") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
         bottomBar = {
             BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            Text(
-                text = "Pantalla de Monstruos - En desarrollo",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            if (monsters.isEmpty()) {
+                Text(text = "No monsters available. Check the JSON file.")
+            } else {
+                LazyColumn {
+                    items(monsters) { monster ->
+                        Text(
+                            text = monster.name ?: "Unnamed Monster",
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }
