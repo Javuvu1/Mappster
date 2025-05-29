@@ -31,6 +31,7 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SchoolData
 import com.javier.mappster.ui.screen.BottomNavigationBar
+import com.javier.mappster.utils.sourceMap
 
 @Composable
 private fun EmptySpellsMessage() {
@@ -271,27 +272,6 @@ private fun SpellListItem(
     )
 
     val defaultColor = MaterialTheme.colorScheme.primary
-
-    val sourceMap = mapOf(
-        "AAG" to "Astral Adventurer's Guide",
-        "AI" to "Aquisitions Incorporated",
-        "AITFR-AVT" to "A Verdant Tomb",
-        "BMT" to "The Book of Many Things",
-        "DODK" to "Dungeons of Drakkenheim",
-        "EGW" to "Explorer's Guide to Wildemount",
-        "FTD" to "Fizban's Treasury of Dragons",
-        "GGR" to "Guildmasters' Guide to Ravnica",
-        "GHLOE" to "Grim Hollow",
-        "IDROTF" to "Icewind Dale: Rime of the Frostmaiden",
-        "LLK" to "Lost Laboratory of Kwalish",
-        "PHB" to "Player's Handbook",
-        "SATO" to "Sigil and the Outlands",
-        "SCC" to "Strixhaven: Curriculum of Chaos",
-        "SCAG" to "Sword Coast Adventurer's Guide",
-        "TCE" to "Tasha's Cauldron of Everything",
-        "TDCSR" to "Tal'Dorei Campaign Setting",
-        "XGE" to "Xanathar's Guide to Everything"
-    )
 
     val schoolData = remember(spell.school) {
         when (spell.school.uppercase()) {
