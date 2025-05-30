@@ -6,10 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -63,6 +61,7 @@ fun MonsterListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
         ) {
             if (monsters.isEmpty()) {
                 Text(
@@ -78,10 +77,11 @@ fun MonsterListScreen(
                     contentPadding = PaddingValues(
                         start = 8.dp,
                         end = 8.dp,
-                        top = 8.dp, // Reducimos el padding superior para acercar el primer item
-                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                        top = 8.dp,
+                        bottom = 16.dp
                     ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     items(monsters) { monster ->
                         MonsterItem(monster = monster)
@@ -126,7 +126,6 @@ fun SearchBar(
 
 @Composable
 fun MonsterItem(monster: Monster) {
-
     val defaultColor = MaterialTheme.colorScheme.primary
 
     Card(
@@ -153,17 +152,22 @@ fun MonsterItem(monster: Monster) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Text(
+                text = monster.name ?: "Unknown",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.1.sp
+                ),
                 modifier = Modifier.fillMaxWidth()
-            ) {
+            )
+            monster.cr?.let { cr ->
                 Text(
-                    text = monster.name ?: "Unknown",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.1.sp
+                    text = "CR ${cr.value ?: "Unknown"}",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = defaultColor.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.Bold
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
@@ -173,33 +177,6 @@ fun MonsterItem(monster: Monster) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = defaultColor.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoFixHigh,
-                        contentDescription = "Monster Icon",
-                        modifier = Modifier.size(16.dp),
-                        tint = defaultColor
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = "Monster",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = defaultColor.copy(alpha = 0.9f),
-                        letterSpacing = 1.sp
-                    )
-                )
-
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
