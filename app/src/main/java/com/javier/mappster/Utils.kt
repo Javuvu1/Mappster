@@ -12,69 +12,68 @@ val sourceMap = mapOf(
     "AAG" to "Astral Adventurer's Guide",
     "AI" to "Aquisitions Incorporated",
     "AITFR-AVT" to "A Verdant Tomb",
+    "BAM" to "Boo's Astral Managerie",
+    "BGDIA" to "Baldur's Gate: Descent into Avernus",
+    "BGG" to "Bigby Presents: Glory of the Giants",
     "BMT" to "The Book of Many Things",
     "CM" to "Candlekeep Mysteries",
     "COS" to "Curse of Strahd",
     "DC" to "Divine Contention",
+    "DitLCoT" to "Descent into the Lost Caverns of Tsojcanth",
+    "DIP" to "Dragon of Icespire Peak",
+    "DMG" to "Dungeon Master's Guide (2014)",
     "DODK" to "Dungeons of Drakkenheim",
+    "DoSi" to "Dragons of Stormwreck Island",
+    "DSotDQ" to "Dragonlance: Shadow of the Dragon Queen",
     "EGW" to "Explorer's Guide to Wildemount",
+    "ERLW" to "Eberron: Rising from the Last War",
+    "ESK" to "Essentials Kit",
     "FTD" to "Fizban's Treasury of Dragons",
     "GGR" to "Guildmasters' Guide to Ravnica",
     "GHLOE" to "Grim Hollow",
+    "GOS" to "Ghosts of Saltmarsh",
+    "HOL" to "House of Lament",
     "HotDQ" to "Hoard of the Dragon Queen",
     "IDROTF" to "Icewind Dale: Rime of the Frostmaiden",
     "JttRC" to "Journey through the Radiant Citadel",
+    "KKW" to "Krenko's Way",
+    "kftGV" to "Keys from the Golden Vault",
     "LLK" to "Lost Laboratory of Kwalish",
     "LMoP" to "Lost Mine of Phandelver",
+    "LoX" to "Light of Xaryxis",
     "MM" to "Monsters Manual (2014)",
+    "MOT" to "Mythic Odysseys of Theros",
+    "MPP" to "Morte's Planar Parade",
     "MPMM" to "Mordenkainen's Monsters of the Multiverse",
     "MTF" to "Mordekainen's Tome of Foes",
     "OotA" to "Out of the Abyss",
+    "OoW" to "The Orrery of the Wanderer",
     "PABTSO" to "Phandelver and Below: The Shattered Obelisk",
     "PHB" to "Player's Handbook",
     "PotA" to "Princes of the Apocalypse",
+    "QftIS" to "Quests from the Infinite Staircase",
+    "ROT" to "Rise of Tiamat",
     "SATO" to "Sigil and the Outlands",
     "SCAG" to "Sword Coast Adventurer's Guide",
     "SCC" to "Strixhaven: Curriculum of Chaos",
+    "SDW" to "Sleeping Dragon's Wake",
     "SKT" to "Storm King's Thunder",
     "TCE" to "Tasha's Cauldron of Everything",
     "TDCSR" to "Tal'Dorei Campaign Setting",
+    "TalPsi" to "The Talent and Psionics",
     "TftYP" to "Tales from the Yawning Portal",
     "TOA" to "Tomb of Annihilation",
     "ToFW" to "Turn of Fortune`s Wheel",
+    "VEoR" to "Vecna: Eve of Ruin",
     "VGM" to "Volo's Guide to Monsters",
     "VRGR" to "Van Richten's Guide to Ravenloft",
     "WBtW" to "Wild beyond the Witchlight",
     "WDH" to "Waterdeep: Dragon Heist",
     "WDMM" to "Waterdeep: Dungeon of the Mad Mage",
+    "XDMG" to "Dungeon Master's Guide (2025)",
     "XGE" to "Xanathar's Guide to Everything",
-    "XMM" to "Monsters Manual (2025)"
-    //DoSI
-    //ERLW
-    //ESK
-    //GOS
-    //HOL
-    //DIP
-    //DMG
-    //DSotDQ
-    //DitLCoT
-    //BAM
-    //BGDIA
-    //BGG
-    //KKW
-    //KftGV
-    //LoX
-    //MPP
-    //OoW
-    //QftIS
-    //RoT
-    //SDW
-    //SLW
-    //TalPsi
-    //VEoR
-    //XDMG
-    //XPHB
-
+    "XMM" to "Monsters Manual (2025)",
+    "XPHB" to "Player's Handbook (2025)"
 )
 
 val conditionDescriptions = mapOf(
