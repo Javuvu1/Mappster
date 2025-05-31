@@ -8,5 +8,6 @@ object Destinations {
     const val EDIT_SPELL = "edit_spell/{spellName}"
     const val CUSTOM_SPELL_LISTS = "custom_spell_lists"
     const val MONSTER_LIST = "monster_list"
+    const val MONSTER_DETAIL = "monster_detail/{name}/{source}"
     const val CUSTOM_MONSTER_LISTS = "custom_monster_lists"
 }

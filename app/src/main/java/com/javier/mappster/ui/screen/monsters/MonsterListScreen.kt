@@ -25,8 +25,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.model.Monster
+import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
+import java.net.URLEncoder
 
 @Composable
 fun MonsterListScreen(
@@ -84,7 +86,14 @@ fun MonsterListScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(monsters) { monster ->
-                        MonsterItem(monster = monster)
+                        MonsterItem(
+                            monster = monster,
+                            onClick = {
+                                val encodedName = URLEncoder.encode(monster.name ?: "Unknown", "UTF-8")
+                                val encodedSource = URLEncoder.encode(monster.source ?: "Unknown", "UTF-8")
+                                navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                            }
+                        )
                     }
                 }
             }
@@ -125,14 +134,14 @@ fun SearchBar(
 }
 
 @Composable
-fun MonsterItem(monster: Monster) {
+fun MonsterItem(monster: Monster, onClick: () -> Unit) {
     val defaultColor = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clickable { /* TODO: Añadir navegación a detalle si se desea */ }
+            .clickable { onClick() }
             .border(
                 width = 2.dp,
                 color = defaultColor.copy(alpha = 0.8f),

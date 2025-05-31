@@ -17,7 +17,7 @@ val sourceMap = mapOf(
     "BGG" to "Bigby Presents: Glory of the Giants",
     "BMT" to "The Book of Many Things",
     "CM" to "Candlekeep Mysteries",
-    "COS" to "Curse of Strahd",
+    "CoS" to "Curse of Strahd",
     "DC" to "Divine Contention",
     "DitLCoT" to "Descent into the Lost Caverns of Tsojcanth",
     "DIP" to "Dragon of Icespire Peak",

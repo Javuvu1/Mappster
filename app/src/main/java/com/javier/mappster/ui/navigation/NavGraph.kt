@@ -18,14 +18,17 @@ import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
 import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
+import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterListScreen
 import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
+import com.javier.mappster.viewmodel.MonsterListViewModel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import java.net.URLDecoder
 import java.net.URLEncoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -136,6 +139,25 @@ fun NavGraph(navController: NavHostController) {
                 viewModel = viewModel,
                 navController = navController
             )
+        }
+        composable(
+            route = "${Destinations.MONSTER_DETAIL}/{name}/{source}",
+            arguments = listOf(
+                navArgument("name") { type = NavType.StringType },
+                navArgument("source") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val name = backStackEntry.arguments?.getString("name")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+            val source = backStackEntry.arguments?.getString("source")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+            val viewModel: MonsterListViewModel = MonsterListViewModel(dataManager)
+            val monster = viewModel.monsters.value.find { it.name == name && it.source == source }
+            monster?.let {
+                MonsterDetailScreen(monster = it)
+            } ?: navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
         }
     }
 }
