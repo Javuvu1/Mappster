@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -22,8 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.javier.mappster.model.*
 import com.javier.mappster.utils.sourceMap
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.floor
 import kotlin.random.Random
@@ -80,7 +85,16 @@ fun MonsterDetailScreen(monster: Monster) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // Sección: HP, AC e Iniciativa
-            MonsterCombatStats(monster)
+            MonsterCombatStats(
+                monster = monster,
+                onModifierClick = { label, modifier ->
+                    currentStatLabel = label
+                    diceRollModifier = modifier
+                    diceRollResult = Random.nextInt(1, 21) // Tirada de d20
+                    diceRollTotal = diceRollResult + modifier
+                    showDiceRollDialog = true
+                }
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -101,12 +115,21 @@ fun MonsterDetailScreen(monster: Monster) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // Sección: Habilidades
-            MonsterSkills(monster)
+            MonsterSkills(
+                monster = monster,
+                onSkillClick = { label, modifier ->
+                    currentStatLabel = label
+                    diceRollModifier = modifier
+                    diceRollResult = Random.nextInt(1, 21) // Tirada de d20
+                    diceRollTotal = diceRollResult + modifier
+                    showDiceRollDialog = true
+                }
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Sección: Resistencias
-            MonsterResistances(monster)
+            // Sección: Resistencias e Inmunidades
+            MonsterResistancesAndImmunities(monster)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -269,7 +292,7 @@ fun MonsterInfoSection(monster: Monster) {
 }
 
 @Composable
-fun MonsterCombatStats(monster: Monster) {
+fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -278,22 +301,44 @@ fun MonsterCombatStats(monster: Monster) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // HP e Iniciativa
+            // HP
             monster.hp?.let { hp ->
                 Text(
                     text = "Hit Points: ${hp.average ?: "Unknown"} (${hp.formula ?: "No formula"})",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                val initMod = monster.initiative?.proficiency?.let { "+$it" }
-                    ?: calculateModifier(monster.dex)?.let { "+$it" } ?: "Unknown"
-                Text(
-                    text = "Initiative: $initMod",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
+
+            // Iniciativa
+            val initModValue = monster.initiative?.proficiency?.toString()?.toIntOrNull()
+                ?: calculateModifier(monster.dex) ?: 0
+            val initMod = if (initModValue >= 0) "+$initModValue" else initModValue.toString()
+            val initAnnotatedText = buildAnnotatedString {
+                append("Initiative: ")
+                pushStringAnnotation(tag = "initModifier", annotation = initModValue.toString())
+                withStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    append(initMod)
+                }
+                pop()
+            }
+            ClickableText(
+                text = initAnnotatedText,
+                onClick = { offset ->
+                    initAnnotatedText.getStringAnnotations(tag = "initModifier", start = offset, end = offset)
+                        .firstOrNull()?.let { annotation ->
+                            onModifierClick("Initiative", annotation.item.toInt())
+                        }
+                },
+                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                modifier = Modifier.padding(top = 4.dp)
+            )
 
             // AC
             monster.ac?.let { acList ->
@@ -550,14 +595,16 @@ fun StatColumn(
         )
         val saveDisplayText = saveValue ?: formatModifier(saveModifier)
         val saveAnnotatedText = buildAnnotatedString {
+            append("Save: ")
             pushStringAnnotation(tag = "saveModifier", annotation = saveModifier.toString())
             withStyle(
                 style = SpanStyle(
                     fontWeight = if (isSaveFromBase) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
                 )
             ) {
-                append("Save: $saveDisplayText")
+                append(saveDisplayText)
             }
             pop()
         }
@@ -572,14 +619,16 @@ fun StatColumn(
             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface)
         )
         val extraAnnotatedText = buildAnnotatedString {
+            append("Mod: ")
             pushStringAnnotation(tag = "extraModifier", annotation = extraModifier.toString())
             withStyle(
                 style = SpanStyle(
                     fontWeight = FontWeight.Normal,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
                 )
             ) {
-                append("Mod: ${formatModifier(extraModifier)}")
+                append(formatModifier(extraModifier))
             }
             pop()
         }
@@ -597,7 +646,7 @@ fun StatColumn(
 }
 
 @Composable
-fun MonsterSkills(monster: Monster) {
+fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -657,10 +706,30 @@ fun MonsterSkills(monster: Monster) {
                         skill.animalHandling to "Animal Handling"
                     ).forEach { (value, label) ->
                         if (value != null) {
-                            Text(
-                                text = "$label: $value",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
+                            val modifier = value.toString().toIntOrNull() ?: 0
+                            val skillAnnotatedText = buildAnnotatedString {
+                                append("$label: ")
+                                pushStringAnnotation(tag = "skillModifier", annotation = modifier.toString())
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontWeight = FontWeight.Normal,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    append(value.toString())
+                                }
+                                pop()
+                            }
+                            ClickableText(
+                                text = skillAnnotatedText,
+                                onClick = { offset ->
+                                    skillAnnotatedText.getStringAnnotations(tag = "skillModifier", start = offset, end = offset)
+                                        .firstOrNull()?.let { annotation ->
+                                            onSkillClick(label, annotation.item.toInt())
+                                        }
+                                },
+                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
@@ -674,10 +743,30 @@ fun MonsterSkills(monster: Monster) {
                                 oneOf.religion to "Religion"
                             ).forEach { (value, label) ->
                                 if (value != null) {
-                                    Text(
-                                        text = "$label: $value",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                    val modifier = value.toString().toIntOrNull() ?: 0
+                                    val skillAnnotatedText = buildAnnotatedString {
+                                        append("$label: ")
+                                        pushStringAnnotation(tag = "skillModifier", annotation = modifier.toString())
+                                        withStyle(
+                                            style = SpanStyle(
+                                                fontWeight = FontWeight.Normal,
+                                                fontSize = 16.sp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        ) {
+                                            append(value.toString())
+                                        }
+                                        pop()
+                                    }
+                                    ClickableText(
+                                        text = skillAnnotatedText,
+                                        onClick = { offset ->
+                                            skillAnnotatedText.getStringAnnotations(tag = "skillModifier", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    onSkillClick(label, annotation.item.toInt())
+                                                }
+                                        },
+                                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                                         modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                                     )
                                 }
@@ -698,7 +787,7 @@ fun MonsterSkills(monster: Monster) {
 }
 
 @Composable
-fun MonsterResistances(monster: Monster) {
+fun MonsterResistancesAndImmunities(monster: Monster) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -706,11 +795,20 @@ fun MonsterResistances(monster: Monster) {
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "Resistances:",
+                text = "Resistances & Immunities:",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
+
+            // Resistencias
+            var hasResistances = false
             monster.resist?.let { resists ->
+                Text(
+                    text = "Resists:",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
                 resists.forEach { resist ->
                     resist.resist?.let { entries ->
                         entries.joinToString(", ") { it.value?.replaceFirstChar { it.uppercase() } ?: "Unknown" }
@@ -719,8 +817,9 @@ fun MonsterResistances(monster: Monster) {
                                     text = "$resistText${resist.note?.let { " ($it)" } ?: ""}",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                                 )
+                                hasResistances = true
                             }
                     } ?: resist.special?.let { special ->
                         special.replaceFirstChar { it.uppercase() }.let { specialText ->
@@ -728,14 +827,59 @@ fun MonsterResistances(monster: Monster) {
                                 text = specialText,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                             )
+                            hasResistances = true
                         }
                     }
                 }
-            } ?: run {
+            }
+
+            // Inmunidades
+            var hasImmunities = false
+            monster.immune?.let { immunities ->
                 Text(
-                    text = "No resistances available",
+                    text = "Immune to:",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                )
+                immunities.forEach { immune ->
+                    when (immune) {
+                        is JsonPrimitive -> {
+                            val immuneText = immune.contentOrNull?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+                            Text(
+                                text = immuneText,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                            )
+                            hasImmunities = true
+                        }
+                        is JsonObject -> {
+                            val immuneList = immune["immune"]?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull }
+                            val note = immune["note"]?.jsonPrimitive?.contentOrNull
+                            immuneList?.joinToString(", ") { it.replaceFirstChar { it.uppercase() } }?.let { immuneText ->
+                                Text(
+                                    text = "$immuneText${note?.let { " ($it)" } ?: ""}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                                hasImmunities = true
+                            }
+                        }
+                        else -> {
+                            // Ignorar otros tipos de JsonElement no esperados
+                        }
+                    }
+                }
+            }
+
+            // Mensaje por defecto si no hay resistencias ni inmunidades
+            if (!hasResistances && !hasImmunities) {
+                Text(
+                    text = "No resistances or immunities available",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp)
