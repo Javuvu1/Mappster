@@ -16,6 +16,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.serializer
 
 @Serializable
@@ -63,7 +64,14 @@ data class Monster(
     val hp: Hp? = null,
     @Serializable(with = AcListSerializer::class)
     val ac: List<Ac>? = null,
-    val initiative: Initiative? = null // Añadido el campo initiative
+    val initiative: Initiative? = null,
+    val skill: Skill? = null,
+    @Serializable(with = ResistanceListSerializer::class)
+    val resist: List<Resistance>? = null,
+    val immune: List<JsonElement>? = null,
+    val vulnerable: List<JsonElement>? = null,
+    @Serializable(with = ConditionImmuneListSerializer::class)
+    val conditionImmune: List<ConditionImmune>? = null
 )
 
 @Serializable
@@ -218,3 +226,159 @@ data class Initiative(
     val proficiency: Int? = null,
     val advantageMode: String? = null
 )
+
+@Serializable
+data class Skill(
+    val perception: String? = null,
+    val arcana: String? = null,
+    val nature: String? = null,
+    val history: String? = null,
+    val stealth: String? = null,
+    val religion: String? = null,
+    val deception: String? = null,
+    val intimidation: String? = null,
+    val persuasion: String? = null,
+    val insight: String? = null,
+    val medicine: String? = null,
+    val survival: String? = null,
+    val other: List<OtherSkill>? = null,
+    val acrobatics: String? = null,
+    @SerialName("sleight of hand")
+    val sleightOfHand: String? = null,
+    val athletics: String? = null,
+    val investigation: String? = null,
+    val performance: String? = null,
+    @SerialName("animal handling")
+    val animalHandling: String? = null
+)
+
+@Serializable
+data class OtherSkill(
+    val oneOf: OneOfSkill? = null
+)
+
+@Serializable
+data class OneOfSkill(
+    val arcana: String? = null,
+    val history: String? = null,
+    val nature: String? = null,
+    val religion: String? = null
+)
+
+@Serializable
+data class Resistance(
+    val special: String? = null,
+    val resist: List<ResistanceEntry>? = null,
+    val note: String? = null,
+    val cond: Boolean? = null,
+    val preNote: String? = null
+)
+
+@Serializable
+data class ResistanceEntry(
+    val value: String? = null,
+    val details: JsonElement? = null // Para manejar objetos complejos
+)
+
+object ResistanceListSerializer : KSerializer<List<Resistance>> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ResistanceList")
+
+    override fun serialize(encoder: Encoder, value: List<Resistance>) {
+        val output = encoder.beginStructure(descriptor)
+        output.encodeSerializableElement(descriptor, 0, serializer<List<Resistance>>(), value)
+        output.endStructure(descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): List<Resistance> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonArray = jsonDecoder.decodeJsonElement().jsonArray
+
+        return jsonArray.map { element ->
+            when {
+                element is JsonPrimitive -> {
+                    Resistance(special = element.contentOrNull)
+                }
+                element is JsonObject -> {
+                    Resistance(
+                        special = element["special"]?.jsonPrimitive?.contentOrNull,
+                        resist = element["resist"]?.jsonArray?.map { resistElement ->
+                            when {
+                                resistElement is JsonPrimitive -> ResistanceEntry(value = resistElement.contentOrNull)
+                                resistElement is JsonObject -> {
+                                    val firstKey = resistElement.keys.firstOrNull()
+                                    ResistanceEntry(
+                                        value = firstKey,
+                                        details = if (firstKey != null) resistElement[firstKey] else null
+                                    )
+                                }
+                                else -> throw IllegalStateException("Unexpected JSON element in resist nested list: $resistElement")
+                            }
+                        },
+                        note = element["note"]?.jsonPrimitive?.contentOrNull,
+                        cond = element["cond"]?.jsonPrimitive?.booleanOrNull,
+                        preNote = element["preNote"]?.jsonPrimitive?.contentOrNull
+                    )
+                }
+                else -> throw IllegalStateException("Unexpected JSON element in resist list: $element")
+            }
+        }
+    }
+}
+
+@Serializable
+data class ConditionImmune(
+    val conditionImmune: List<ConditionImmuneEntry>? = null,
+    val note: String? = null,
+    val cond: Boolean? = null
+)
+
+@Serializable
+data class ConditionImmuneEntry(
+    val value: String? = null,
+    val details: JsonElement? = null // Para manejar objetos complejos
+)
+
+object ConditionImmuneListSerializer : KSerializer<List<ConditionImmune>> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ConditionImmuneList")
+
+    override fun serialize(encoder: Encoder, value: List<ConditionImmune>) {
+        val output = encoder.beginStructure(descriptor)
+        output.encodeSerializableElement(descriptor, 0, serializer<List<ConditionImmune>>(), value)
+        output.endStructure(descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): List<ConditionImmune> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonArray = jsonDecoder.decodeJsonElement().jsonArray
+
+        return jsonArray.map { element ->
+            when {
+                element is JsonPrimitive -> {
+                    ConditionImmune(conditionImmune = listOf(ConditionImmuneEntry(value = element.contentOrNull)))
+                }
+                element is JsonObject -> {
+                    ConditionImmune(
+                        conditionImmune = element["conditionImmune"]?.jsonArray?.map { immuneElement ->
+                            when {
+                                immuneElement is JsonPrimitive -> ConditionImmuneEntry(value = immuneElement.contentOrNull)
+                                immuneElement is JsonObject -> {
+                                    val firstKey = immuneElement.keys.firstOrNull()
+                                    ConditionImmuneEntry(
+                                        value = firstKey,
+                                        details = if (firstKey != null) immuneElement[firstKey] else null
+                                    )
+                                }
+                                else -> throw IllegalStateException("Unexpected JSON element in conditionImmune nested list: $immuneElement")
+                            }
+                        },
+                        note = element["note"]?.jsonPrimitive?.contentOrNull,
+                        cond = element["cond"]?.jsonPrimitive?.booleanOrNull
+                    )
+                }
+                else -> throw IllegalStateException("Unexpected JSON element in conditionImmune list: $element")
+            }
+        }
+    }
+}
