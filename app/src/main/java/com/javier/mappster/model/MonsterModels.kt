@@ -71,7 +71,16 @@ data class Monster(
     val immune: List<JsonElement>? = null,
     val vulnerable: List<JsonElement>? = null,
     @Serializable(with = ConditionImmuneListSerializer::class)
-    val conditionImmune: List<ConditionImmune>? = null
+    val conditionImmune: List<ConditionImmune>? = null,
+    val senses: List<String>? = null,
+    @Serializable(with = MonsterTypeSerializer::class)
+    val type: MonsterType? = null,
+    @Serializable(with = AlignmentListSerializer::class)
+    val alignment: List<Alignment>? = null,
+    val alignmentPrefix: String? = null,
+    @Serializable(with = PassiveSerializer::class)
+    val passive: Passive? = null,
+    val save: Save? = null // Nuevo campo para tiradas de salvación
 )
 
 @Serializable
@@ -277,7 +286,7 @@ data class Resistance(
 @Serializable
 data class ResistanceEntry(
     val value: String? = null,
-    val details: JsonElement? = null // Para manejar objetos complejos
+    val details: JsonElement? = null
 )
 
 object ResistanceListSerializer : KSerializer<List<Resistance>> {
@@ -336,7 +345,7 @@ data class ConditionImmune(
 @Serializable
 data class ConditionImmuneEntry(
     val value: String? = null,
-    val details: JsonElement? = null // Para manejar objetos complejos
+    val details: JsonElement? = null
 )
 
 object ConditionImmuneListSerializer : KSerializer<List<ConditionImmune>> {
@@ -382,3 +391,127 @@ object ConditionImmuneListSerializer : KSerializer<List<ConditionImmune>> {
         }
     }
 }
+
+@Serializable
+data class MonsterType(
+    val type: JsonElement? = null,
+    val tags: List<JsonElement>? = null
+)
+
+object MonsterTypeSerializer : KSerializer<MonsterType> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("MonsterType")
+
+    override fun serialize(encoder: Encoder, value: MonsterType) {
+        if (value.tags.isNullOrEmpty() && value.type is JsonPrimitive) {
+            encoder.encodeString(value.type.jsonPrimitive.content)
+        } else {
+            encoder.beginStructure(descriptor).apply {
+                if (value.type != null) encodeSerializableElement(descriptor, 0, serializer<JsonElement>(), value.type)
+                if (!value.tags.isNullOrEmpty()) encodeSerializableElement(descriptor, 1, serializer<List<JsonElement>>(), value.tags)
+                endStructure(descriptor)
+            }
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): MonsterType {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("Only JsonDecoder is supported")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonPrimitive -> {
+                MonsterType(type = jsonElement)
+            }
+            jsonElement is JsonObject -> {
+                MonsterType(
+                    type = jsonElement["type"],
+                    tags = jsonElement["tags"]?.jsonArray?.toList()
+                )
+            }
+            else -> throw IllegalArgumentException("Unsupported JSON format for MonsterType: $jsonElement")
+        }
+    }
+}
+
+@Serializable
+data class Alignment(
+    val values: List<String>? = null
+)
+
+object AlignmentListSerializer : KSerializer<List<Alignment>> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("AlignmentList")
+
+    override fun serialize(encoder: Encoder, value: List<Alignment>) {
+        val output = encoder.beginStructure(descriptor)
+        output.encodeSerializableElement(descriptor, 0, serializer<List<Alignment>>(), value)
+        output.endStructure(descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): List<Alignment> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonArray = jsonDecoder.decodeJsonElement().jsonArray
+
+        return jsonArray.map { element ->
+            when {
+                element is JsonPrimitive -> {
+                    val content = element.contentOrNull
+                    Alignment(values = if (content != null) listOf(content) else emptyList())
+                }
+                element is JsonObject -> {
+                    Alignment(
+                        values = element["alignment"]?.jsonArray?.mapNotNull { it.jsonPrimitive?.contentOrNull }
+                    )
+                }
+                else -> throw IllegalStateException("Unexpected JSON element in alignment list: $element")
+            }
+        }
+    }
+}
+
+@Serializable
+sealed class Passive {
+    @Serializable
+    data class Value(val value: Int) : Passive()
+
+    @Serializable
+    data class Formula(val formula: String) : Passive()
+}
+
+object PassiveSerializer : KSerializer<Passive> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Passive")
+
+    override fun serialize(encoder: Encoder, value: Passive) {
+        when (value) {
+            is Passive.Value -> encoder.encodeInt(value.value)
+            is Passive.Formula -> encoder.encodeString(value.formula)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): Passive {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("Only JsonDecoder is supported")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonPrimitive && jsonElement.intOrNull != null -> {
+                Passive.Value(jsonElement.intOrNull!!)
+            }
+            jsonElement is JsonPrimitive -> {
+                Passive.Formula(jsonElement.content)
+            }
+            else -> throw IllegalArgumentException("Unsupported JSON format for Passive: $jsonElement")
+        }
+    }
+}
+
+@Serializable
+data class Save(
+    val str: String? = null, // Strength save modifier
+    val dex: String? = null, // Dexterity save modifier
+    val con: String? = null, // Constitution save modifier
+    @SerialName("int")
+    val int: String? = null, // Intelligence save modifier
+    val wis: String? = null, // Wisdom save modifier
+    val cha: String? = null  // Charisma save modifier
+)
