@@ -13,6 +13,7 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -82,7 +83,9 @@ data class Monster(
     @Serializable(with = PassiveSerializer::class)
     val passive: Passive? = null,
     val save: Save? = null,
-    val trait: List<Trait>? = null
+    val trait: List<Trait>? = null,
+    @Serializable(with = ActionListSerializer::class)
+    val action: List<Action>? = null
 )
 
 @Serializable
@@ -544,3 +547,50 @@ data class Trait(
     val name: String? = null,
     val entries: List<JsonElement>? = null
 )
+
+@Serializable
+data class Action(
+    val name: String? = null,
+    val entries: List<JsonElement>? = null // Cambiado a List<JsonElement>? para manejar objetos y cadenas
+)
+
+object ActionListSerializer : KSerializer<List<Action>> {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Action>()
+
+    override fun serialize(encoder: Encoder, value: List<Action>) {
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Action>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Action>>(), value)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<Action> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonArray -> {
+                jsonElement.map { element ->
+                    when {
+                        element is JsonObject -> {
+                            val name = element["name"]?.jsonPrimitive?.contentOrNull
+                            val entries = element["entries"]?.let { entriesElement ->
+                                when {
+                                    entriesElement is JsonArray -> entriesElement.toList() // Mantiene todos los elementos (cadenas, objetos, etc.)
+                                    entriesElement is JsonPrimitive -> listOf(entriesElement)
+                                    entriesElement is JsonObject -> listOf(entriesElement)
+                                    else -> emptyList()
+                                }
+                            } ?: emptyList()
+                            Action(name = name, entries = entries)
+                        }
+                        else -> throw IllegalStateException("Unexpected JSON element in action list: $element")
+                    }
+                }
+            }
+            else -> throw IllegalStateException("Unexpected JSON format for action list: $jsonElement")
+        }
+    }
+}

@@ -171,6 +171,11 @@ fun MonsterDetailScreen(monster: Monster) {
 
             // Sección: Traits
             MonsterTraits(monster, onDiceRollClick, onConditionClick)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sección: Actions (nueva sección)
+            MonsterActions(monster, onDiceRollClick, onConditionClick)
         }
     }
 
@@ -600,7 +605,7 @@ fun MonsterSpeed(monster: Monster) {
                         Text(
                             text = "$speedType: ${choose.amount ?: 0} ft${choose.note?.let { " ($it)" } ?: ""}",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface, // Corrección aquí
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                         )
                         hasSpeedData = true
@@ -1274,6 +1279,208 @@ fun MonsterTraits(
                                     // Manejar otros tipos de objetos si es necesario
                                     Text(
                                         text = "Unsupported entry type: $type",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Text(
+                                    text = "Unsupported entry format",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterActions(
+    monster: Monster,
+    onDiceRollClick: (String, Int, Int) -> Unit,
+    onConditionClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Actions:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (monster.action.isNullOrEmpty()) {
+                Text(
+                    text = "No actions available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            } else {
+                monster.action.forEach { action ->
+                    // Nombre de la acción
+                    Text(
+                        text = action.name ?: "Unnamed Action",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                    )
+                    // Entradas de la acción
+                    action.entries?.forEach { entry ->
+                        when (entry) {
+                            is JsonPrimitive -> {
+                                // Si es un string, lo mostramos directamente después de limpiar etiquetas
+                                val cleanedEntry = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildAnnotatedString {
+                                    var lastIndex = 0
+                                    // Detección de tiradas de dados (por ejemplo, 5d10)
+                                    val diceRegex = Regex("(\\d+d\\d+)")
+                                    // Detección de condiciones (por ejemplo, charmed, unconscious)
+                                    val conditionRegex = Regex("\\b(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion)\\b")
+                                    val allMatches = (diceRegex.findAll(cleanedEntry).map { it to "dice" } +
+                                            conditionRegex.findAll(cleanedEntry).map { it to "condition" })
+                                        .sortedBy { it.first.range.first }
+
+                                    allMatches.forEach { (match, type) ->
+                                        append(cleanedEntry.substring(lastIndex, match.range.first))
+                                        if (type == "dice") {
+                                            pushStringAnnotation(tag = "diceRoll", annotation = match.value)
+                                            withStyle(
+                                                style = SpanStyle(
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Normal
+                                                )
+                                            ) {
+                                                append(match.value)
+                                            }
+                                            pop()
+                                        } else if (type == "condition") {
+                                            pushStringAnnotation(tag = "condition", annotation = match.value)
+                                            withStyle(
+                                                style = SpanStyle(
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Normal
+                                                )
+                                            ) {
+                                                append(match.value)
+                                            }
+                                            pop()
+                                        }
+                                        lastIndex = match.range.last + 1
+                                    }
+                                    append(cleanedEntry.substring(lastIndex))
+                                }
+                                ClickableText(
+                                    text = annotatedText,
+                                    onClick = { offset ->
+                                        // Manejar clic en tiradas de dados
+                                        annotatedText.getStringAnnotations(tag = "diceRoll", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val (numDice, dieSides) = annotation.item.split("d").map { it.toInt() }
+                                                onDiceRollClick(annotation.item, numDice, dieSides)
+                                            }
+                                        // Manejar clic en condiciones
+                                        annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                onConditionClick(annotation.item)
+                                            }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                            is JsonObject -> {
+                                // Si es un objeto, lo interpretamos (por ejemplo, una lista)
+                                val type = entry["type"]?.jsonPrimitive?.contentOrNull
+                                if (type == "list") {
+                                    Text(
+                                        text = "List:",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                    entry["items"]?.jsonArray?.forEach { item ->
+                                        val itemText = if (item is JsonPrimitive) {
+                                            cleanTraitEntry(item.contentOrNull ?: "Unknown")
+                                        } else {
+                                            "Unsupported item format"
+                                        }
+                                        val annotatedText = buildAnnotatedString {
+                                            var lastIndex = 0
+                                            val diceRegex = Regex("(\\d+d\\d+)")
+                                            val conditionRegex = Regex("\\b(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion)\\b")
+                                            val allMatches = (diceRegex.findAll(itemText).map { it to "dice" } +
+                                                    conditionRegex.findAll(itemText).map { it to "condition" })
+                                                .sortedBy { it.first.range.first }
+
+                                            allMatches.forEach { (match, type) ->
+                                                append(itemText.substring(lastIndex, match.range.first))
+                                                if (type == "dice") {
+                                                    pushStringAnnotation(tag = "diceRoll", annotation = match.value)
+                                                    withStyle(
+                                                        style = SpanStyle(
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            fontWeight = FontWeight.Normal
+                                                        )
+                                                    ) {
+                                                        append(match.value)
+                                                    }
+                                                    pop()
+                                                } else if (type == "condition") {
+                                                    pushStringAnnotation(tag = "condition", annotation = match.value)
+                                                    withStyle(
+                                                        style = SpanStyle(
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            fontWeight = FontWeight.Normal
+                                                        )
+                                                    ) {
+                                                        append(match.value)
+                                                    }
+                                                    pop()
+                                                }
+                                                lastIndex = match.range.last + 1
+                                            }
+                                            append(itemText.substring(lastIndex))
+                                        }
+                                        ClickableText(
+                                            text = annotatedText,
+                                            onClick = { offset ->
+                                                // Manejar clic en tiradas de dados
+                                                annotatedText.getStringAnnotations(tag = "diceRoll", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        val (numDice, dieSides) = annotation.item.split("d").map { it.toInt() }
+                                                        onDiceRollClick(annotation.item, numDice, dieSides)
+                                                    }
+                                                // Manejar clic en condiciones
+                                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        onConditionClick(annotation.item)
+                                                    }
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                            modifier = Modifier.padding(start = 24.dp, top = 2.dp)
+                                        )
+                                    }
+                                } else {
+                                    // Manejar otros tipos de objetos si es necesario
+                                    val text = when {
+                                        entry.containsKey("damage") && entry.containsKey("type") -> {
+                                            "${entry["damage"]?.jsonPrimitive?.contentOrNull} ${entry["type"]?.jsonPrimitive?.contentOrNull} damage"
+                                        }
+                                        else -> entry.toString()
+                                    }
+                                    Text(
+                                        text = text,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         modifier = Modifier.padding(start = 16.dp, top = 4.dp)
