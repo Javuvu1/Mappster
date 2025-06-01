@@ -38,6 +38,393 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
 @Composable
+fun MonsterInfoSection(monster: Monster) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val sizeText = monster.size?.firstOrNull()?.let { size ->
+                    when (size.uppercase()) {
+                        "M" -> "Medium"
+                        "L" -> "Large"
+                        "S" -> "Small"
+                        "T" -> "Tiny"
+                        "H" -> "Huge"
+                        "G" -> "Gargantuan"
+                        else -> size
+                    }
+                } ?: "Unknown"
+
+                val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+
+                val alignmentText = monster.alignment?.flatMap { it.values.orEmpty() }?.joinToString(" ") { align ->
+                    when (align.uppercase()) {
+                        "L" -> "Lawful"
+                        "N" -> "Neutral"
+                        "C" -> "Chaotic"
+                        "G" -> "Good"
+                        "E" -> "Evil"
+                        "A" -> "Any alignment"
+                        else -> align
+                    }
+                }?.let { if (it.isNotEmpty()) " $it" else "" } ?: ""
+
+                Text(
+                    text = "$sizeText $typeText$alignmentText",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            monster.cr?.let { cr ->
+                val crValue = cr.value?.toDoubleOrNull() ?: 0.0
+                val crText = when {
+                    crValue == 0.5 -> "1/2"
+                    crValue == 0.25 -> "1/4"
+                    crValue == 0.125 -> "1/8"
+                    else -> crValue.toString()
+                }
+                Text(
+                    text = "CR: $crText",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            monster.hp?.let { hp ->
+                Text(
+                    text = "Hit Points: ${hp.average ?: "Unknown"} (${hp.formula ?: "No formula"})",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            val initModValue = monster.initiative?.proficiency?.toString()?.toIntOrNull()
+                ?: calculateModifier(monster.dex) ?: 0
+            val initMod = formatModifier(initModValue)
+            val initAnnotatedText = buildAnnotatedString {
+                append("Initiative: ")
+                pushStringAnnotation(tag = "initModifier", annotation = initModValue.toString())
+                withStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    append(initMod)
+                }
+                pop()
+            }
+            ClickableText(
+                text = initAnnotatedText,
+                onClick = { offset ->
+                    initAnnotatedText.getStringAnnotations(tag = "initModifier", start = offset, end = offset)
+                        .firstOrNull()?.let { annotation ->
+                            onModifierClick("Initiative", annotation.item.toInt())
+                        }
+                },
+                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            monster.ac?.let { acList ->
+                val acText = acList.joinToString(", ") { ac ->
+                    buildString {
+                        append(ac.ac ?: "Unknown")
+                        ac.from?.let { from ->
+                            val cleanedFrom = from.map { cleanTraitEntry(it) }.joinToString(", ")
+                            append(" (from $cleanedFrom)")
+                        }
+                        ac.special?.let { special ->
+                            val cleanedSpecial = cleanTraitEntry(special)
+                            append(" ($cleanedSpecial)")
+                        }
+                    }
+                }
+                Text(
+                    text = "Armor Class: $acText",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterActions(
+    monster: Monster,
+    onDiceRollClick: (DiceRollData) -> Unit,
+    onConditionClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Actions:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (monster.action.isNullOrEmpty()) {
+                Text(
+                    text = "No actions available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            } else {
+                monster.action.forEach { action ->
+                    val actionName = cleanTraitEntry(action.name ?: "Unnamed Action")
+                    Text(
+                        text = actionName,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                    )
+                    action.entries?.forEach { entry ->
+                        when (entry) {
+                            is JsonPrimitive -> {
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val cleanedText = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                ClickableText(
+                                    text = annotatedText,
+                                    onClick = { offset ->
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val index = annotation.item.toInt()
+                                                onDiceRollClick(diceDataList[index])
+                                            }
+                                        annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                onConditionClick(annotation.item)
+                                            }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                            is JsonObject -> {
+                                val type = entry["type"]?.jsonPrimitive?.contentOrNull
+                                if (type == "list") {
+                                    Text(
+                                        text = "List:",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                    entry["items"]?.jsonArray?.forEach { item ->
+                                        val itemText = if (item is JsonPrimitive) {
+                                            item.contentOrNull ?: "Unknown"
+                                        } else {
+                                            "Unsupported item format"
+                                        }
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val cleanedText = cleanTraitEntry(itemText)
+                                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                        ClickableText(
+                                            text = annotatedText,
+                                            onClick = { offset ->
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        val index = annotation.item.toInt()
+                                                        onDiceRollClick(diceDataList[index])
+                                                    }
+                                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        onConditionClick(annotation.item)
+                                                    }
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                            modifier = Modifier.padding(start = 24.dp, top = 2.dp)
+                                        )
+                                    }
+                                } else {
+                                    val text = when {
+                                        entry.containsKey("damage") && entry.containsKey("type") -> {
+                                            "${entry["damage"]?.jsonPrimitive?.contentOrNull} ${entry["type"]?.jsonPrimitive?.contentOrNull} damage"
+                                        }
+                                        else -> entry.toString()
+                                    }
+                                    Text(
+                                        text = text,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Text(
+                                    text = "Unsupported entry format",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterBonusActions(
+    monster: Monster,
+    onDiceRollClick: (DiceRollData) -> Unit,
+    onConditionClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Bonus Actions:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (monster.bonus.isNullOrEmpty()) {
+                Text(
+                    text = "No bonus actions available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            } else {
+                monster.bonus.forEach { bonus ->
+                    val bonusName = cleanTraitEntry(bonus.name ?: "Unnamed Bonus Action")
+                    Text(
+                        text = bonusName,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                    )
+                    bonus.entries?.forEach { entry ->
+                        when (entry) {
+                            is JsonPrimitive -> {
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val cleanedText = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                ClickableText(
+                                    text = annotatedText,
+                                    onClick = { offset ->
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val index = annotation.item.toInt()
+                                                onDiceRollClick(diceDataList[index])
+                                            }
+                                        annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                onConditionClick(annotation.item)
+                                            }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                            is JsonObject -> {
+                                val type = entry["type"]?.jsonPrimitive?.contentOrNull
+                                if (type == "list") {
+                                    Text(
+                                        text = "List:",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                    entry["items"]?.jsonArray?.forEach { item ->
+                                        val itemText = if (item is JsonPrimitive) {
+                                            item.contentOrNull ?: "Unknown"
+                                        } else {
+                                            "Unsupported item format"
+                                        }
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val cleanedText = cleanTraitEntry(itemText)
+                                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                        ClickableText(
+                                            text = annotatedText,
+                                            onClick = { offset ->
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        val index = annotation.item.toInt()
+                                                        onDiceRollClick(diceDataList[index])
+                                                    }
+                                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        onConditionClick(annotation.item)
+                                                    }
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                            modifier = Modifier.padding(start = 24.dp, top = 2.dp)
+                                        )
+                                    }
+                                } else {
+                                    val text = when {
+                                        entry.containsKey("damage") && entry.containsKey("type") -> {
+                                            "${entry["damage"]?.jsonPrimitive?.contentOrNull} ${entry["type"]?.jsonPrimitive?.contentOrNull} damage"
+                                        }
+                                        else -> entry.toString()
+                                    }
+                                    Text(
+                                        text = text,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Text(
+                                    text = "Unsupported entry format",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun MonsterSpeed(monster: Monster) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -760,6 +1147,129 @@ fun MonsterTraits(
                                 } else {
                                     Text(
                                         text = "Unsupported entry type: $type",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Text(
+                                    text = "Unsupported entry format",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterReactions(
+    monster: Monster,
+    onDiceRollClick: (DiceRollData) -> Unit,
+    onConditionClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Reactions:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (monster.reaction.isNullOrEmpty()) {
+                Text(
+                    text = "No reactions available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            } else {
+                monster.reaction.forEach { reaction ->
+                    val reactionName = cleanTraitEntry(reaction.name ?: "Unnamed Reaction")
+                    Text(
+                        text = reactionName,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                    )
+                    reaction.entries?.forEach { entry ->
+                        when (entry) {
+                            is JsonPrimitive -> {
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val cleanedText = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                ClickableText(
+                                    text = annotatedText,
+                                    onClick = { offset ->
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val index = annotation.item.toInt()
+                                                onDiceRollClick(diceDataList[index])
+                                            }
+                                        annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                onConditionClick(annotation.item)
+                                            }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                            is JsonObject -> {
+                                val type = entry["type"]?.jsonPrimitive?.contentOrNull
+                                if (type == "list") {
+                                    Text(
+                                        text = "List:",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                    entry["items"]?.jsonArray?.forEach { item ->
+                                        val itemText = if (item is JsonPrimitive) {
+                                            item.contentOrNull ?: "Unknown"
+                                        } else {
+                                            "Unsupported item format"
+                                        }
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val cleanedText = cleanTraitEntry(itemText)
+                                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                        ClickableText(
+                                            text = annotatedText,
+                                            onClick = { offset ->
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        val index = annotation.item.toInt()
+                                                        onDiceRollClick(diceDataList[index])
+                                                    }
+                                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        onConditionClick(annotation.item)
+                                                    }
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                            modifier = Modifier.padding(start = 24.dp, top = 2.dp)
+                                        )
+                                    }
+                                } else {
+                                    val text = when {
+                                        entry.containsKey("damage") && entry.containsKey("type") -> {
+                                            "${entry["damage"]?.jsonPrimitive?.contentOrNull} ${entry["type"]?.jsonPrimitive?.contentOrNull} damage"
+                                        }
+                                        else -> entry.toString()
+                                    }
+                                    Text(
+                                        text = text,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         modifier = Modifier.padding(start = 16.dp, top = 4.dp)
