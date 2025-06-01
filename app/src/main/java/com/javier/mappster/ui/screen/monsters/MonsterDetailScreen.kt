@@ -39,29 +39,24 @@ import kotlin.random.Random
 @Composable
 fun MonsterDetailScreen(monster: Monster) {
     var showDiceRollDialog by remember { mutableStateOf(false) }
-    var diceRollResult by remember { mutableStateOf(0) }
-    var diceRollModifier by remember { mutableStateOf(0) }
-    var diceRollTotal by remember { mutableStateOf(0) }
-    var currentStatLabel by remember { mutableStateOf("") }
     var diceRollDetails by remember { mutableStateOf<List<Int>>(emptyList()) }
+    var diceRollTotal by remember { mutableStateOf(0) }
+    var currentDiceData by remember { mutableStateOf<DiceRollData?>(null) }
     var showConditionDialog by remember { mutableStateOf(false) }
     var currentCondition by remember { mutableStateOf("") }
-    var conditionDescription by remember { mutableStateOf("") }
 
-    // Callback para manejar las tiradas de dados desde MonsterTraits
-    val onDiceRollClick: (String, Int, Int) -> Unit = { label, numDice, dieSides ->
-        currentStatLabel = "Dice Roll ($label)"
-        diceRollModifier = 0
-        diceRollDetails = (1..numDice).map { Random.nextInt(1, dieSides + 1) }
-        diceRollResult = diceRollDetails.sum()
-        diceRollTotal = diceRollResult + diceRollModifier
+    // Callback para manejar las tiradas de dados
+    val onDiceRollClick: (DiceRollData) -> Unit = { diceData ->
+        currentDiceData = diceData
+        val (rolls, total) = rollDice(diceData)
+        diceRollDetails = rolls
+        diceRollTotal = total
         showDiceRollDialog = true
     }
 
     // Callback para manejar clics en condiciones
     val onConditionClick: (String) -> Unit = { condition ->
         currentCondition = condition.replaceFirstChar { it.uppercase() }
-        conditionDescription = conditionDescriptions[condition.lowercase()] ?: "No description available for this condition."
         showConditionDialog = true
     }
 
@@ -111,11 +106,10 @@ fun MonsterDetailScreen(monster: Monster) {
             MonsterCombatStats(
                 monster = monster,
                 onModifierClick = { label, modifier ->
-                    currentStatLabel = label
-                    diceRollModifier = modifier
-                    diceRollResult = Random.nextInt(1, 21) // Tirada de d20
-                    diceRollTotal = diceRollResult + modifier
-                    diceRollDetails = listOf(diceRollResult)
+                    currentDiceData = DiceRollData(numDice = 1, dieSides = 20, bonus = modifier, type = "hit")
+                    val (rolls, total) = rollDice(currentDiceData!!)
+                    diceRollDetails = rolls
+                    diceRollTotal = total
                     showDiceRollDialog = true
                 }
             )
@@ -129,11 +123,10 @@ fun MonsterDetailScreen(monster: Monster) {
 
             // Sección: Ability Scores y Saving Throws
             MonsterStats(monster) { label, modifier ->
-                currentStatLabel = label
-                diceRollModifier = modifier
-                diceRollResult = Random.nextInt(1, 21) // Tirada de d20
-                diceRollTotal = diceRollResult + modifier
-                diceRollDetails = listOf(diceRollResult)
+                currentDiceData = DiceRollData(numDice = 1, dieSides = 20, bonus = modifier, type = "hit")
+                val (rolls, total) = rollDice(currentDiceData!!)
+                diceRollDetails = rolls
+                diceRollTotal = total
                 showDiceRollDialog = true
             }
 
@@ -143,11 +136,10 @@ fun MonsterDetailScreen(monster: Monster) {
             MonsterSkills(
                 monster = monster,
                 onSkillClick = { label, modifier ->
-                    currentStatLabel = label
-                    diceRollModifier = modifier
-                    diceRollResult = Random.nextInt(1, 21) // Tirada de d20
-                    diceRollTotal = diceRollResult + modifier
-                    diceRollDetails = listOf(diceRollResult)
+                    currentDiceData = DiceRollData(numDice = 1, dieSides = 20, bonus = modifier, type = "hit")
+                    val (rolls, total) = rollDice(currentDiceData!!)
+                    diceRollDetails = rolls
+                    diceRollTotal = total
                     showDiceRollDialog = true
                 }
             )
@@ -174,13 +166,13 @@ fun MonsterDetailScreen(monster: Monster) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Sección: Actions (nueva sección)
+            // Sección: Actions
             MonsterActions(monster, onDiceRollClick, onConditionClick)
         }
     }
 
     // Diálogo para mostrar el resultado de la tirada
-    if (showDiceRollDialog) {
+    if (showDiceRollDialog && currentDiceData != null) {
         AlertDialog(
             onDismissRequest = { showDiceRollDialog = false },
             title = {
@@ -195,7 +187,7 @@ fun MonsterDetailScreen(monster: Monster) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "$currentStatLabel Roll",
+                        text = "Dice Roll",
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -208,30 +200,26 @@ fun MonsterDetailScreen(monster: Monster) {
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (diceRollDetails.size == 1) {
-                        // Tirada simple (como d20)
-                        Text(
-                            text = "d20: $diceRollResult",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                            color = when (diceRollResult) {
-                                20 -> Color.Green
-                                1 -> Color.Red
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                    } else {
-                        // Tirada de múltiples dados (como 5d10)
-                        Text(
-                            text = "Rolls: ${diceRollDetails.joinToString(" + ")}",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Modifier: ${formatModifier(diceRollModifier)}",
+                        text = "Roll: ${currentDiceData!!.numDice}d${currentDiceData!!.dieSides}" +
+                                (currentDiceData!!.bonus?.let { " + $it" } ?: ""),
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Breakdown: ",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = buildDiceRollBreakdown(
+                            rolls = diceRollDetails,
+                            dieSides = currentDiceData!!.dieSides,
+                            bonus = currentDiceData!!.bonus,
+                            defaultColor = MaterialTheme.colorScheme.onSurface
+                        ).text,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
@@ -295,7 +283,7 @@ fun MonsterDetailScreen(monster: Monster) {
                         .verticalScroll(rememberScrollState())
                 ) {
                     Text(
-                        text = conditionDescription,
+                        text = conditionDescriptions[currentCondition.lowercase()] ?: "No description available for this condition.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -340,7 +328,6 @@ fun MonsterInfoSection(monster: Monster) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Tamaño, Tipo y Alineamiento
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
@@ -378,7 +365,6 @@ fun MonsterInfoSection(monster: Monster) {
                 )
             }
 
-            // CR (Challenge Rating)
             monster.cr?.let { cr ->
                 val crValue = cr.value?.toDoubleOrNull() ?: 0.0
                 val crText = when {
@@ -407,7 +393,6 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // HP
             monster.hp?.let { hp ->
                 Text(
                     text = "Hit Points: ${hp.average ?: "Unknown"} (${hp.formula ?: "No formula"})",
@@ -416,10 +401,9 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
                 )
             }
 
-            // Iniciativa
             val initModValue = monster.initiative?.proficiency?.toString()?.toIntOrNull()
                 ?: calculateModifier(monster.dex) ?: 0
-            val initMod = if (initModValue >= 0) "+$initModValue" else initModValue.toString()
+            val initMod = formatModifier(initModValue)
             val initAnnotatedText = buildAnnotatedString {
                 append("Initiative: ")
                 pushStringAnnotation(tag = "initModifier", annotation = initModValue.toString())
@@ -446,7 +430,6 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            // AC
             monster.ac?.let { acList ->
                 val acText = acList.joinToString(", ") { ac ->
                     buildString {
@@ -936,7 +919,6 @@ fun MonsterResistancesAndImmunities(monster: Monster) {
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Resistencias
             var hasResistances = false
             monster.resist?.let { resists ->
                 Text(
@@ -971,7 +953,6 @@ fun MonsterResistancesAndImmunities(monster: Monster) {
                 }
             }
 
-            // Inmunidades
             var hasImmunities = false
             monster.immune?.let { immunities ->
                 Text(
@@ -1005,14 +986,11 @@ fun MonsterResistancesAndImmunities(monster: Monster) {
                                 hasImmunities = true
                             }
                         }
-                        else -> {
-                            // Ignorar otros tipos de JsonElement no esperados
-                        }
+                        else -> {}
                     }
                 }
             }
 
-            // Mensaje por defecto si no hay resistencias ni inmunidades
             if (!hasResistances && !hasImmunities) {
                 Text(
                     text = "No resistances or immunities available",
@@ -1108,7 +1086,7 @@ fun MonsterLanguages(monster: Monster) {
 @Composable
 fun MonsterTraits(
     monster: Monster,
-    onDiceRollClick: (String, Int, Int) -> Unit,
+    onDiceRollClick: (DiceRollData) -> Unit,
     onConditionClick: (String) -> Unit
 ) {
     Card(
@@ -1132,68 +1110,27 @@ fun MonsterTraits(
                 )
             } else {
                 monster.trait.forEach { trait ->
-                    // Nombre del rasgo
+                    val traitName = cleanTraitEntry(trait.name ?: "Unknown Trait")
                     Text(
-                        text = trait.name ?: "Unknown Trait",
+                        text = traitName,
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, top = 8.dp)
                     )
-                    // Entradas del rasgo
                     trait.entries?.forEach { entry ->
                         when (entry) {
                             is JsonPrimitive -> {
-                                // Si es un string, lo mostramos directamente después de limpiar etiquetas
-                                val cleanedEntry = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
-                                val annotatedText = buildAnnotatedString {
-                                    var lastIndex = 0
-                                    // Detección de tiradas de dados (por ejemplo, 5d10)
-                                    val diceRegex = Regex("(\\d+d\\d+)")
-                                    // Detección de condiciones (por ejemplo, charmed, unconscious)
-                                    val conditionRegex = Regex("\\b(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion)\\b")
-                                    val allMatches = (diceRegex.findAll(cleanedEntry).map { it to "dice" } +
-                                            conditionRegex.findAll(cleanedEntry).map { it to "condition" })
-                                        .sortedBy { it.first.range.first }
-
-                                    allMatches.forEach { (match, type) ->
-                                        append(cleanedEntry.substring(lastIndex, match.range.first))
-                                        if (type == "dice") {
-                                            pushStringAnnotation(tag = "diceRoll", annotation = match.value)
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Normal
-                                                )
-                                            ) {
-                                                append(match.value)
-                                            }
-                                            pop()
-                                        } else if (type == "condition") {
-                                            pushStringAnnotation(tag = "condition", annotation = match.value)
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Normal
-                                                )
-                                            ) {
-                                                append(match.value)
-                                            }
-                                            pop()
-                                        }
-                                        lastIndex = match.range.last + 1
-                                    }
-                                    append(cleanedEntry.substring(lastIndex))
-                                }
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val cleanedText = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
                                 ClickableText(
                                     text = annotatedText,
                                     onClick = { offset ->
-                                        // Manejar clic en tiradas de dados
-                                        annotatedText.getStringAnnotations(tag = "diceRoll", start = offset, end = offset)
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
-                                                val (numDice, dieSides) = annotation.item.split("d").map { it.toInt() }
-                                                onDiceRollClick(annotation.item, numDice, dieSides)
+                                                val index = annotation.item.toInt()
+                                                onDiceRollClick(diceDataList[index])
                                             }
-                                        // Manejar clic en condiciones
                                         annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
                                                 onConditionClick(annotation.item)
@@ -1204,7 +1141,6 @@ fun MonsterTraits(
                                 )
                             }
                             is JsonObject -> {
-                                // Si es un objeto, lo interpretamos (por ejemplo, una lista)
                                 val type = entry["type"]?.jsonPrimitive?.contentOrNull
                                 if (type == "list") {
                                     Text(
@@ -1215,57 +1151,21 @@ fun MonsterTraits(
                                     )
                                     entry["items"]?.jsonArray?.forEach { item ->
                                         val itemText = if (item is JsonPrimitive) {
-                                            cleanTraitEntry(item.contentOrNull ?: "Unknown")
+                                            item.contentOrNull ?: "Unknown"
                                         } else {
                                             "Unsupported item format"
                                         }
-                                        val annotatedText = buildAnnotatedString {
-                                            var lastIndex = 0
-                                            val diceRegex = Regex("(\\d+d\\d+)")
-                                            val conditionRegex = Regex("\\b(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion)\\b")
-                                            val allMatches = (diceRegex.findAll(itemText).map { it to "dice" } +
-                                                    conditionRegex.findAll(itemText).map { it to "condition" })
-                                                .sortedBy { it.first.range.first }
-
-                                            allMatches.forEach { (match, type) ->
-                                                append(itemText.substring(lastIndex, match.range.first))
-                                                if (type == "dice") {
-                                                    pushStringAnnotation(tag = "diceRoll", annotation = match.value)
-                                                    withStyle(
-                                                        style = SpanStyle(
-                                                            color = MaterialTheme.colorScheme.primary,
-                                                            fontWeight = FontWeight.Normal
-                                                        )
-                                                    ) {
-                                                        append(match.value)
-                                                    }
-                                                    pop()
-                                                } else if (type == "condition") {
-                                                    pushStringAnnotation(tag = "condition", annotation = match.value)
-                                                    withStyle(
-                                                        style = SpanStyle(
-                                                            color = MaterialTheme.colorScheme.primary,
-                                                            fontWeight = FontWeight.Normal
-                                                        )
-                                                    ) {
-                                                        append(match.value)
-                                                    }
-                                                    pop()
-                                                }
-                                                lastIndex = match.range.last + 1
-                                            }
-                                            append(itemText.substring(lastIndex))
-                                        }
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val cleanedText = cleanTraitEntry(itemText)
+                                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
                                         ClickableText(
                                             text = annotatedText,
                                             onClick = { offset ->
-                                                // Manejar clic en tiradas de dados
-                                                annotatedText.getStringAnnotations(tag = "diceRoll", start = offset, end = offset)
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
-                                                        val (numDice, dieSides) = annotation.item.split("d").map { it.toInt() }
-                                                        onDiceRollClick(annotation.item, numDice, dieSides)
+                                                        val index = annotation.item.toInt()
+                                                        onDiceRollClick(diceDataList[index])
                                                     }
-                                                // Manejar clic en condiciones
                                                 annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
                                                         onConditionClick(annotation.item)
@@ -1276,7 +1176,6 @@ fun MonsterTraits(
                                         )
                                     }
                                 } else {
-                                    // Manejar otros tipos de objetos si es necesario
                                     Text(
                                         text = "Unsupported entry type: $type",
                                         style = MaterialTheme.typography.bodyLarge,
@@ -1304,7 +1203,7 @@ fun MonsterTraits(
 @Composable
 fun MonsterActions(
     monster: Monster,
-    onDiceRollClick: (String, Int, Int) -> Unit,
+    onDiceRollClick: (DiceRollData) -> Unit,
     onConditionClick: (String) -> Unit
 ) {
     Card(
@@ -1328,68 +1227,27 @@ fun MonsterActions(
                 )
             } else {
                 monster.action.forEach { action ->
-                    // Nombre de la acción
+                    val actionName = cleanTraitEntry(action.name ?: "Unnamed Action")
                     Text(
-                        text = action.name ?: "Unnamed Action",
+                        text = "$actionName",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, top = 8.dp)
                     )
-                    // Entradas de la acción
                     action.entries?.forEach { entry ->
                         when (entry) {
                             is JsonPrimitive -> {
-                                // Si es un string, lo mostramos directamente después de limpiar etiquetas
-                                val cleanedEntry = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
-                                val annotatedText = buildAnnotatedString {
-                                    var lastIndex = 0
-                                    // Detección de tiradas de dados (por ejemplo, 5d10)
-                                    val diceRegex = Regex("(\\d+d\\d+)")
-                                    // Detección de condiciones (por ejemplo, charmed, unconscious)
-                                    val conditionRegex = Regex("\\b(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion)\\b")
-                                    val allMatches = (diceRegex.findAll(cleanedEntry).map { it to "dice" } +
-                                            conditionRegex.findAll(cleanedEntry).map { it to "condition" })
-                                        .sortedBy { it.first.range.first }
-
-                                    allMatches.forEach { (match, type) ->
-                                        append(cleanedEntry.substring(lastIndex, match.range.first))
-                                        if (type == "dice") {
-                                            pushStringAnnotation(tag = "diceRoll", annotation = match.value)
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Normal
-                                                )
-                                            ) {
-                                                append(match.value)
-                                            }
-                                            pop()
-                                        } else if (type == "condition") {
-                                            pushStringAnnotation(tag = "condition", annotation = match.value)
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Normal
-                                                )
-                                            ) {
-                                                append(match.value)
-                                            }
-                                            pop()
-                                        }
-                                        lastIndex = match.range.last + 1
-                                    }
-                                    append(cleanedEntry.substring(lastIndex))
-                                }
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val cleanedText = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
                                 ClickableText(
                                     text = annotatedText,
                                     onClick = { offset ->
-                                        // Manejar clic en tiradas de dados
-                                        annotatedText.getStringAnnotations(tag = "diceRoll", start = offset, end = offset)
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
-                                                val (numDice, dieSides) = annotation.item.split("d").map { it.toInt() }
-                                                onDiceRollClick(annotation.item, numDice, dieSides)
+                                                val index = annotation.item.toInt()
+                                                onDiceRollClick(diceDataList[index])
                                             }
-                                        // Manejar clic en condiciones
                                         annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
                                                 onConditionClick(annotation.item)
@@ -1400,7 +1258,6 @@ fun MonsterActions(
                                 )
                             }
                             is JsonObject -> {
-                                // Si es un objeto, lo interpretamos (por ejemplo, una lista)
                                 val type = entry["type"]?.jsonPrimitive?.contentOrNull
                                 if (type == "list") {
                                     Text(
@@ -1411,57 +1268,21 @@ fun MonsterActions(
                                     )
                                     entry["items"]?.jsonArray?.forEach { item ->
                                         val itemText = if (item is JsonPrimitive) {
-                                            cleanTraitEntry(item.contentOrNull ?: "Unknown")
+                                            item.contentOrNull ?: "Unknown"
                                         } else {
                                             "Unsupported item format"
                                         }
-                                        val annotatedText = buildAnnotatedString {
-                                            var lastIndex = 0
-                                            val diceRegex = Regex("(\\d+d\\d+)")
-                                            val conditionRegex = Regex("\\b(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion)\\b")
-                                            val allMatches = (diceRegex.findAll(itemText).map { it to "dice" } +
-                                                    conditionRegex.findAll(itemText).map { it to "condition" })
-                                                .sortedBy { it.first.range.first }
-
-                                            allMatches.forEach { (match, type) ->
-                                                append(itemText.substring(lastIndex, match.range.first))
-                                                if (type == "dice") {
-                                                    pushStringAnnotation(tag = "diceRoll", annotation = match.value)
-                                                    withStyle(
-                                                        style = SpanStyle(
-                                                            color = MaterialTheme.colorScheme.primary,
-                                                            fontWeight = FontWeight.Normal
-                                                        )
-                                                    ) {
-                                                        append(match.value)
-                                                    }
-                                                    pop()
-                                                } else if (type == "condition") {
-                                                    pushStringAnnotation(tag = "condition", annotation = match.value)
-                                                    withStyle(
-                                                        style = SpanStyle(
-                                                            color = MaterialTheme.colorScheme.primary,
-                                                            fontWeight = FontWeight.Normal
-                                                        )
-                                                    ) {
-                                                        append(match.value)
-                                                    }
-                                                    pop()
-                                                }
-                                                lastIndex = match.range.last + 1
-                                            }
-                                            append(itemText.substring(lastIndex))
-                                        }
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val cleanedText = cleanTraitEntry(itemText)
+                                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
                                         ClickableText(
                                             text = annotatedText,
                                             onClick = { offset ->
-                                                // Manejar clic en tiradas de dados
-                                                annotatedText.getStringAnnotations(tag = "diceRoll", start = offset, end = offset)
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
-                                                        val (numDice, dieSides) = annotation.item.split("d").map { it.toInt() }
-                                                        onDiceRollClick(annotation.item, numDice, dieSides)
+                                                        val index = annotation.item.toInt()
+                                                        onDiceRollClick(diceDataList[index])
                                                     }
-                                                // Manejar clic en condiciones
                                                 annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
                                                         onConditionClick(annotation.item)
@@ -1472,7 +1293,6 @@ fun MonsterActions(
                                         )
                                     }
                                 } else {
-                                    // Manejar otros tipos de objetos si es necesario
                                     val text = when {
                                         entry.containsKey("damage") && entry.containsKey("type") -> {
                                             "${entry["damage"]?.jsonPrimitive?.contentOrNull} ${entry["type"]?.jsonPrimitive?.contentOrNull} damage"
@@ -1506,8 +1326,6 @@ fun MonsterActions(
 // Función para limpiar las etiquetas de las entradas de los rasgos
 private fun cleanTraitEntry(entry: String): String {
     var cleaned = entry
-    // Reemplazar etiquetas comunes en un orden que evite interferencias
-    cleaned = cleaned.replace(Regex("\\{@damage (\\w+)\\}"), "$1") // {@damage 7d6} → 7d6
     cleaned = cleaned.replace(Regex("\\{@actSave (\\w+)\\}")) { match ->
         when (match.groupValues[1].lowercase()) {
             "con" -> "Constitution saving throw"
@@ -1519,24 +1337,17 @@ private fun cleanTraitEntry(entry: String): String {
             else -> match.groupValues[1]
         }
     }
-    cleaned = cleaned.replace(Regex("\\{@dc (\\d+)\\}"), "DC $1") // {@dc 14} → DC 14
-    cleaned = cleaned.replace(Regex("\\{@variantrule ([^|]+)\\|XPHB(?:\\|[^}]*)?\\}"), "$1") // {@variantrule Hit Points|XPHB} → hit points
-    cleaned = cleaned.replace(Regex("\\{@actSaveFail\\}"), "On a failed save,") // {@actSaveFail} → On a failed save,
-    cleaned = cleaned.replace(Regex("\\{@spell ([^}]+)\\}"), "$1") // {@spell dispel magic} → dispel magic spell
-    cleaned = cleaned.replace(Regex("\\{@dice (\\w+)\\}"), "$1") // {@dice 5d10} → 5d10
-    cleaned = cleaned.replace(Regex("\\{@condition (\\w+)\\}"), "$1") // {@condition charmed} → charmed
-    cleaned = cleaned.replace(Regex("\\{@i ([^}]+)\\}"), "$1") // {@i placeholder} → placeholder
-    // Manejo de {@skill ...}
-    cleaned = cleaned.replace(Regex("\\{@skill ([^|}]*)\\|?[^}]*\\}")) { match ->
-        match.groupValues[1] // Captura el nombre de la habilidad, ignorando cualquier fuente
-    }
-    // Manejo específico de {@item ...} para preservar el signo del modificador
-    cleaned = cleaned.replace(Regex("\\{@item ([^|}]*(?:\\s[+-]\\d+)?)(?:\\|.*)?\\}")) { match ->
-        match.groupValues[1] // Captura todo hasta el |, incluyendo el modificador
-    }
-    cleaned = cleaned.replace(Regex("\\{@atk mw\\}"), "") // Eliminar {@atk mw}
-    cleaned = cleaned.replace(Regex("\\{@hit (\\d+)\\}"), "$1 to hit") // {@hit 4} → 4 to hit
-    cleaned = cleaned.replace(Regex("\\{@h\\}"), "Hit: ") // {@h} → Hit:
+    cleaned = cleaned.replace(Regex("\\{@dc (\\d+)\\}"), "DC $1")
+    cleaned = cleaned.replace(Regex("\\{@variantrule ([^|]+)\\|XPHB(?:\\|[^}]*)?\\}"), "$1")
+    cleaned = cleaned.replace(Regex("\\{@actSaveFail\\}"), "On a failed save,")
+    cleaned = cleaned.replace(Regex("\\{@spell ([^}]+)\\}"), "$1")
+    cleaned = cleaned.replace(Regex("\\{@skill ([^|}]*)\\|?[^}]*\\}"), "$1")
+    cleaned = cleaned.replace(Regex("\\{@item ([^|}]*(?:\\s[+-]\\d+)?)(?:\\|.*)?\\}"), "$1")
+    cleaned = cleaned.replace(Regex("\\{@atk mw\\}"), "Melee Weapon Attack: ")
+    cleaned = cleaned.replace(Regex("\\{@atk rw\\}"), "Ranged Weapon Attack: ")
+    cleaned = cleaned.replace(Regex("\\{@h\\}"), "Hit: ")
+    cleaned = cleaned.replace(Regex("\\{@recharge (\\d+)\\}"), "(Recharge $1–6)")
+    cleaned = cleaned.replace(Regex("\\{@i ([^}]+)\\}"), "$1")
     return cleaned
 }
 
@@ -1548,4 +1359,209 @@ private fun calculateModifier(stat: Int?): Int? {
 
 private fun formatModifier(modifier: Int): String {
     return if (modifier >= 0) "+$modifier" else modifier.toString()
+}
+
+// Calcular el promedio de una tirada de dados
+private fun calculateDiceAverage(numDice: Int, dieSides: Int, bonus: Int? = null): Int {
+    val averagePerDie = (dieSides + 1) / 2.0
+    val totalAverage = (numDice * averagePerDie).toInt()
+    return totalAverage + (bonus ?: 0)
+}
+
+// Datos de la tirada de dados
+data class DiceRollData(
+    val numDice: Int,
+    val dieSides: Int,
+    val bonus: Int? = null,
+    val type: String = "damage", // "damage", "dice", "hit", "scaledice", "scaledamage"
+    val scaledDie: String? = null,
+    val levelRange: String? = null
+)
+
+// Construye un AnnotatedString con partes clicables
+@Composable
+fun buildDamageAnnotatedString(
+    text: String,
+    diceDataList: MutableList<DiceRollData>
+): AnnotatedString {
+    val pattern = Regex(
+        "\\{@damage\\s*(\\d+d\\d+\\s*[+\\s]\\s*\\d+|\\d+d\\d+)\\}|" +
+                "\\{@hit\\s*(\\d+)\\}\\s*to hit|" +
+                "\\{@hit\\s*(\\d+)\\}|" +
+                "\\{@dice\\s*(\\d*d\\d+)\\}|" +
+                "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
+                "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
+                "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}"
+    )
+    val matches = pattern.findAll(text).toList()
+    diceDataList.clear()
+
+    return buildAnnotatedString {
+        var lastIndex = 0
+        var hitAdded = false // Reset for each call
+
+        matches.forEachIndexed { index, matchResult ->
+            val start = matchResult.range.first
+            val end = matchResult.range.last + 1
+
+            // Append the text before the match
+            append(text.substring(lastIndex, start))
+
+            when {
+                matchResult.value.startsWith("{@damage") -> {
+                    val damage = matchResult.groupValues[1].trim().replace("\\s+".toRegex(), " ")
+                    val parts = damage.split("[+\\s]".toRegex()).filter { it.isNotEmpty() }
+                    if (parts.size == 1) {
+                        val (numDice, dieSides) = parts[0].split("d").map { it.toIntOrNull() ?: 0 }
+                        if (numDice > 0 && dieSides > 0) {
+                            diceDataList.add(DiceRollData(numDice, dieSides, type = "damage"))
+                            pushStringAnnotation(tag = "damage", annotation = index.toString())
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                                append(damage)
+                            }
+                            pop()
+                        }
+                    } else if (parts.size == 2) {
+                        val (dicePart, bonusPart) = parts
+                        val (numDice, dieSides) = dicePart.split("d").map { it.toIntOrNull() ?: 0 }
+                        val bonus = bonusPart.toIntOrNull() ?: 0
+                        if (numDice > 0 && dieSides > 0) {
+                            diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
+                            pushStringAnnotation(tag = "damage", annotation = index.toString())
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                                append("$numDice d$dieSides + $bonus")
+                            }
+                            pop()
+                        }
+                    }
+                }
+                matchResult.value.startsWith("{@hit") -> {
+                    val bonus = if (matchResult.groupValues[2].isNotEmpty()) {
+                        matchResult.groupValues[2].toIntOrNull() ?: 0
+                    } else {
+                        matchResult.groupValues[3].toIntOrNull() ?: 0
+                    }
+                    if (!hitAdded) {
+                        diceDataList.add(DiceRollData(numDice = 1, dieSides = 20, bonus = bonus, type = "hit"))
+                        pushStringAnnotation(tag = "damage", annotation = index.toString())
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                            append("${formatModifier(bonus)} to hit")
+                        }
+                        pop()
+                        hitAdded = true
+                    }
+                }
+                matchResult.value.startsWith("{@dice") -> {
+                    val dice = matchResult.groupValues[4].replace("\\s+".toRegex(), "")
+                    val parts = dice.split("d")
+                    val numDice = if (parts[0].isEmpty()) 1 else parts[0].toIntOrNull() ?: 0
+                    val dieSides = parts[1].toIntOrNull() ?: 0
+                    if (numDice > 0 && dieSides > 0) {
+                        diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
+                        pushStringAnnotation(tag = "damage", annotation = index.toString())
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                            append(dice)
+                        }
+                        pop()
+                    }
+                }
+                matchResult.value.startsWith("{@scaledice") -> {
+                    val scaledDie = matchResult.groupValues[5].replace("\\s+".toRegex(), "")
+                    val levelRange = matchResult.groupValues[6]
+                    val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toIntOrNull() ?: 0 }
+                    if (scaledNumDice > 0 && scaledDieSides > 0) {
+                        diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledice", scaledDie = scaledDie, levelRange = levelRange))
+                        pushStringAnnotation(tag = "damage", annotation = index.toString())
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                            append(scaledDie)
+                        }
+                        pop()
+                    }
+                }
+                matchResult.value.startsWith("{@scaledamage") -> {
+                    val scaledDie = matchResult.groupValues[8].replace("\\s+".toRegex(), "")
+                    val levelRange = matchResult.groupValues[9]
+                    val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toIntOrNull() ?: 0 }
+                    if (scaledNumDice > 0 && scaledDieSides > 0) {
+                        diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledamage", scaledDie = scaledDie, levelRange = levelRange))
+                        pushStringAnnotation(tag = "damage", annotation = index.toString())
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                            append(scaledDie)
+                        }
+                        pop()
+                    }
+                }
+                matchResult.value.startsWith("{@condition") -> {
+                    val condition = matchResult.groupValues[10]
+                    val display = when (condition) {
+                        "deafened||deaf" -> "deafened"
+                        "blinded||blind" -> "blinded"
+                        else -> condition
+                    }
+                    pushStringAnnotation(tag = "condition", annotation = condition)
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                        append(display)
+                    }
+                    pop()
+                }
+            }
+            lastIndex = end
+        }
+        // Append the remaining text after the last match
+        append(text.substring(lastIndex))
+    }
+}
+
+// Función para realizar la tirada de dados
+fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
+    val baseNumDice = dice.numDice
+    val scaledNumDice = if (dice.type == "scaledice" || dice.type == "scaledamage") {
+        val levelRange = dice.levelRange?.split("-")?.map { it.toInt() } ?: listOf(1, 9)
+        val minLevel = levelRange[0]
+        val maxLevel = levelRange[1]
+        if (slotLevel in minLevel..maxLevel) {
+            val levelAdjustment = slotLevel - minLevel + 1
+            baseNumDice * levelAdjustment
+        } else {
+            baseNumDice
+        }
+    } else {
+        baseNumDice
+    }
+    val dieSides = when (dice.type) {
+        "hit" -> 20 // Usar d20 para "to hit"
+        else -> dice.dieSides
+    }
+    val rolls = (1..scaledNumDice).map { Random.nextInt(1, dieSides + 1) }
+    val total = rolls.sum() + (dice.bonus ?: 0)
+    return rolls to total
+}
+
+// Construye el texto del desglose con colores para máximo y mínimo
+fun buildDiceRollBreakdown(
+    rolls: List<Int>,
+    dieSides: Int,
+    bonus: Int?,
+    defaultColor: Color
+): AnnotatedString {
+    return buildAnnotatedString {
+        rolls.forEachIndexed { index, roll ->
+            val color = when {
+                roll == dieSides -> Color.Green
+                roll == 1 -> Color.Red
+                else -> defaultColor
+            }
+            withStyle(style = SpanStyle(color = color)) {
+                append(roll.toString())
+            }
+            if (index < rolls.size - 1 || bonus != null) {
+                append(" + ")
+            }
+        }
+        if (bonus != null) {
+            withStyle(style = SpanStyle(color = defaultColor)) {
+                append(bonus.toString())
+            }
+        }
+    }
 }
