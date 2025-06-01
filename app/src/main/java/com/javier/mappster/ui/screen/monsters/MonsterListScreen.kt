@@ -28,6 +28,8 @@ import com.javier.mappster.model.Monster
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLEncoder
 
 @Composable
@@ -161,33 +163,85 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            Text(
-                text = monster.name ?: "Unknown",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.1.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            monster.cr?.let { cr ->
+            // Fila superior: Nombre (izquierda) y CR (derecha)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = "CR ${cr.value ?: "Unknown"}",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = defaultColor.copy(alpha = 0.9f),
-                        fontWeight = FontWeight.Bold
+                    text = monster.name ?: "Unknown",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.1.sp
                     ),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.weight(1f)
                 )
+                monster.cr?.let { cr ->
+                    val crValue = cr.value?.toDoubleOrNull() ?: 0.0
+                    val crText = when {
+                        crValue == 0.5 -> "1/2"
+                        crValue == 0.25 -> "1/4"
+                        crValue == 0.125 -> "1/8"
+                        else -> crValue.toString()
+                    }
+                    Text(
+                        text = "CR: $crText",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = defaultColor.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Fila inferior: Tamaño/Tipo/Alineamiento (izquierda) y Fuente (derecha)
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.weight(1f))
+                // Tamaño, Tipo y Alineamiento
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val sizeText = monster.size?.firstOrNull()?.let { size ->
+                        when (size.uppercase()) {
+                            "M" -> "Medium"
+                            "L" -> "Large"
+                            "S" -> "Small"
+                            "T" -> "Tiny"
+                            "H" -> "Huge"
+                            "G" -> "Gargantuan"
+                            else -> size
+                        }
+                    } ?: "Unknown"
 
+                    val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+
+                    val alignmentText = monster.alignment?.flatMap { it.values.orEmpty() }?.joinToString(" ") { align ->
+                        when (align.uppercase()) {
+                            "L" -> "Lawful"
+                            "N" -> "Neutral"
+                            "C" -> "Chaotic"
+                            "G" -> "Good"
+                            "E" -> "Evil"
+                            "A" -> "Any alignment"
+                            else -> align
+                        }
+                    }?.let { if (it.isNotEmpty()) " $it" else "" } ?: ""
+
+                    Text(
+                        text = "$sizeText $typeText$alignmentText",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Fuente
                 Text(
                     text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
                     style = MaterialTheme.typography.labelSmall.copy(

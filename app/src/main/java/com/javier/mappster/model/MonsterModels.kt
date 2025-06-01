@@ -79,7 +79,8 @@ data class Monster(
     val alignmentPrefix: String? = null,
     @Serializable(with = PassiveSerializer::class)
     val passive: Passive? = null,
-    val save: Save? = null // Nuevo campo para tiradas de salvación
+    val save: Save? = null,
+    val trait: List<Trait>? = null
 )
 
 @Serializable
@@ -506,11 +507,17 @@ object PassiveSerializer : KSerializer<Passive> {
 
 @Serializable
 data class Save(
-    val str: String? = null, // Strength save modifier
-    val dex: String? = null, // Dexterity save modifier
-    val con: String? = null, // Constitution save modifier
+    val str: String? = null,
+    val dex: String? = null,
+    val con: String? = null,
     @SerialName("int")
-    val int: String? = null, // Intelligence save modifier
-    val wis: String? = null, // Wisdom save modifier
-    val cha: String? = null  // Charisma save modifier
+    val int: String? = null,
+    val wis: String? = null,
+    val cha: String? = null
+)
+
+@Serializable
+data class Trait(
+    val name: String? = null,
+    val entries: List<JsonElement>? = null // Cambiado de List<String> a List<JsonElement>
 )
