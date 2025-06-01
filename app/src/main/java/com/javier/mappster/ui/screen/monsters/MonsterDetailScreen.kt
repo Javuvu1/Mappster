@@ -173,6 +173,11 @@ fun MonsterDetailScreen(monster: Monster) {
 
             // Sección: Bonus Actions
             MonsterBonusActions(monster, onDiceRollClick, onConditionClick)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sección: Reactions
+            MonsterReactions(monster, onDiceRollClick, onConditionClick)
         }
     }
 
@@ -1370,6 +1375,129 @@ fun MonsterBonusActions(
                         modifier = Modifier.padding(start = 8.dp, top = 8.dp)
                     )
                     bonus.entries?.forEach { entry ->
+                        when (entry) {
+                            is JsonPrimitive -> {
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val cleanedText = cleanTraitEntry(entry.contentOrNull ?: "Unknown")
+                                val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                ClickableText(
+                                    text = annotatedText,
+                                    onClick = { offset ->
+                                        annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val index = annotation.item.toInt()
+                                                onDiceRollClick(diceDataList[index])
+                                            }
+                                        annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                onConditionClick(annotation.item)
+                                            }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                            is JsonObject -> {
+                                val type = entry["type"]?.jsonPrimitive?.contentOrNull
+                                if (type == "list") {
+                                    Text(
+                                        text = "List:",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                    entry["items"]?.jsonArray?.forEach { item ->
+                                        val itemText = if (item is JsonPrimitive) {
+                                            item.contentOrNull ?: "Unknown"
+                                        } else {
+                                            "Unsupported item format"
+                                        }
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val cleanedText = cleanTraitEntry(itemText)
+                                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                                        ClickableText(
+                                            text = annotatedText,
+                                            onClick = { offset ->
+                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        val index = annotation.item.toInt()
+                                                        onDiceRollClick(diceDataList[index])
+                                                    }
+                                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        onConditionClick(annotation.item)
+                                                    }
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                            modifier = Modifier.padding(start = 24.dp, top = 2.dp)
+                                        )
+                                    }
+                                } else {
+                                    val text = when {
+                                        entry.containsKey("damage") && entry.containsKey("type") -> {
+                                            "${entry["damage"]?.jsonPrimitive?.contentOrNull} ${entry["type"]?.jsonPrimitive?.contentOrNull} damage"
+                                        }
+                                        else -> entry.toString()
+                                    }
+                                    Text(
+                                        text = text,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Text(
+                                    text = "Unsupported entry format",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterReactions(
+    monster: Monster,
+    onDiceRollClick: (DiceRollData) -> Unit,
+    onConditionClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Reactions:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (monster.reaction.isNullOrEmpty()) {
+                Text(
+                    text = "No reactions available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            } else {
+                monster.reaction.forEach { reaction ->
+                    val reactionName = cleanTraitEntry(reaction.name ?: "Unnamed Reaction")
+                    Text(
+                        text = "$reactionName",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                    )
+                    reaction.entries?.forEach { entry ->
                         when (entry) {
                             is JsonPrimitive -> {
                                 val diceDataList = remember { mutableListOf<DiceRollData>() }

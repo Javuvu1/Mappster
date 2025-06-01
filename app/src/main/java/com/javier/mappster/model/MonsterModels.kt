@@ -87,7 +87,9 @@ data class Monster(
     @Serializable(with = ActionListSerializer::class)
     val action: List<Action>? = null,
     @Serializable(with = BonusListSerializer::class)
-    val bonus: List<Bonus>? = null
+    val bonus: List<Bonus>? = null,
+    @Serializable(with = ReactionListSerializer::class)
+    val reaction: List<Reaction>? = null
 )
 
 @Serializable
@@ -640,6 +642,53 @@ object BonusListSerializer : KSerializer<List<Bonus>> {
                 }
             }
             else -> throw IllegalStateException("Unexpected JSON format for bonus list: $jsonElement")
+        }
+    }
+}
+
+@Serializable
+data class Reaction(
+    val name: String? = null,
+    val entries: List<JsonElement>? = null
+)
+
+object ReactionListSerializer : KSerializer<List<Reaction>> {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Reaction>()
+
+    override fun serialize(encoder: Encoder, value: List<Reaction>) {
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Reaction>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Reaction>>(), value)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<Reaction> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonArray -> {
+                jsonElement.map { element ->
+                    when {
+                        element is JsonObject -> {
+                            val name = element["name"]?.jsonPrimitive?.contentOrNull
+                            val entries = element["entries"]?.let { entriesElement ->
+                                when {
+                                    entriesElement is JsonArray -> entriesElement.toList()
+                                    entriesElement is JsonPrimitive -> listOf(entriesElement)
+                                    entriesElement is JsonObject -> listOf(entriesElement)
+                                    else -> emptyList()
+                                }
+                            } ?: emptyList()
+                            Reaction(name = name, entries = entries)
+                        }
+                        else -> throw IllegalStateException("Unexpected JSON element in reaction list: $element")
+                    }
+                }
+            }
+            else -> throw IllegalStateException("Unexpected JSON format for reaction list: $jsonElement")
         }
     }
 }
