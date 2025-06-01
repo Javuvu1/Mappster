@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.contentOrNull
@@ -89,7 +90,9 @@ data class Monster(
     @Serializable(with = BonusListSerializer::class)
     val bonus: List<Bonus>? = null,
     @Serializable(with = ReactionListSerializer::class)
-    val reaction: List<Reaction>? = null
+    val reaction: List<Reaction>? = null,
+    @Serializable(with = SpellcastingListSerializer::class)
+    val spellcasting: List<Spellcasting>? = null
 )
 
 @Serializable
@@ -689,6 +692,151 @@ object ReactionListSerializer : KSerializer<List<Reaction>> {
                 }
             }
             else -> throw IllegalStateException("Unexpected JSON format for reaction list: $jsonElement")
+        }
+    }
+}
+
+@Serializable
+data class Spellcasting(
+    val name: String? = null,
+    val type: String? = null,
+    val headerEntries: List<String>? = null,
+    val spells: Map<String, SpellLevel>? = null,
+    val daily: Map<String, List<DailySpell>>? = null,
+    val will: List<DailySpell>? = null,
+    val ability: String? = null,
+    val displayAs: String? = null,
+    val hidden: List<String>? = null
+)
+
+@Serializable
+data class SpellLevel(
+    val slots: Int? = null,
+    val spells: List<String>? = null
+)
+
+@Serializable
+data class DailySpell(
+    val entry: String? = null,
+    val hidden: Boolean? = null
+)
+
+object SpellcastingListSerializer : KSerializer<List<Spellcasting>> {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Spellcasting>()
+
+    override fun serialize(encoder: Encoder, value: List<Spellcasting>) {
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Spellcasting>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Spellcasting>>(), value)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<Spellcasting> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonArray -> {
+                jsonElement.map { element ->
+                    if (element !is JsonObject) {
+                        throw IllegalStateException("Expected a JsonObject in spellcasting list, but found: $element")
+                    }
+
+                    // Helper function to safely extract a string from a JsonElement
+                    fun extractString(fieldName: String, jsonElement: JsonElement?): String? {
+                        return when (jsonElement) {
+                            is JsonPrimitive -> jsonElement.contentOrNull
+                            is JsonObject -> throw IllegalStateException("Expected a JsonPrimitive for '$fieldName', but found a JsonObject: $jsonElement")
+                            else -> null
+                        }
+                    }
+
+                    // Helper function to safely extract a list of strings from a JsonElement
+                    fun extractStringList(fieldName: String, jsonElement: JsonElement?): List<String>? {
+                        return when (jsonElement) {
+                            is JsonArray -> jsonElement.map { item ->
+                                if (item is JsonPrimitive) {
+                                    item.contentOrNull
+                                } else {
+                                    throw IllegalStateException("Expected a JsonPrimitive in '$fieldName' list, but found: $item")
+                                }
+                            }.filterNotNull()
+                            is JsonObject -> throw IllegalStateException("Expected a JsonArray for '$fieldName', but found a JsonObject: $jsonElement")
+                            else -> null
+                        }
+                    }
+
+                    // Helper function to safely extract an integer from a JsonElement
+                    fun extractInt(fieldName: String, jsonElement: JsonElement?): Int? {
+                        return when (jsonElement) {
+                            is JsonPrimitive -> jsonElement.intOrNull
+                            is JsonObject -> throw IllegalStateException("Expected a JsonPrimitive for '$fieldName', but found a JsonObject: $jsonElement")
+                            else -> null
+                        }
+                    }
+
+                    // Helper function to safely extract a DailySpell from a JsonElement
+                    fun extractDailySpell(fieldName: String, jsonElement: JsonElement?): DailySpell? {
+                        return when (jsonElement) {
+                            is JsonPrimitive -> DailySpell(entry = jsonElement.contentOrNull)
+                            is JsonObject -> DailySpell(
+                                entry = jsonElement["entry"]?.jsonPrimitive?.contentOrNull,
+                                hidden = jsonElement["hidden"]?.jsonPrimitive?.booleanOrNull
+                            )
+                            else -> null
+                        }
+                    }
+
+                    val spellsMap = element["spells"]?.let { spellsElement ->
+                        if (spellsElement !is JsonObject) {
+                            throw IllegalStateException("Expected a JsonObject for 'spells', but found: $spellsElement")
+                        }
+                        spellsElement.jsonObject.mapValues { (key, value) ->
+                            if (value !is JsonObject) {
+                                throw IllegalStateException("Expected a JsonObject for spell level '$key', but found: $value")
+                            }
+                            SpellLevel(
+                                slots = extractInt("slots", value.jsonObject["slots"]),
+                                spells = extractStringList("spells", value.jsonObject["spells"])
+                            )
+                        }
+                    }
+
+                    val dailyMap = element["daily"]?.let { dailyElement ->
+                        if (dailyElement !is JsonObject) {
+                            throw IllegalStateException("Expected a JsonObject for 'daily', but found: $dailyElement")
+                        }
+                        dailyElement.jsonObject.mapValues { (key, value) ->
+                            if (value !is JsonArray) {
+                                throw IllegalStateException("Expected a JsonArray for daily spells under '$key', but found: $value")
+                            }
+                            value.jsonArray.mapNotNull { extractDailySpell("daily[$key]", it) }
+                        }
+                    }
+
+                    val willList = element["will"]?.let { willElement ->
+                        if (willElement !is JsonArray) {
+                            throw IllegalStateException("Expected a JsonArray for 'will', but found: $willElement")
+                        }
+                        willElement.jsonArray.mapNotNull { extractDailySpell("will", it) }
+                    }
+
+                    Spellcasting(
+                        name = extractString("name", element["name"]),
+                        type = extractString("type", element["type"]),
+                        headerEntries = extractStringList("headerEntries", element["headerEntries"]),
+                        spells = spellsMap,
+                        daily = dailyMap,
+                        will = willList,
+                        ability = extractString("ability", element["ability"]),
+                        displayAs = extractString("displayAs", element["displayAs"]),
+                        hidden = extractStringList("hidden", element["hidden"])
+                    )
+                }
+            }
+            else -> throw IllegalStateException("Unexpected JSON format for spellcasting list: $jsonElement")
         }
     }
 }
