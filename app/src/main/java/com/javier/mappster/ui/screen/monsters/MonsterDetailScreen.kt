@@ -26,13 +26,14 @@ import com.javier.mappster.model.*
 import com.javier.mappster.ui.screen.monsters.MonsterActions
 import com.javier.mappster.ui.screen.monsters.MonsterBonusActions
 import com.javier.mappster.ui.screen.monsters.MonsterCombatStats
-import com.javier.mappster.ui.screen.monsters.MonsterInfoSection
 import com.javier.mappster.ui.screen.monsters.MonsterLanguages
+import com.javier.mappster.ui.screen.monsters.MonsterLegendary
 import com.javier.mappster.ui.screen.monsters.MonsterReactions
 import com.javier.mappster.ui.screen.monsters.MonsterResistancesAndImmunities
 import com.javier.mappster.ui.screen.monsters.MonsterSenses
 import com.javier.mappster.ui.screen.monsters.MonsterSkills
 import com.javier.mappster.ui.screen.monsters.MonsterSpeed
+import com.javier.mappster.ui.screen.monsters.MonsterSpellcasting
 import com.javier.mappster.ui.screen.monsters.MonsterStats
 import com.javier.mappster.ui.screen.monsters.MonsterTraits
 import com.javier.mappster.utils.conditionDescriptions
@@ -353,204 +354,81 @@ fun MonsterDetailScreen(monster: Monster) {
     }
 }
 
-// Nueva sección para Spellcasting
 @Composable
-fun MonsterSpellcasting(
-    monster: Monster,
-    onConditionClick: (String) -> Unit
-) {
+fun MonsterInfoSection(monster: Monster) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "Spellcasting:",
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val sizeText = monster.size?.firstOrNull()?.let { size ->
+                    when (size.uppercase()) {
+                        "M" -> "Medium"
+                        "L" -> "Large"
+                        "S" -> "Small"
+                        "T" -> "Tiny"
+                        "H" -> "Huge"
+                        "G" -> "Gargantuan"
+                        else -> size
+                    }
+                } ?: "Unknown"
 
-            if (monster.spellcasting.isNullOrEmpty()) {
+                val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+
+                val alignmentText = monster.alignment?.flatMap { it.values.orEmpty() }?.joinToString(" ") { align ->
+                    when (align.uppercase()) {
+                        "L" -> "Lawful"
+                        "N" -> "Neutral"
+                        "C" -> "Chaotic"
+                        "G" -> "Good"
+                        "E" -> "Evil"
+                        "A" -> "Any alignment"
+                        else -> align
+                    }
+                }?.let { if (it.isNotEmpty()) ", $it" else "" } ?: ""
+
                 Text(
-                    text = "No spellcasting available",
+                    text = "$sizeText $typeText$alignmentText",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                    color = MaterialTheme.colorScheme.onSurface // Fixed: Changed MonsterInfoSection.colorScheme to MaterialTheme.colorScheme
                 )
-            } else {
-                monster.spellcasting.forEach { spellcasting ->
-                    // Nombre del tipo de spellcasting (por ejemplo, "Innate Spellcasting")
-                    spellcasting.name?.let { name ->
-                        Text(
-                            text = cleanTraitEntry(name),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, top = 8.dp)
-                        )
-                    }
+            }
 
-                    // Entradas de cabecera (headerEntries)
-                    spellcasting.headerEntries?.forEach { entry ->
-                        val diceDataList = remember { mutableListOf<DiceRollData>() }
-                        val cleanedText = cleanTraitEntry(entry)
-                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
-                        ClickableText(
-                            text = annotatedText,
-                            onClick = { offset ->
-                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
-                                    .firstOrNull()?.let { annotation ->
-                                        onConditionClick(annotation.item)
-                                    }
-                            },
-                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier
+            ) {
+                monster.cr?.let { cr ->
+                    val crValue = cr.value?.toDoubleOrNull() ?: 0.0
+                    val crText = when {
+                        crValue == 0.5 -> "1/2"
+                        crValue == 0.25 -> "1/4"
+                        crValue == 0.125 -> "1/8"
+                        else -> crValue.toString()
                     }
-
-                    // Hechizos por nivel (spells)
-                    spellcasting.spells?.forEach { (level, spellLevel) ->
-                        Text(
-                            text = "Level $level (${spellLevel.slots ?: 0} slots):",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
-                        spellLevel.spells?.joinToString(", ") { cleanTraitEntry(it) }?.let { spellsText ->
-                            val diceDataList = remember { mutableListOf<DiceRollData>() }
-                            val annotatedText = buildDamageAnnotatedString(spellsText, diceDataList)
-                            ClickableText(
-                                text = annotatedText,
-                                onClick = { offset ->
-                                    annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
-                                        .firstOrNull()?.let { annotation ->
-                                            onConditionClick(annotation.item)
-                                        }
-                                },
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                modifier = Modifier.padding(start = 24.dp, top = 2.dp)
-                            )
-                        }
-                    }
-
-                    // Hechizos "a voluntad" (will)
-                    spellcasting.will?.let { willSpells ->
-                        Text(
-                            text = "At Will:",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
-                        willSpells.joinToString(", ") { it.entry ?: "Unknown" }.let { willText ->
-                            val diceDataList = remember { mutableListOf<DiceRollData>() }
-                            val cleanedText = cleanTraitEntry(willText)
-                            val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
-                            ClickableText(
-                                text = annotatedText,
-                                onClick = { offset ->
-                                    annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
-                                        .firstOrNull()?.let { annotation ->
-                                            onConditionClick(annotation.item)
-                                        }
-                                },
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                modifier = Modifier.padding(start = 24.dp, top = 2.dp)
-                            )
-                        }
-                    }
-
-                    // Hechizos diarios (daily)
-                    spellcasting.daily?.forEach { (frequency, dailySpells) ->
-                        Text(
-                            text = "${frequency.replace("e", "")}:",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
-                        dailySpells.joinToString(", ") { it.entry ?: "Unknown" }.let { dailyText ->
-                            val diceDataList = remember { mutableListOf<DiceRollData>() }
-                            val cleanedText = cleanTraitEntry(dailyText)
-                            val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
-                            ClickableText(
-                                text = annotatedText,
-                                onClick = { offset ->
-                                    annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
-                                        .firstOrNull()?.let { annotation ->
-                                            onConditionClick(annotation.item)
-                                        }
-                                },
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                modifier = Modifier.padding(start = 24.dp, top = 2.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "CR: $crText",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
     }
 }
 
-// Nueva sección para Legendary Actions
-@Composable
-fun MonsterLegendary(
-    monster: Monster,
-    onDiceRollClick: (DiceRollData) -> Unit,
-    onConditionClick: (String) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "Legendary Actions",
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
 
-            if (monster.legendary.isNullOrEmpty()) {
-                Text(
-                    text = "No legendary actions available",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
-                )
-            } else {
-                monster.legendary.forEach { legendary ->
-                    legendary.name?.let { name ->
-                        Text(
-                            text = cleanTraitEntry(name),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, top = 8.dp)
-                        )
-                    }
-
-                    legendary.entries?.forEach { entry ->
-                        val diceDataList = remember { mutableListOf<DiceRollData>() }
-                        val cleanedText = cleanTraitEntry(entry.toString())
-                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
-                        ClickableText(
-                            text = annotatedText,
-                            onClick = { offset ->
-                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
-                                    .firstOrNull()?.let { annotation ->
-                                        onConditionClick(annotation.item)
-                                    }
-                                diceDataList.getOrNull(0)?.let { diceData ->
-                                    onDiceRollClick(diceData)
-                                }
-                            },
-                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 // Función para limpiar las etiquetas de las entradas de los rasgos
 fun cleanTraitEntry(entry: String): String {
