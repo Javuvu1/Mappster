@@ -92,7 +92,9 @@ data class Monster(
     @Serializable(with = ReactionListSerializer::class)
     val reaction: List<Reaction>? = null,
     @Serializable(with = SpellcastingListSerializer::class)
-    val spellcasting: List<Spellcasting>? = null
+    val spellcasting: List<Spellcasting>? = null,
+    @Serializable(with = LegendaryListSerializer::class)
+    val legendary: List<Legendary>? = null
 )
 
 @Serializable
@@ -837,6 +839,53 @@ object SpellcastingListSerializer : KSerializer<List<Spellcasting>> {
                 }
             }
             else -> throw IllegalStateException("Unexpected JSON format for spellcasting list: $jsonElement")
+        }
+    }
+}
+
+@Serializable
+data class Legendary(
+    val name: String? = null,
+    val entries: List<JsonElement>? = null
+)
+
+object LegendaryListSerializer : KSerializer<List<Legendary>> {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Legendary>()
+
+    override fun serialize(encoder: Encoder, value: List<Legendary>) {
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Legendary>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Legendary>>(), value)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<Legendary> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonArray -> {
+                jsonElement.map { element ->
+                    when {
+                        element is JsonObject -> {
+                            val name = element["name"]?.jsonPrimitive?.contentOrNull
+                            val entries = element["entries"]?.let { entriesElement ->
+                                when {
+                                    entriesElement is JsonArray -> entriesElement.toList()
+                                    entriesElement is JsonPrimitive -> listOf(entriesElement)
+                                    entriesElement is JsonObject -> listOf(entriesElement)
+                                    else -> emptyList()
+                                }
+                            } ?: emptyList()
+                            Legendary(name = name, entries = entries)
+                        }
+                        else -> throw IllegalStateException("Unexpected JSON element in legendary list: $element")
+                    }
+                }
+            }
+            else -> throw IllegalStateException("Unexpected JSON format for legendary list: $jsonElement")
         }
     }
 }

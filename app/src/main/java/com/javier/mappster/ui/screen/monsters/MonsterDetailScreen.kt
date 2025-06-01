@@ -193,8 +193,13 @@ fun MonsterDetailScreen(monster: Monster) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Nueva sección: Spellcasting
+            // Sección: Spellcasting
             MonsterSpellcasting(monster, onConditionClick)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Nueva sección: Legendary Actions
+            MonsterLegendary(monster, onDiceRollClick, onConditionClick)
         }
     }
 
@@ -478,6 +483,68 @@ fun MonsterSpellcasting(
                                 modifier = Modifier.padding(start = 24.dp, top = 2.dp)
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Nueva sección para Legendary Actions
+@Composable
+fun MonsterLegendary(
+    monster: Monster,
+    onDiceRollClick: (DiceRollData) -> Unit,
+    onConditionClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Legendary Actions",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (monster.legendary.isNullOrEmpty()) {
+                Text(
+                    text = "No legendary actions available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            } else {
+                monster.legendary.forEach { legendary ->
+                    legendary.name?.let { name ->
+                        Text(
+                            text = cleanTraitEntry(name),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                        )
+                    }
+
+                    legendary.entries?.forEach { entry ->
+                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                        val cleanedText = cleanTraitEntry(entry.toString())
+                        val annotatedText = buildDamageAnnotatedString(cleanedText, diceDataList)
+                        ClickableText(
+                            text = annotatedText,
+                            onClick = { offset ->
+                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                    .firstOrNull()?.let { annotation ->
+                                        onConditionClick(annotation.item)
+                                    }
+                                diceDataList.getOrNull(0)?.let { diceData ->
+                                    onDiceRollClick(diceData)
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
                     }
                 }
             }
