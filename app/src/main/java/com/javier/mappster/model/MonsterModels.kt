@@ -85,7 +85,9 @@ data class Monster(
     val save: Save? = null,
     val trait: List<Trait>? = null,
     @Serializable(with = ActionListSerializer::class)
-    val action: List<Action>? = null
+    val action: List<Action>? = null,
+    @Serializable(with = BonusListSerializer::class)
+    val bonus: List<Bonus>? = null
 )
 
 @Serializable
@@ -551,7 +553,7 @@ data class Trait(
 @Serializable
 data class Action(
     val name: String? = null,
-    val entries: List<JsonElement>? = null // Cambiado a List<JsonElement>? para manejar objetos y cadenas
+    val entries: List<JsonElement>? = null
 )
 
 object ActionListSerializer : KSerializer<List<Action>> {
@@ -578,7 +580,7 @@ object ActionListSerializer : KSerializer<List<Action>> {
                             val name = element["name"]?.jsonPrimitive?.contentOrNull
                             val entries = element["entries"]?.let { entriesElement ->
                                 when {
-                                    entriesElement is JsonArray -> entriesElement.toList() // Mantiene todos los elementos (cadenas, objetos, etc.)
+                                    entriesElement is JsonArray -> entriesElement.toList()
                                     entriesElement is JsonPrimitive -> listOf(entriesElement)
                                     entriesElement is JsonObject -> listOf(entriesElement)
                                     else -> emptyList()
@@ -591,6 +593,53 @@ object ActionListSerializer : KSerializer<List<Action>> {
                 }
             }
             else -> throw IllegalStateException("Unexpected JSON format for action list: $jsonElement")
+        }
+    }
+}
+
+@Serializable
+data class Bonus(
+    val name: String? = null,
+    val entries: List<JsonElement>? = null
+)
+
+object BonusListSerializer : KSerializer<List<Bonus>> {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Bonus>()
+
+    override fun serialize(encoder: Encoder, value: List<Bonus>) {
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Bonus>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Bonus>>(), value)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<Bonus> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can only be used with JSON")
+        val jsonElement = jsonDecoder.decodeJsonElement()
+
+        return when {
+            jsonElement is JsonArray -> {
+                jsonElement.map { element ->
+                    when {
+                        element is JsonObject -> {
+                            val name = element["name"]?.jsonPrimitive?.contentOrNull
+                            val entries = element["entries"]?.let { entriesElement ->
+                                when {
+                                    entriesElement is JsonArray -> entriesElement.toList()
+                                    entriesElement is JsonPrimitive -> listOf(entriesElement)
+                                    entriesElement is JsonObject -> listOf(entriesElement)
+                                    else -> emptyList()
+                                }
+                            } ?: emptyList()
+                            Bonus(name = name, entries = entries)
+                        }
+                        else -> throw IllegalStateException("Unexpected JSON element in bonus list: $element")
+                    }
+                }
+            }
+            else -> throw IllegalStateException("Unexpected JSON format for bonus list: $jsonElement")
         }
     }
 }
