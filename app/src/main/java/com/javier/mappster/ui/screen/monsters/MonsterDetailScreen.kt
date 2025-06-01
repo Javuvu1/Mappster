@@ -178,6 +178,11 @@ fun MonsterDetailScreen(monster: Monster) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Sección: Spellcasting
+            MonsterSpellcasting(monster, onConditionClick)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Sección: Actions
             MonsterActions(monster, onDiceRollClick, onConditionClick)
 
@@ -190,11 +195,6 @@ fun MonsterDetailScreen(monster: Monster) {
 
             // Sección: Reactions
             MonsterReactions(monster, onDiceRollClick, onConditionClick)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Sección: Spellcasting
-            MonsterSpellcasting(monster, onConditionClick)
 
             Spacer(modifier = Modifier.height(12.dp))
 
