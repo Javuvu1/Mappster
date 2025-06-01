@@ -372,7 +372,7 @@ fun MonsterInfoSection(monster: Monster) {
 
                 val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
 
-                val alignmentText = monster.alignment?.flatMap { it.values.orEmpty() }?.joinToString(" ") { align ->
+                val alignmentText = monster.alignment?.joinToString(" ") { align ->
                     when (align.uppercase()) {
                         "L" -> "Lawful"
                         "N" -> "Neutral"
@@ -382,12 +382,12 @@ fun MonsterInfoSection(monster: Monster) {
                         "A" -> "Any alignment"
                         else -> align
                     }
-                }?.let { if (it.isNotEmpty()) ", $it" else "" } ?: ""
+                }?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
 
                 Text(
                     text = "$sizeText $typeText$alignmentText",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface // Fixed: Changed MonsterInfoSection.colorScheme to MaterialTheme.colorScheme
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -396,13 +396,8 @@ fun MonsterInfoSection(monster: Monster) {
                 modifier = Modifier
             ) {
                 monster.cr?.let { cr ->
-                    val crValue = cr.value?.toDoubleOrNull() ?: 0.0
-                    val crText = when {
-                        crValue == 0.5 -> "1/2"
-                        crValue == 0.25 -> "1/4"
-                        crValue == 0.125 -> "1/8"
-                        else -> crValue.toString()
-                    }
+                    // Mostramos directamente el valor del CR como String
+                    val crText = cr.value ?: "?"
                     Text(
                         text = "CR: $crText",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),

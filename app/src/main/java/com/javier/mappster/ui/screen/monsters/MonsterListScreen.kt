@@ -194,18 +194,14 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 monster.cr?.let { cr ->
-                    val crValue = cr.value?.toDoubleOrNull() ?: 0.0
-                    val crText = when {
-                        crValue == 0.5 -> "1/2"
-                        crValue == 0.25 -> "1/4"
-                        crValue == 0.125 -> "1/8"
-                        else -> crValue.toString()
-                    }
+                    // Mostramos directamente el valor del CR como String con fuente más grande
+                    val crText = cr.value ?: "?"
                     Text(
                         text = "CR: $crText",
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = defaultColor.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
                         )
                     )
                 }
@@ -213,7 +209,7 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Fila inferior: Tamaño/Tipo/Alineamiento (izquierda) y Fuente (derecha)
+            // Resto del código permanece igual...
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -238,7 +234,7 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
 
                     val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
 
-                    val alignmentText = monster.alignment?.flatMap { it.values.orEmpty() }?.joinToString(" ") { align ->
+                    val alignmentText = monster.alignment?.joinToString(" ") { align ->
                         when (align.uppercase()) {
                             "L" -> "Lawful"
                             "N" -> "Neutral"
@@ -248,7 +244,7 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                             "A" -> "Any alignment"
                             else -> align
                         }
-                    }?.let { if (it.isNotEmpty()) " $it" else "" } ?: ""
+                    }?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
 
                     Text(
                         text = "$sizeText $typeText$alignmentText",

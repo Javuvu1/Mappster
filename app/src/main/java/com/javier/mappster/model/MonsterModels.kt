@@ -79,7 +79,7 @@ data class Monster(
     @Serializable(with = MonsterTypeSerializer::class)
     val type: MonsterType? = null,
     @Serializable(with = AlignmentListSerializer::class)
-    val alignment: List<Alignment>? = null,
+    val alignment: List<String>? = null,  // Cambiado de List<Alignment> a List<String>
     val alignmentPrefix: String? = null,
     @Serializable(with = PassiveSerializer::class)
     val passive: Passive? = null,
@@ -122,40 +122,23 @@ object ChallengeRatingSerializer : KSerializer<ChallengeRating> {
     }
 
     override fun serialize(encoder: Encoder, value: ChallengeRating) {
-        if (value.value != null && value.coven == null && value.lair == null && value.xp == null && value.xpLair == null) {
-            encoder.encodeString(value.value)
-        } else {
-            encoder.beginStructure(descriptor).apply {
-                if (value.value != null) encodeStringElement(descriptor, 0, value.value)
-                if (value.coven != null) encodeStringElement(descriptor, 1, value.coven)
-                if (value.lair != null) encodeStringElement(descriptor, 2, value.lair)
-                if (value.xp != null) encodeIntElement(descriptor, 3, value.xp)
-                if (value.xpLair != null) encodeIntElement(descriptor, 4, value.xpLair)
-                endStructure(descriptor)
-            }
-        }
+        encoder.encodeString(value.value ?: "")
     }
 
     override fun deserialize(decoder: Decoder): ChallengeRating {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw IllegalStateException("Only JsonDecoder is supported")
-        val jsonElement = jsonDecoder.decodeJsonElement()
 
-        return when {
-            jsonElement is JsonPrimitive -> {
-                ChallengeRating(value = jsonElement.content)
-            }
-            jsonElement is JsonObject -> {
-                val obj = jsonElement
-                ChallengeRating(
-                    value = obj["cr"]?.jsonPrimitive?.content,
-                    coven = obj["coven"]?.jsonPrimitive?.content,
-                    lair = obj["lair"]?.jsonPrimitive?.content,
-                    xp = obj["xp"]?.jsonPrimitive?.content?.toIntOrNull(),
-                    xpLair = obj["xpLair"]?.jsonPrimitive?.content?.toIntOrNull()
-                )
-            }
-            else -> throw IllegalArgumentException("Unsupported JSON format for ChallengeRating")
+        return when (val element = jsonDecoder.decodeJsonElement()) {
+            is JsonPrimitive -> ChallengeRating(value = element.content)
+            is JsonObject -> ChallengeRating(
+                value = element["cr"]?.jsonPrimitive?.content,
+                coven = element["coven"]?.jsonPrimitive?.content,
+                lair = element["lair"]?.jsonPrimitive?.content,
+                xp = element["xp"]?.jsonPrimitive?.intOrNull,
+                xpLair = element["xpLair"]?.jsonPrimitive?.intOrNull
+            )
+            else -> throw IllegalArgumentException("Invalid CR format")
         }
     }
 }
@@ -466,40 +449,34 @@ object MonsterTypeSerializer : KSerializer<MonsterType> {
     }
 }
 
-@Serializable
-data class Alignment(
-    val values: List<String>? = null
-)
+//@Serializable
+//data class Alignment(
+//    val values: List<String>? = null
+//)
 
-object AlignmentListSerializer : KSerializer<List<Alignment>> {
-    override val descriptor: SerialDescriptor = listSerialDescriptor<Alignment>()
+object AlignmentListSerializer : KSerializer<List<String>> {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<String>()
 
-    override fun serialize(encoder: Encoder, value: List<Alignment>) {
-        if (value.isEmpty()) {
-            encoder.encodeSerializableValue(serializer<List<Alignment>>(), emptyList())
-        } else {
-            encoder.encodeSerializableValue(serializer<List<Alignment>>(), value)
-        }
+    override fun serialize(encoder: Encoder, value: List<String>) {
+        encoder.encodeSerializableValue(serializer<List<String>>(), value)
     }
 
-    override fun deserialize(decoder: Decoder): List<Alignment> {
+    override fun deserialize(decoder: Decoder): List<String> {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw IllegalStateException("This serializer can only be used with JSON")
-        val jsonArray = jsonDecoder.decodeJsonElement().jsonArray
+        val jsonElement = jsonDecoder.decodeJsonElement()
 
-        return jsonArray.map { element ->
-            when {
-                element is JsonPrimitive -> {
-                    val content = element.contentOrNull
-                    Alignment(values = if (content != null) listOf(content) else emptyList())
+        return when {
+            jsonElement is JsonArray -> {
+                jsonElement.mapNotNull { element ->
+                    when (element) {
+                        is JsonPrimitive -> element.contentOrNull
+                        else -> null
+                    }
                 }
-                element is JsonObject -> {
-                    Alignment(
-                        values = element["alignment"]?.jsonArray?.mapNotNull { it.jsonPrimitive?.contentOrNull }
-                    )
-                }
-                else -> throw IllegalStateException("Unexpected JSON element in alignment list: $element")
             }
+            jsonElement is JsonPrimitive -> listOf(jsonElement.content)
+            else -> emptyList()
         }
     }
 }
