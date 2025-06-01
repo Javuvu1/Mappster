@@ -487,7 +487,11 @@ fun MonsterSpeed(monster: Monster) {
 
             monster.speed?.let { speed ->
                 speed.walk?.let { walk ->
-                    val walkValue = walk.jsonPrimitive.intOrNull?.toString() ?: walk.jsonPrimitive.contentOrNull ?: "0"
+                    val walkValue = when (walk) {
+                        is JsonPrimitive -> walk.intOrNull?.toString() ?: walk.contentOrNull ?: "0"
+                        is JsonObject -> walk["number"]?.jsonPrimitive?.intOrNull?.toString() ?: "0"
+                        else -> "0"
+                    }
                     Text(
                         text = "Walk: $walkValue ft",
                         style = MaterialTheme.typography.bodyLarge,
@@ -497,9 +501,17 @@ fun MonsterSpeed(monster: Monster) {
                     hasSpeedData = true
                 }
                 speed.fly?.let { fly ->
-                    val flyValue = fly.jsonPrimitive.intOrNull?.toString() ?: fly.jsonPrimitive.contentOrNull ?: "0"
+                    val flyValue = when (fly) {
+                        is JsonPrimitive -> fly.intOrNull?.toString() ?: fly.contentOrNull ?: "0"
+                        is JsonObject -> {
+                            val number = fly["number"]?.jsonPrimitive?.intOrNull?.toString() ?: "0"
+                            val condition = fly["condition"]?.jsonPrimitive?.contentOrNull
+                            if (condition != null) "$number ft ($condition)" else "$number ft"
+                        }
+                        else -> "0"
+                    }
                     Text(
-                        text = "Fly: $flyValue ft${if (speed.canHover == true) " (can hover)" else ""}",
+                        text = "Fly: $flyValue${if (speed.canHover == true) " (can hover)" else ""}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, top = 4.dp)
@@ -507,7 +519,11 @@ fun MonsterSpeed(monster: Monster) {
                     hasSpeedData = true
                 }
                 speed.swim?.let { swim ->
-                    val swimValue = swim.jsonPrimitive.intOrNull?.toString() ?: swim.jsonPrimitive.contentOrNull ?: "0"
+                    val swimValue = when (swim) {
+                        is JsonPrimitive -> swim.intOrNull?.toString() ?: swim.contentOrNull ?: "0"
+                        is JsonObject -> swim["number"]?.jsonPrimitive?.intOrNull?.toString() ?: "0"
+                        else -> "0"
+                    }
                     Text(
                         text = "Swim: $swimValue ft",
                         style = MaterialTheme.typography.bodyLarge,
@@ -517,7 +533,11 @@ fun MonsterSpeed(monster: Monster) {
                     hasSpeedData = true
                 }
                 speed.climb?.let { climb ->
-                    val climbValue = climb.jsonPrimitive.intOrNull?.toString() ?: climb.jsonPrimitive.contentOrNull ?: "0"
+                    val climbValue = when (climb) {
+                        is JsonPrimitive -> climb.intOrNull?.toString() ?: climb.contentOrNull ?: "0"
+                        is JsonObject -> climb["number"]?.jsonPrimitive?.intOrNull?.toString() ?: "0"
+                        else -> "0"
+                    }
                     Text(
                         text = "Climb: $climbValue ft",
                         style = MaterialTheme.typography.bodyLarge,
@@ -527,7 +547,11 @@ fun MonsterSpeed(monster: Monster) {
                     hasSpeedData = true
                 }
                 speed.burrow?.let { burrow ->
-                    val burrowValue = burrow.jsonPrimitive.intOrNull?.toString() ?: burrow.jsonPrimitive.contentOrNull ?: "0"
+                    val burrowValue = when (burrow) {
+                        is JsonPrimitive -> burrow.intOrNull?.toString() ?: burrow.contentOrNull ?: "0"
+                        is JsonObject -> burrow["number"]?.jsonPrimitive?.intOrNull?.toString() ?: "0"
+                        else -> "0"
+                    }
                     Text(
                         text = "Burrow: $burrowValue ft",
                         style = MaterialTheme.typography.bodyLarge,
@@ -576,7 +600,7 @@ fun MonsterSpeed(monster: Monster) {
                         Text(
                             text = "$speedType: ${choose.amount ?: 0} ft${choose.note?.let { " ($it)" } ?: ""}",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onSurface, // Corrección aquí
                             modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                         )
                         hasSpeedData = true
@@ -1303,6 +1327,9 @@ private fun cleanTraitEntry(entry: String): String {
     cleaned = cleaned.replace(Regex("\\{@item ([^|}]*(?:\\s[+-]\\d+)?)(?:\\|.*)?\\}")) { match ->
         match.groupValues[1] // Captura todo hasta el |, incluyendo el modificador
     }
+    cleaned = cleaned.replace(Regex("\\{@atk mw\\}"), "") // Eliminar {@atk mw}
+    cleaned = cleaned.replace(Regex("\\{@hit (\\d+)\\}"), "$1 to hit") // {@hit 4} → 4 to hit
+    cleaned = cleaned.replace(Regex("\\{@h\\}"), "Hit: ") // {@h} → Hit:
     return cleaned
 }
 

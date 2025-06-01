@@ -1,5 +1,6 @@
 package com.javier.mappster.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,26 +22,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.model.Monster
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import java.net.URLEncoder
 
 @Composable
 fun MonsterListScreen(
     navController: NavHostController,
-    dataManager: LocalDataManager
+    viewModel: MonsterListViewModel
 ) {
-    val viewModel: MonsterListViewModel = viewModel {
-        MonsterListViewModel(dataManager)
-    }
-    val monsters = viewModel.monsters.collectAsState().value
+    val state = viewModel.state.collectAsState().value
     val searchQuery = viewModel.searchQuery.collectAsState().value
 
     Scaffold(
@@ -67,9 +64,22 @@ fun MonsterListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (monsters.isEmpty()) {
+            if (state.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.error != null) {
                 Text(
-                    text = if (searchQuery.isEmpty()) "No monsters available. Check the JSON file." else "No monsters found for \"$searchQuery\"",
+                    text = "Error loading monsters: ${state.error}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error
+                )
+            } else if (state.monsters.isEmpty()) {
+                Text(
+                    text = if (searchQuery.isEmpty()) "No monsters available." else "No monsters found for \"$searchQuery\"",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -87,13 +97,19 @@ fun MonsterListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(monsters) { monster ->
+                    items(state.monsters) { monster ->
                         MonsterItem(
                             monster = monster,
                             onClick = {
-                                val encodedName = URLEncoder.encode(monster.name ?: "Unknown", "UTF-8")
-                                val encodedSource = URLEncoder.encode(monster.source ?: "Unknown", "UTF-8")
-                                navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                                Log.d("MonsterListScreen", "Serializing monster: $monster")
+                                val monsterJson = try {
+                                    Json.encodeToString(monster)
+                                } catch (e: Exception) {
+                                    Log.e("MonsterListScreen", "Serialization failed: ${e.message}", e)
+                                    return@MonsterItem
+                                }
+                                val encodedJson = java.net.URLEncoder.encode(monsterJson, "UTF-8")
+                                navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedJson")
                             }
                         )
                     }

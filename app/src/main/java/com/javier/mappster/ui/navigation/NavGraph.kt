@@ -9,9 +9,12 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.util.Log
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.data.LocalDataManager
+import com.javier.mappster.model.Monster
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.CustomMonsterListsScreen
@@ -26,16 +29,16 @@ import com.javier.mappster.ui.screen.spells.SpellDetailScreen
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModel
+import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.net.URLDecoder
-import java.net.URLEncoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun NavGraph(navController: NavHostController) {
     val context = LocalContext.current
-    val viewModel = provideSpellListViewModel(context)
+    val spellListViewModel = provideSpellListViewModel(context)
     val dataManager = remember { LocalDataManager(context) }
 
     NavHost(navController = navController, startDestination = Destinations.LOGIN) {
@@ -44,16 +47,16 @@ fun NavGraph(navController: NavHostController) {
         }
         composable(Destinations.SPELL_LIST) {
             SpellListScreen(
-                viewModel = viewModel,
+                viewModel = spellListViewModel,
                 onSpellClick = { spell ->
-                    val encodedName = URLEncoder.encode(spell.name, "UTF-8")
+                    val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
                     navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
                 },
                 onCreateSpellClick = {
                     navController.navigate(Destinations.CREATE_SPELL)
                 },
                 onEditSpellClick = { spell ->
-                    val encodedName = URLEncoder.encode(spell.name, "UTF-8")
+                    val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
                     navController.navigate("${Destinations.EDIT_SPELL.replace("{spellName}", encodedName)}")
                 },
                 navController = navController
@@ -66,7 +69,7 @@ fun NavGraph(navController: NavHostController) {
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
                 java.net.URLDecoder.decode(it, "UTF-8")
             }
-            val spell = viewModel.spells.value.find { it.name == spellName }
+            val spell = spellListViewModel.spells.value.find { it.name == spellName }
             spell?.let {
                 SpellDetailScreen(spell = it)
             } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
@@ -81,11 +84,11 @@ fun NavGraph(navController: NavHostController) {
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
                 java.net.URLDecoder.decode(it, "UTF-8")
             }
-            val spell = viewModel.spells.value.find { it.name == spellName }
+            val spell = spellListViewModel.spells.value.find { it.name == spellName }
             spell?.let {
                 EditSpellScreen(
                     spell = it,
-                    viewModel = viewModel,
+                    viewModel = spellListViewModel,
                     onSpellUpdated = {
                         navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
                     }
@@ -96,9 +99,10 @@ fun NavGraph(navController: NavHostController) {
             CustomSpellListsScreen(navController = navController)
         }
         composable(Destinations.MONSTER_LIST) {
+            val monsterViewModel: MonsterListViewModel = viewModel(factory = MonsterListViewModelFactory(dataManager))
             MonsterListScreen(
                 navController = navController,
-                dataManager = dataManager
+                viewModel = monsterViewModel
             )
         }
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
@@ -106,7 +110,7 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("create_spell_list") {
             CreateSpellListScreen(
-                viewModel = viewModel,
+                viewModel = spellListViewModel,
                 navController = navController
             )
         }
@@ -123,7 +127,7 @@ fun NavGraph(navController: NavHostController) {
             val spellIdsJson = backStackEntry.arguments?.getString("spellIds")
             val spellIds = spellIdsJson?.let { Json.decodeFromString<List<String>>(it) }
             CreateSpellListScreen(
-                viewModel = viewModel,
+                viewModel = spellListViewModel,
                 navController = navController,
                 listId = listId,
                 listName = listName,
@@ -136,25 +140,23 @@ fun NavGraph(navController: NavHostController) {
         ) { backStackEntry ->
             SpellListViewScreen(
                 listId = backStackEntry.arguments?.getString("listId") ?: "",
-                viewModel = viewModel,
+                viewModel = spellListViewModel,
                 navController = navController
             )
         }
         composable(
-            route = "${Destinations.MONSTER_DETAIL}/{name}/{source}",
-            arguments = listOf(
-                navArgument("name") { type = NavType.StringType },
-                navArgument("source") { type = NavType.StringType }
-            )
+            route = "${Destinations.MONSTER_DETAIL}/{monsterJson}",
+            arguments = listOf(navArgument("monsterJson") { type = NavType.StringType })
         ) { backStackEntry ->
-            val name = backStackEntry.arguments?.getString("name")?.let {
-                URLDecoder.decode(it, "UTF-8")
+            val monsterJson = backStackEntry.arguments?.getString("monsterJson")?.let {
+                java.net.URLDecoder.decode(it, "UTF-8")
             }
-            val source = backStackEntry.arguments?.getString("source")?.let {
-                URLDecoder.decode(it, "UTF-8")
+            val monster = try {
+                monsterJson?.let { Json.decodeFromString<Monster>(it) }
+            } catch (e: Exception) {
+                Log.e("NavGraph", "Deserialization failed: ${e.message}", e)
+                null
             }
-            val viewModel: MonsterListViewModel = MonsterListViewModel(dataManager)
-            val monster = viewModel.monsters.value.find { it.name == name && it.source == source }
             monster?.let {
                 MonsterDetailScreen(monster = it)
             } ?: navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)

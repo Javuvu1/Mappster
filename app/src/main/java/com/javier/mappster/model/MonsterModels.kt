@@ -5,6 +5,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.listSerialDescriptor
+import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
@@ -99,7 +101,13 @@ data class ChallengeRating(
 )
 
 object ChallengeRatingSerializer : KSerializer<ChallengeRating> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ChallengeRating")
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ChallengeRating") {
+        element<String>("cr", isOptional = true)
+        element<String>("coven", isOptional = true)
+        element<String>("lair", isOptional = true)
+        element<Int>("xp", isOptional = true)
+        element<Int>("xpLair", isOptional = true)
+    }
 
     override fun serialize(encoder: Encoder, value: ChallengeRating) {
         if (value.value != null && value.coven == null && value.lair == null && value.xp == null && value.xpLair == null) {
@@ -199,12 +207,14 @@ data class Ac(
 )
 
 object AcListSerializer : KSerializer<List<Ac>> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("AcList")
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Ac>()
 
     override fun serialize(encoder: Encoder, value: List<Ac>) {
-        val output = encoder.beginStructure(descriptor)
-        output.encodeSerializableElement(descriptor, 0, serializer<List<Ac>>(), value)
-        output.endStructure(descriptor)
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Ac>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Ac>>(), value)
+        }
     }
 
     override fun deserialize(decoder: Decoder): List<Ac> {
@@ -290,12 +300,14 @@ data class ResistanceEntry(
 )
 
 object ResistanceListSerializer : KSerializer<List<Resistance>> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ResistanceList")
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Resistance>()
 
     override fun serialize(encoder: Encoder, value: List<Resistance>) {
-        val output = encoder.beginStructure(descriptor)
-        output.encodeSerializableElement(descriptor, 0, serializer<List<Resistance>>(), value)
-        output.endStructure(descriptor)
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Resistance>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Resistance>>(), value)
+        }
     }
 
     override fun deserialize(decoder: Decoder): List<Resistance> {
@@ -349,12 +361,14 @@ data class ConditionImmuneEntry(
 )
 
 object ConditionImmuneListSerializer : KSerializer<List<ConditionImmune>> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ConditionImmuneList")
+    override val descriptor: SerialDescriptor = listSerialDescriptor<ConditionImmune>()
 
     override fun serialize(encoder: Encoder, value: List<ConditionImmune>) {
-        val output = encoder.beginStructure(descriptor)
-        output.encodeSerializableElement(descriptor, 0, serializer<List<ConditionImmune>>(), value)
-        output.endStructure(descriptor)
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<ConditionImmune>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<ConditionImmune>>(), value)
+        }
     }
 
     override fun deserialize(decoder: Decoder): List<ConditionImmune> {
@@ -399,15 +413,22 @@ data class MonsterType(
 )
 
 object MonsterTypeSerializer : KSerializer<MonsterType> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("MonsterType")
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("MonsterType") {
+        element<JsonElement>("type", isOptional = true)
+        element<List<JsonElement>>("tags", isOptional = true)
+    }
 
     override fun serialize(encoder: Encoder, value: MonsterType) {
         if (value.tags.isNullOrEmpty() && value.type is JsonPrimitive) {
-            encoder.encodeString(value.type.jsonPrimitive.content)
+            encoder.encodeSerializableValue(JsonPrimitive.serializer(), value.type)
         } else {
             encoder.beginStructure(descriptor).apply {
-                if (value.type != null) encodeSerializableElement(descriptor, 0, serializer<JsonElement>(), value.type)
-                if (!value.tags.isNullOrEmpty()) encodeSerializableElement(descriptor, 1, serializer<List<JsonElement>>(), value.tags)
+                if (value.type != null) {
+                    encodeSerializableElement(descriptor, 0, serializer<JsonElement>(), value.type)
+                }
+                if (!value.tags.isNullOrEmpty()) {
+                    encodeSerializableElement(descriptor, 1, serializer<List<JsonElement>>(), value.tags)
+                }
                 endStructure(descriptor)
             }
         }
@@ -439,12 +460,14 @@ data class Alignment(
 )
 
 object AlignmentListSerializer : KSerializer<List<Alignment>> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("AlignmentList")
+    override val descriptor: SerialDescriptor = listSerialDescriptor<Alignment>()
 
     override fun serialize(encoder: Encoder, value: List<Alignment>) {
-        val output = encoder.beginStructure(descriptor)
-        output.encodeSerializableElement(descriptor, 0, serializer<List<Alignment>>(), value)
-        output.endStructure(descriptor)
+        if (value.isEmpty()) {
+            encoder.encodeSerializableValue(serializer<List<Alignment>>(), emptyList())
+        } else {
+            encoder.encodeSerializableValue(serializer<List<Alignment>>(), value)
+        }
     }
 
     override fun deserialize(decoder: Decoder): List<Alignment> {
@@ -519,5 +542,5 @@ data class Save(
 @Serializable
 data class Trait(
     val name: String? = null,
-    val entries: List<JsonElement>? = null // Cambiado de List<String> a List<JsonElement>
+    val entries: List<JsonElement>? = null
 )
