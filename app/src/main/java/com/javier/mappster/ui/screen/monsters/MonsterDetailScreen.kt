@@ -857,6 +857,10 @@ fun MonsterLegendary(
 
 @Composable
 fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
+    val normalTextSize = 18.sp
+    val modifierTextSize = 20.sp
+    val sectionPadding = 4.dp
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -865,14 +869,19 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
+            // Hit Points
             monster.hp?.let { hp ->
                 Text(
                     text = "Hit Points: ${hp.average ?: "Unknown"} (${hp.formula ?: "No formula"})",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = normalTextSize
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = sectionPadding)
                 )
             }
 
+            // Initiative
             val initModValue = monster.initiative?.proficiency?.toString()?.toIntOrNull()
                 ?: calculateModifier(monster.dex) ?: 0
             val initMod = formatModifier(initModValue)
@@ -881,9 +890,10 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
                 pushStringAnnotation(tag = "initModifier", annotation = initModValue.toString())
                 withStyle(
                     style = SpanStyle(
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = modifierTextSize,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 0.5.sp
                     )
                 ) {
                     append(initMod)
@@ -898,10 +908,14 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
                             onModifierClick("Initiative", annotation.item.toInt())
                         }
                 },
-                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                modifier = Modifier.padding(top = 4.dp)
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = normalTextSize
+                ),
+                modifier = Modifier.padding(vertical = sectionPadding)
             )
 
+            // Armor Class
             monster.ac?.let { acList ->
                 val acText = acList.joinToString(", ") { ac ->
                     buildString {
@@ -918,9 +932,11 @@ fun MonsterCombatStats(monster: Monster, onModifierClick: (String, Int) -> Unit)
                 }
                 Text(
                     text = "Armor Class: $acText",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = normalTextSize
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = sectionPadding)
                 )
             }
         }
@@ -1328,6 +1344,11 @@ fun MonsterSpeed(monster: Monster) {
 
 @Composable
 fun MonsterStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
+    Log.d("MonsterStats", "Monster stats: STR=${monster.str}, DEX=${monster.dex}, CON=${monster.con}, INT=${monster.int}, WIS=${monster.wis}, CHA=${monster.cha}")
+    Log.d("MonsterStats", "Monster saves: ${monster.save?.let {
+        "STR=${it.str}, DEX=${it.dex}, CON=${it.con}, INT=${it.int}, WIS=${it.wis}, CHA=${it.cha}"
+    } ?: "No saves"}")
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -1348,27 +1369,30 @@ fun MonsterStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
                 StatColumn(
                     label = "STR",
                     abilityValue = monster.str,
-                    saveValue = monster.save?.str,
-                    saveModifier = monster.save?.str?.toIntOrNull() ?: calculateModifier(monster.str) ?: 0,
-                    isSaveFromBase = monster.save?.str != null,
+                    saveValue = monster.save?.str?.trim(),
+                    saveModifier = monster.save?.str?.trim()?.removePrefix("+")?.toIntOrNull()
+                        ?: calculateModifier(monster.str) ?: 0,
+                    isSaveFromBase = monster.save?.str == null,
                     extraModifier = calculateModifier(monster.str) ?: 0,
                     onModifierClick = onModifierClick
                 )
                 StatColumn(
                     label = "DEX",
                     abilityValue = monster.dex,
-                    saveValue = monster.save?.dex,
-                    saveModifier = monster.save?.dex?.toIntOrNull() ?: calculateModifier(monster.dex) ?: 0,
-                    isSaveFromBase = monster.save?.dex != null,
+                    saveValue = monster.save?.dex?.trim(),
+                    saveModifier = monster.save?.dex?.trim()?.removePrefix("+")?.toIntOrNull()
+                        ?: calculateModifier(monster.dex) ?: 0,
+                    isSaveFromBase = monster.save?.dex == null,
                     extraModifier = calculateModifier(monster.dex) ?: 0,
                     onModifierClick = onModifierClick
                 )
                 StatColumn(
                     label = "CON",
                     abilityValue = monster.con,
-                    saveValue = monster.save?.con,
-                    saveModifier = monster.save?.con?.toIntOrNull() ?: calculateModifier(monster.con) ?: 0,
-                    isSaveFromBase = monster.save?.con != null,
+                    saveValue = monster.save?.con?.trim(),
+                    saveModifier = monster.save?.con?.trim()?.removePrefix("+")?.toIntOrNull()
+                        ?: calculateModifier(monster.con) ?: 0,
+                    isSaveFromBase = monster.save?.con == null,
                     extraModifier = calculateModifier(monster.con) ?: 0,
                     onModifierClick = onModifierClick
                 )
@@ -1382,27 +1406,30 @@ fun MonsterStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
                 StatColumn(
                     label = "INT",
                     abilityValue = monster.int,
-                    saveValue = monster.save?.int,
-                    saveModifier = monster.save?.int?.toIntOrNull() ?: calculateModifier(monster.int) ?: 0,
-                    isSaveFromBase = monster.save?.int != null,
+                    saveValue = monster.save?.int?.trim(),
+                    saveModifier = monster.save?.int?.trim()?.removePrefix("+")?.toIntOrNull()
+                        ?: calculateModifier(monster.int) ?: 0,
+                    isSaveFromBase = monster.save?.int == null,
                     extraModifier = calculateModifier(monster.int) ?: 0,
                     onModifierClick = onModifierClick
                 )
                 StatColumn(
                     label = "WIS",
                     abilityValue = monster.wis,
-                    saveValue = monster.save?.wis,
-                    saveModifier = monster.save?.wis?.toIntOrNull() ?: calculateModifier(monster.wis) ?: 0,
-                    isSaveFromBase = monster.save?.wis != null,
+                    saveValue = monster.save?.wis?.trim(),
+                    saveModifier = monster.save?.wis?.trim()?.removePrefix("+")?.toIntOrNull()
+                        ?: calculateModifier(monster.wis) ?: 0,
+                    isSaveFromBase = monster.save?.wis == null,
                     extraModifier = calculateModifier(monster.wis) ?: 0,
                     onModifierClick = onModifierClick
                 )
                 StatColumn(
                     label = "CHA",
                     abilityValue = monster.cha,
-                    saveValue = monster.save?.cha,
-                    saveModifier = monster.save?.cha?.toIntOrNull() ?: calculateModifier(monster.cha) ?: 0,
-                    isSaveFromBase = monster.save?.cha != null,
+                    saveValue = monster.save?.cha?.trim(),
+                    saveModifier = monster.save?.cha?.trim()?.removePrefix("+")?.toIntOrNull()
+                        ?: calculateModifier(monster.cha) ?: 0,
+                    isSaveFromBase = monster.save?.cha == null,
                     extraModifier = calculateModifier(monster.cha) ?: 0,
                     onModifierClick = onModifierClick
                 )
@@ -1421,30 +1448,45 @@ fun StatColumn(
     extraModifier: Int,
     onModifierClick: (String, Int) -> Unit
 ) {
+    val textSize = 20.sp
+    val modifierTextSize = 22.sp
+    val fontWeight = FontWeight.SemiBold
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(2.dp)
+        modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
     ) {
+        // Ability Score
         Text(
             text = "$label: ${abilityValue?.toString() ?: "–"}",
-            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = fontWeight,
+                fontSize = textSize
+            ),
             color = MaterialTheme.colorScheme.onSurface
         )
-        val saveDisplayText = saveValue ?: formatModifier(saveModifier)
+
+        // Saving Throw
+        val saveDisplayText = saveValue?.let {
+            if (it.startsWith("+") || it.startsWith("-")) it else "+$it"
+        } ?: formatModifier(saveModifier)
+
         val saveAnnotatedText = buildAnnotatedString {
             append("Save: ")
             pushStringAnnotation(tag = "saveModifier", annotation = saveModifier.toString())
             withStyle(
                 style = SpanStyle(
-                    fontWeight = if (isSaveFromBase) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    fontWeight = if (isSaveFromBase) FontWeight.Normal else fontWeight,
+                    fontSize = modifierTextSize,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 0.5.sp
                 )
             ) {
                 append(saveDisplayText)
             }
             pop()
         }
+
         ClickableText(
             text = saveAnnotatedText,
             onClick = { offset ->
@@ -1453,22 +1495,29 @@ fun StatColumn(
                         onModifierClick("$label Save", annotation.item.toInt())
                     }
             },
-            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface)
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = textSize
+            )
         )
+
+        // Ability Modifier
         val extraAnnotatedText = buildAnnotatedString {
             append("Mod: ")
             pushStringAnnotation(tag = "extraModifier", annotation = extraModifier.toString())
             withStyle(
                 style = SpanStyle(
                     fontWeight = FontWeight.Normal,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    fontSize = modifierTextSize,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 0.5.sp
                 )
             ) {
                 append(formatModifier(extraModifier))
             }
             pop()
         }
+
         ClickableText(
             text = extraAnnotatedText,
             onClick = { offset ->
@@ -1477,13 +1526,20 @@ fun StatColumn(
                         onModifierClick("$label Mod", annotation.item.toInt())
                     }
             },
-            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface)
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = textSize
+            )
         )
     }
 }
 
 @Composable
 fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
+    val skillTextSize = 18.sp
+    val modifierTextSize = 20.sp
+    val sectionTextSize = 20.sp
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -1492,9 +1548,14 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 text = "Skills:",
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = sectionTextSize
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
+
             val hasSkills = monster.skill?.let { skill ->
                 listOfNotNull(
                     skill.perception to "Perception",
@@ -1543,20 +1604,17 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                         skill.animalHandling to "Animal Handling"
                     ).forEach { (value, label) ->
                         if (value != null) {
-                            Log.d("MonsterSkills", "Raw value for $label: '$value'")
-                            Log.d("MonsterSkills", "Raw value type for $label: ${value::class.simpleName}")
                             val cleanedValue = value.removePrefix("+").trim()
-                            Log.d("MonsterSkills", "Cleaned value for $label: '$cleanedValue'")
                             val modifier = cleanedValue.toIntOrNull() ?: 0
-                            Log.d("MonsterSkills", "Parsed modifier for $label: $modifier")
                             val skillAnnotatedText = buildAnnotatedString {
                                 append("$label: ")
                                 pushStringAnnotation(tag = "skillModifier", annotation = modifier.toString())
                                 withStyle(
                                     style = SpanStyle(
-                                        fontWeight = FontWeight.Normal,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.primary
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = modifierTextSize,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        letterSpacing = 0.5.sp
                                     )
                                 ) {
                                     append(formatModifier(modifier))
@@ -1568,15 +1626,18 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                                 onClick = { offset ->
                                     skillAnnotatedText.getStringAnnotations(tag = "skillModifier", start = offset, end = offset)
                                         .firstOrNull()?.let { annotation ->
-                                            Log.d("MonsterSkills", "Clicked $label with modifier: ${annotation.item}")
                                             onSkillClick(label, annotation.item.toInt())
                                         }
                                 },
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = skillTextSize
+                                ),
+                                modifier = Modifier.padding(start = 8.dp, top = 6.dp)
                             )
                         }
                     }
+
                     skill.other?.forEach { other ->
                         other.oneOf?.let { oneOf ->
                             listOfNotNull(
@@ -1586,20 +1647,17 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                                 oneOf.religion to "Religion"
                             ).forEach { (value, label) ->
                                 if (value != null) {
-                                    Log.d("MonsterSkills", "Raw value for $label (other): '$value'")
-                                    Log.d("MonsterSkills", "Raw value type for $label (other): ${value::class.simpleName}")
                                     val cleanedValue = value.removePrefix("+").trim()
-                                    Log.d("MonsterSkills", "Cleaned value for $label (other): '$cleanedValue'")
                                     val modifier = cleanedValue.toIntOrNull() ?: 0
-                                    Log.d("MonsterSkills", "Parsed modifier for $label (other): $modifier")
                                     val skillAnnotatedText = buildAnnotatedString {
                                         append("$label: ")
                                         pushStringAnnotation(tag = "skillModifier", annotation = modifier.toString())
                                         withStyle(
                                             style = SpanStyle(
-                                                fontWeight = FontWeight.Normal,
-                                                fontSize = 16.sp,
-                                                color = MaterialTheme.colorScheme.primary
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = modifierTextSize,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                letterSpacing = 0.5.sp
                                             )
                                         ) {
                                             append(formatModifier(modifier))
@@ -1611,12 +1669,14 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                                         onClick = { offset ->
                                             skillAnnotatedText.getStringAnnotations(tag = "skillModifier", start = offset, end = offset)
                                                 .firstOrNull()?.let { annotation ->
-                                                    Log.d("MonsterSkills", "Clicked $label (other) with modifier: ${annotation.item}")
                                                     onSkillClick(label, annotation.item.toInt())
                                                 }
                                         },
-                                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                        modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = skillTextSize
+                                        ),
+                                        modifier = Modifier.padding(start = 8.dp, top = 6.dp)
                                     )
                                 }
                             }
@@ -1626,9 +1686,11 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
             } else {
                 Text(
                     text = "No skills available",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = skillTextSize,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier.padding(start = 8.dp, top = 6.dp)
                 )
             }
         }
