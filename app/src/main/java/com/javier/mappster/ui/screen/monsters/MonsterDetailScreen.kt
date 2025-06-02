@@ -1,5 +1,6 @@
 package com.javier.mappster.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -1494,7 +1495,6 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
-
             val hasSkills = monster.skill?.let { skill ->
                 listOfNotNull(
                     skill.perception to "Perception",
@@ -1541,47 +1541,42 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                         skill.investigation to "Investigation",
                         skill.performance to "Performance",
                         skill.animalHandling to "Animal Handling"
-                    ).forEach { (skillValue, label) ->
-                        if (skillValue != null) {
-                            // Parseamos el valor numérico (eliminando el + si existe)
-                            val numericValue = try {
-                                skillValue.replace("+", "").toInt()
-                            } catch (e: NumberFormatException) {
-                                0
-                            }
-
-                            // Mostramos exactamente lo que viene del JSON (con el + si lo tiene)
-                            val displayValue = if (skillValue.startsWith("+") || skillValue.startsWith("-")) {
-                                skillValue
-                            } else if (numericValue >= 0) {
-                                "+$skillValue"
-                            } else {
-                                skillValue
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .padding(start = 8.dp, top = 4.dp)
-                                    .clickable {
-                                        onSkillClick(label, numericValue)
-                                    }
-                            ) {
-                                Text(
-                                    text = "$label: ",
-                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
-                                )
-                                Text(
-                                    text = displayValue,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Bold,
+                    ).forEach { (value, label) ->
+                        if (value != null) {
+                            Log.d("MonsterSkills", "Raw value for $label: '$value'")
+                            Log.d("MonsterSkills", "Raw value type for $label: ${value::class.simpleName}")
+                            val cleanedValue = value.removePrefix("+").trim()
+                            Log.d("MonsterSkills", "Cleaned value for $label: '$cleanedValue'")
+                            val modifier = cleanedValue.toIntOrNull() ?: 0
+                            Log.d("MonsterSkills", "Parsed modifier for $label: $modifier")
+                            val skillAnnotatedText = buildAnnotatedString {
+                                append("$label: ")
+                                pushStringAnnotation(tag = "skillModifier", annotation = modifier.toString())
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontWeight = FontWeight.Normal,
+                                        fontSize = 16.sp,
                                         color = MaterialTheme.colorScheme.primary
                                     )
-                                )
+                                ) {
+                                    append(formatModifier(modifier))
+                                }
+                                pop()
                             }
+                            ClickableText(
+                                text = skillAnnotatedText,
+                                onClick = { offset ->
+                                    skillAnnotatedText.getStringAnnotations(tag = "skillModifier", start = offset, end = offset)
+                                        .firstOrNull()?.let { annotation ->
+                                            Log.d("MonsterSkills", "Clicked $label with modifier: ${annotation.item}")
+                                            onSkillClick(label, annotation.item.toInt())
+                                        }
+                                },
+                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                            )
                         }
                     }
-
-                    // Manejo de habilidades "other"
                     skill.other?.forEach { other ->
                         other.oneOf?.let { oneOf ->
                             listOfNotNull(
@@ -1589,41 +1584,40 @@ fun MonsterSkills(monster: Monster, onSkillClick: (String, Int) -> Unit) {
                                 oneOf.history to "History",
                                 oneOf.nature to "Nature",
                                 oneOf.religion to "Religion"
-                            ).forEach { (skillValue, label) ->
-                                if (skillValue != null) {
-                                    val numericValue = try {
-                                        skillValue.replace("+", "").toInt()
-                                    } catch (e: NumberFormatException) {
-                                        0
-                                    }
-
-                                    val displayValue = if (skillValue.startsWith("+") || skillValue.startsWith("-")) {
-                                        skillValue
-                                    } else if (numericValue >= 0) {
-                                        "+$skillValue"
-                                    } else {
-                                        skillValue
-                                    }
-
-                                    Row(
-                                        modifier = Modifier
-                                            .padding(start = 8.dp, top = 4.dp)
-                                            .clickable {
-                                                onSkillClick(label, numericValue)
-                                            }
-                                    ) {
-                                        Text(
-                                            text = "$label: ",
-                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
-                                        )
-                                        Text(
-                                            text = displayValue,
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Bold,
+                            ).forEach { (value, label) ->
+                                if (value != null) {
+                                    Log.d("MonsterSkills", "Raw value for $label (other): '$value'")
+                                    Log.d("MonsterSkills", "Raw value type for $label (other): ${value::class.simpleName}")
+                                    val cleanedValue = value.removePrefix("+").trim()
+                                    Log.d("MonsterSkills", "Cleaned value for $label (other): '$cleanedValue'")
+                                    val modifier = cleanedValue.toIntOrNull() ?: 0
+                                    Log.d("MonsterSkills", "Parsed modifier for $label (other): $modifier")
+                                    val skillAnnotatedText = buildAnnotatedString {
+                                        append("$label: ")
+                                        pushStringAnnotation(tag = "skillModifier", annotation = modifier.toString())
+                                        withStyle(
+                                            style = SpanStyle(
+                                                fontWeight = FontWeight.Normal,
+                                                fontSize = 16.sp,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
-                                        )
+                                        ) {
+                                            append(formatModifier(modifier))
+                                        }
+                                        pop()
                                     }
+                                    ClickableText(
+                                        text = skillAnnotatedText,
+                                        onClick = { offset ->
+                                            skillAnnotatedText.getStringAnnotations(tag = "skillModifier", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    Log.d("MonsterSkills", "Clicked $label (other) with modifier: ${annotation.item}")
+                                                    onSkillClick(label, annotation.item.toInt())
+                                                }
+                                        },
+                                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                        modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                    )
                                 }
                             }
                         }
