@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.javier.mappster.data.AuthManager
+import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.model.Monster
 import kotlinx.coroutines.Job
@@ -21,7 +23,11 @@ data class DataState(
     val error: String? = null
 )
 
-class MonsterListViewModel(private val dataManager: LocalDataManager) : ViewModel() {
+class MonsterListViewModel(
+    private val dataManager: LocalDataManager,
+    private val authManager: AuthManager,
+    private val firestoreManager: FirestoreManager = FirestoreManager()
+) : ViewModel() {
 
     private val _state = MutableStateFlow(DataState(isLoading = true))
     val state: StateFlow<DataState> = _state.asStateFlow()
@@ -30,7 +36,7 @@ class MonsterListViewModel(private val dataManager: LocalDataManager) : ViewMode
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private var searchJob: Job? = null
-    private var allMonsters: List<Monster> = emptyList() // Lista original de monstruos
+    private var allMonsters: List<Monster> = emptyList()
 
     init {
         loadMonsters()
@@ -39,17 +45,40 @@ class MonsterListViewModel(private val dataManager: LocalDataManager) : ViewMode
     private fun loadMonsters() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            val result = dataManager.loadMonsters()
-            val monsters = result.getOrDefault(emptyList())
-            allMonsters = monsters // Guardar la lista original
-            _state.update {
-                it.copy(
-                    isLoading = false,
-                    monsters = monsters, // Mostrar todos los monstruos inicialmente
-                    error = result.exceptionOrNull()?.message
-                )
+            try {
+                // Cargar monstruos desde JSON local
+                val localResult = dataManager.loadMonsters()
+                val localMonsters = localResult.getOrDefault(emptyList())
+
+                // Cargar monstruos personalizados desde Firestore
+                val userId = authManager.getCurrentUserId()
+                val customMonsters = firestoreManager.getMonsters(userId)
+
+                // Combinar y eliminar duplicados por nombre
+                allMonsters = (localMonsters + customMonsters)
+                    .distinctBy { it.name?.lowercase() }
+                    .sortedBy { it.name?.trim()?.lowercase() }
+
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        monsters = allMonsters.filter {
+                            it.name?.contains(_searchQuery.value, ignoreCase = true) ?: false
+                        },
+                        error = localResult.exceptionOrNull()?.message
+                    )
+                }
+                Log.d("MonsterListViewModel", "Obtenidos ${allMonsters.size} monstruos (locales + personalizados)")
+            } catch (e: Exception) {
+                Log.e("MonsterListViewModel", "Error al cargar monstruos: ${e.message}", e)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        monsters = emptyList(),
+                        error = "Error al cargar monstruos: ${e.message}"
+                    )
+                }
             }
-            Log.d("MonsterListViewModel", "Fetched ${monsters.size} monsters locally")
         }
     }
 
@@ -58,31 +87,38 @@ class MonsterListViewModel(private val dataManager: LocalDataManager) : ViewMode
         _searchQuery.value = query
         searchJob = viewModelScope.launch {
             delay(300.milliseconds)
-            if (_searchQuery.value == query) { // Solo filtrar si el query no cambió
+            if (_searchQuery.value == query) {
                 filterMonsters(query)
             }
         }
     }
 
     private fun filterMonsters(query: String) {
-        Log.d("MonsterListViewModel", "Filtering monsters with query='$query'")
+        Log.d("MonsterListViewModel", "Filtrando monstruos con query='$query'")
         val filtered = if (query.isBlank()) {
-            allMonsters // Usar la lista original si el query está vacío
+            allMonsters
         } else {
-            allMonsters.filter { // Filtrar desde la lista original
+            allMonsters.filter {
                 it.name?.contains(query, ignoreCase = true) == true
             }.sortedBy { it.name?.lowercase() }
         }
         _state.update { it.copy(monsters = filtered) }
-        Log.d("MonsterListViewModel", "Filtered ${filtered.size} monsters")
+        Log.d("MonsterListViewModel", "Filtrados ${filtered.size} monstruos")
+    }
+
+    fun refreshMonsters() {
+        loadMonsters()
     }
 }
 
-class MonsterListViewModelFactory(private val dataManager: LocalDataManager) : ViewModelProvider.Factory {
+class MonsterListViewModelFactory(
+    private val dataManager: LocalDataManager,
+    private val authManager: AuthManager
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MonsterListViewModel::class.java)) {
-            return MonsterListViewModel(dataManager) as T
+            return MonsterListViewModel(dataManager, authManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

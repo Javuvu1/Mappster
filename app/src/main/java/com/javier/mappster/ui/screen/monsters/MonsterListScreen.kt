@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -45,14 +46,34 @@ fun MonsterListScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(start = 16.dp, end = 8.dp, top = 32.dp, bottom = 8.dp)
             ) {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChanged = viewModel::onSearchQueryChanged,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChanged = viewModel::onSearchQueryChanged,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { navController.navigate(Destinations.CREATE_MONSTER) },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Crear Monstruo",
+                            tint = Color.White
+                        )
+                    }
+                }
             }
         },
         bottomBar = {
@@ -70,7 +91,7 @@ fun MonsterListScreen(
                 }
             } else if (state.error != null) {
                 Text(
-                    text = "Error loading monsters: ${state.error}",
+                    text = "Error al cargar monstruos: ${state.error}",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -79,7 +100,7 @@ fun MonsterListScreen(
                 )
             } else if (state.monsters.isEmpty()) {
                 Text(
-                    text = if (searchQuery.isEmpty()) "No monsters available." else "No monsters found for \"$searchQuery\"",
+                    text = if (searchQuery.isEmpty()) "No hay monstruos disponibles." else "No se encontraron monstruos para \"$searchQuery\"",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -101,11 +122,11 @@ fun MonsterListScreen(
                         MonsterItem(
                             monster = monster,
                             onClick = {
-                                Log.d("MonsterListScreen", "Serializing monster: $monster")
+                                Log.d("MonsterListScreen", "Serializando monstruo: $monster")
                                 val monsterJson = try {
                                     Json.encodeToString(monster)
                                 } catch (e: Exception) {
-                                    Log.e("MonsterListScreen", "Serialization failed: ${e.message}", e)
+                                    Log.e("MonsterListScreen", "Error de serialización: ${e.message}", e)
                                     return@MonsterItem
                                 }
                                 val encodedJson = java.net.URLEncoder.encode(monsterJson, "UTF-8")
@@ -132,11 +153,11 @@ fun SearchBar(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search",
+                contentDescription = "Buscar",
                 modifier = Modifier.size(20.dp)
             )
         },
-        placeholder = { Text("Search monsters...") },
+        placeholder = { Text("Buscar monstruos...") },
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp),
@@ -179,14 +200,13 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // Fila superior: Nombre (izquierda) y CR (derecha)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = monster.name ?: "Unknown",
+                    text = monster.name ?: "Desconocido",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.1.sp
@@ -194,7 +214,6 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 monster.cr?.let { cr ->
-                    // Mostramos directamente el valor del CR como String con fuente más grande
                     val crText = cr.value ?: "?"
                     Text(
                         text = "CR: $crText",
@@ -209,39 +228,37 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Resto del código permanece igual...
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Tamaño, Tipo y Alineamiento
                 Row(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val sizeText = monster.size?.firstOrNull()?.let { size ->
                         when (size.uppercase()) {
-                            "M" -> "Medium"
-                            "L" -> "Large"
-                            "S" -> "Small"
-                            "T" -> "Tiny"
-                            "H" -> "Huge"
-                            "G" -> "Gargantuan"
+                            "M" -> "Mediano"
+                            "L" -> "Grande"
+                            "S" -> "Pequeño"
+                            "T" -> "Diminuto"
+                            "H" -> "Enorme"
+                            "G" -> "Gigantesco"
                             else -> size
                         }
-                    } ?: "Unknown"
+                    } ?: "Desconocido"
 
-                    val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+                    val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Desconocido"
 
                     val alignmentText = monster.alignment?.joinToString(" ") { align ->
                         when (align.uppercase()) {
-                            "L" -> "Lawful"
+                            "L" -> "Legal"
                             "N" -> "Neutral"
-                            "C" -> "Chaotic"
-                            "G" -> "Good"
-                            "E" -> "Evil"
-                            "A" -> "Any alignment"
+                            "C" -> "Caótico"
+                            "G" -> "Bueno"
+                            "E" -> "Maligno"
+                            "A" -> "Cualquier alineamiento"
                             else -> align
                         }
                     }?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
@@ -253,9 +270,8 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                     )
                 }
 
-                // Fuente
                 Text(
-                    text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
+                    text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Desconocido",
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontStyle = FontStyle.Italic

@@ -19,35 +19,33 @@ import androidx.compose.ui.unit.sp
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    background = Color(0xFF121212), // Fondo oscuro para mejor contraste
+    surface = Color(0xFF1E1E1E), // Superficie ligeramente más clara
+    onSurface = Color(0xFFE0E0E0), // Texto claro para buen contraste
+    onSurfaceVariant = Color(0xFFB0B0B0) // Texto secundario más claro
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    tertiary = Pink40,
+    background = Color(0xFFF5F5F5), // Fondo claro suave
+    surface = Color(0xFFFFFFFF), // Superficie blanca
+    onSurface = Color(0xFF1C1B1F), // Texto oscuro para buen contraste
+    onSurfaceVariant = Color(0xFF4A4A4A) // Texto secundario más oscuro
 )
 
 private val MappsterTypography = Typography(
     bodyLarge = TextStyle(
         fontSize = 18.sp,
         fontWeight = FontWeight.Bold,
-        color = Color.Black
+        letterSpacing = 0.15.sp
     ),
     bodyMedium = TextStyle(
         fontSize = 14.sp,
         fontWeight = FontWeight.Normal,
-        color = Color.Gray
+        letterSpacing = 0.25.sp
     )
 )
 
@@ -68,7 +66,7 @@ fun MappsterTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = MappsterTypography, // Usar tipografía personalizada
+        typography = MappsterTypography,
         content = content
     )
 }

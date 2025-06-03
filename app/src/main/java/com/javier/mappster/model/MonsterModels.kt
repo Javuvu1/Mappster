@@ -25,6 +25,8 @@ import kotlinx.serialization.serializer
 @Serializable
 data class Monster(
     val name: String? = null,
+    val userId: String? = null,
+    val custom: Boolean = false,
     val source: String? = null,
     val page: Int? = null,
     @SerialName("otherSources")

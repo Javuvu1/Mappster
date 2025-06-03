@@ -18,6 +18,7 @@ class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
     private val spellsCollection = db.collection("spells")
     private val spellListsCollection = db.collection("spellLists")
+    private val monstersCollection = db.collection("monsters")
 
     suspend fun getSpells(userId: String? = null): List<Spell> {
         if (userId == null) {
@@ -220,6 +221,76 @@ class FirestoreManager {
         } catch (e: Exception) {
             Log.e("FirestoreManager", "Error deleting spell list $listId: ${e.message}", e)
             false
+        }
+    }
+
+    // Normaliza el ID del monstruo
+    private fun getMonsterId(monster: Monster): String {
+        return monster.name?.trim()?.lowercase()?.replace("[^a-z0-9]".toRegex(), "_") ?: ""
+    }
+
+    // Crear un monstruo personalizado
+    suspend fun createMonster(userId: String, monster: Monster): Boolean {
+        return try {
+            val id = getMonsterId(monster)
+            val document = monstersCollection.document(id)
+            document.get().await().let { doc ->
+                if (doc.exists()) {
+                    Log.d("FirestoreManager", "Monstruo con ID $id ya existe")
+                    return false
+                }
+            }
+            val monsterWithUserId = monster.copy(
+                userId = userId,
+                custom = true
+            )
+            document.set(monsterWithUserId).await()
+            Log.d("Monstruo", "Monstruo creado exitosamente: ${monster.name}, id: $id, userId=$userId")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error al crear el monstruo ${monster.name}: ${e.message}", e)
+            false
+        }
+    }
+
+    // Obtener monstruos personalizados
+    suspend fun getMonsters(userId: String?): List<Monster> {
+        return try {
+            if (userId == null) {
+                Log.d("FirestoreManager", "User ID es nulo, no se obtienen monstruos personalizados")
+                return emptyList()
+            }
+
+            val userCustomQuery = monstersCollection
+                .whereEqualTo("custom", true)
+                .whereEqualTo("userId", userId)
+            val publicCustomQuery = monstersCollection
+                .whereEqualTo("custom", true)
+                .whereEqualTo("public", true)
+
+            val results = listOf(
+                userCustomQuery.get(),
+                publicCustomQuery.get()
+            ).map { it.await() }
+
+            val monsters = results.flatMap { snapshot ->
+                snapshot.documents.mapNotNull { document ->
+                    try {
+                        document.toObject(Monster::class.java)?.also {
+                            Log.d("Monstre", "Monstruo parseado: ${it.name}, custom=${it.custom}, userId=${it.userId}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("Firestore", "Error al parsear documento de monstruo ${document.id}: ${e.message}", e)
+                        null
+                    }
+                }
+            }.distinctBy { it.name }.sortedBy { it.name?.trim()?.lowercase() }
+
+            Log.d("FirestoreManager", "Obtenidos ${monsters.size} monstruos personalizados: ${monsters.map { it.name }}")
+            monsters
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error al obtener monstruos: ${e.message}", e)
+            emptyList()
         }
     }
 }

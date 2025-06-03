@@ -1,33 +1,34 @@
 package com.javier.mappster.navigation
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import androidx.lifecycle.viewmodel.compose.viewModel
-import android.util.Log
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.model.Monster
-import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
-import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.CustomMonsterListsScreen
-import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
-import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.LoginScreen
+import com.javier.mappster.ui.screen.CreateMonsterScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterListScreen
-import com.javier.mappster.ui.screen.spells.SpellListScreen
-import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
+import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
+import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
+import com.javier.mappster.ui.screen.spells.CreateSpellScreen
+import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
+import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
+import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 import kotlinx.serialization.decodeFromString
@@ -40,6 +41,7 @@ fun NavGraph(navController: NavHostController) {
     val context = LocalContext.current
     val spellListViewModel = provideSpellListViewModel(context)
     val dataManager = remember { LocalDataManager(context) }
+    val authManager = remember { AuthManager.getInstance(context) }
 
     NavHost(navController = navController, startDestination = Destinations.LOGIN) {
         composable(Destinations.LOGIN) {
@@ -99,7 +101,9 @@ fun NavGraph(navController: NavHostController) {
             CustomSpellListsScreen(navController = navController)
         }
         composable(Destinations.MONSTER_LIST) {
-            val monsterViewModel: MonsterListViewModel = viewModel(factory = MonsterListViewModelFactory(dataManager))
+            val monsterViewModel: MonsterListViewModel = viewModel(
+                factory = MonsterListViewModelFactory(dataManager, authManager)
+            )
             MonsterListScreen(
                 navController = navController,
                 viewModel = monsterViewModel
@@ -107,6 +111,9 @@ fun NavGraph(navController: NavHostController) {
         }
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
             CustomMonsterListsScreen(navController = navController)
+        }
+        composable(Destinations.CREATE_MONSTER) {
+            CreateMonsterScreen(navController = navController)
         }
         composable("create_spell_list") {
             CreateSpellListScreen(
