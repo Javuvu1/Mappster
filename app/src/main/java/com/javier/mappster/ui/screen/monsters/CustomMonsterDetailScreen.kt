@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: String) {
+fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: String, isTwoPaneMode: Boolean = false) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
     val firestoreManager = remember { FirestoreManager() }
@@ -51,17 +51,19 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Detalles del Monstruo Personalizado") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver"
-                        )
+            if (!isTwoPaneMode) { // Solo mostrar topBar en modo pantalla completa
+                TopAppBar(
+                    title = { Text("Detalles del Monstruo Personalizado") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Volver"
+                            )
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier

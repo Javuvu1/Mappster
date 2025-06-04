@@ -38,7 +38,7 @@ import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MonsterDetailScreen(monster: Monster) {
+fun MonsterDetailScreen(monster: Monster, isTwoPaneMode: Boolean = false) {
     var showDiceRollDialog by remember { mutableStateOf(false) }
     var diceRollDetails by remember { mutableStateOf<List<Int>>(emptyList()) }
     var diceRollTotal by remember { mutableStateOf(0) }
@@ -63,28 +63,30 @@ fun MonsterDetailScreen(monster: Monster) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = monster.name ?: "Unknown Monster",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(top = 16.dp)
-            )
+            if (!isTwoPaneMode) { // Solo mostrar topBar en modo pantalla completa
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = monster.name ?: "Unknown Monster",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(top = 16.dp)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = if (isTwoPaneMode) 16.dp else 16.dp) // Ajustar padding
                 .verticalScroll(rememberScrollState())
         ) {
             // Sección: Fuente (Source) debajo del nombre

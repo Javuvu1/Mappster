@@ -1,20 +1,17 @@
 package com.javier.mappster.navigation
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,6 +30,7 @@ import com.javier.mappster.ui.screen.CreateMonsterScreen
 import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterListScreen
+import com.javier.mappster.ui.screen.monsters.TwoPaneMonsterListScreen
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
 import com.javier.mappster.ui.screen.spells.CreateSpellScreen
@@ -115,13 +113,20 @@ fun NavGraph(navController: NavHostController) {
             CustomSpellListsScreen(navController = navController)
         }
         composable(Destinations.MONSTER_LIST) {
-            val monsterViewModel: MonsterListViewModel = viewModel(
-                factory = MonsterListViewModelFactory(dataManager, authManager)
-            )
-            MonsterListScreen(
-                navController = navController,
-                viewModel = monsterViewModel
-            )
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+            if (isLandscape) {
+                TwoPaneMonsterListScreen(navController = navController)
+            } else {
+                val monsterViewModel: MonsterListViewModel = viewModel(
+                    factory = MonsterListViewModelFactory(dataManager, authManager)
+                )
+                MonsterListScreen(
+                    navController = navController,
+                    viewModel = monsterViewModel
+                )
+            }
         }
         composable(Destinations.CUSTOM_MONSTER_LISTS) {
             CustomMonsterListsScreen(navController = navController)
@@ -217,7 +222,7 @@ fun NavGraph(navController: NavHostController) {
                     }
                 }
                 monster != null -> {
-                    MonsterDetailScreen(monster = monster!!)
+                    MonsterDetailScreen(monster = monster!!, isTwoPaneMode = false)
                 }
                 else -> {
                     Text(
@@ -240,7 +245,8 @@ fun NavGraph(navController: NavHostController) {
             val monsterId = backStackEntry.arguments?.getString("monsterId") ?: ""
             CustomMonsterDetailScreen(
                 navController = navController,
-                monsterId = monsterId
+                monsterId = monsterId,
+                isTwoPaneMode = false
             )
         }
     }

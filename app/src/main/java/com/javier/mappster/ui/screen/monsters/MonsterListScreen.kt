@@ -157,8 +157,12 @@ fun SearchBar(
 @Composable
 fun MonsterItem(
     monster: UnifiedMonster,
-    navController: NavHostController,
-    onDeleteClick: (UnifiedMonster) -> Unit
+    isSelected: Boolean = false,
+    navController: NavHostController?,
+    isTwoPaneMode: Boolean = false,
+    onItemClick: (UnifiedMonster) -> Unit = {},
+    onDeleteClick: (UnifiedMonster) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val defaultColor = MaterialTheme.colorScheme.primary
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -189,12 +193,18 @@ fun MonsterItem(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
             .clickable {
-                if (monster.isCustom) {
-                    navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                if (isTwoPaneMode) {
+                    onItemClick(monster)
                 } else {
-                    val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
-                    val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
-                    navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                    navController?.let {
+                        if (monster.isCustom) {
+                            it.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                        } else {
+                            val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
+                            val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
+                            it.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                        }
+                    }
                 }
             }
             .border(
