@@ -1,5 +1,6 @@
 package com.javier.mappster.ui.screen.spells
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -30,6 +32,7 @@ import com.javier.mappster.R
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SchoolData
+import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.BottomNavigationBar
 import com.javier.mappster.utils.sourceMap
 
@@ -80,56 +83,19 @@ fun SpellListScreen(
     onEditSpellClick: (Spell) -> Unit,
     navController: NavHostController
 ) {
-    val spells by viewModel.spells.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    Scaffold(
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    SearchBar(
-                        query = searchQuery,
-                        onQueryChanged = viewModel::onSearchQueryChanged,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = onCreateSpellClick) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Crear hechizo"
-                        )
-                    }
-                }
-            }
-        },
-        bottomBar = {
-            BottomNavigationBar(navController = navController)
-        }
-    ) { paddingValues ->
-        when {
-            isLoading -> LoadingIndicator()
-            error != null -> ErrorMessage(error!!, onDismiss = { viewModel.clearError() })
-            spells.isEmpty() -> EmptySpellsMessage()
-            else -> SpellListContent(
-                spells = spells,
-                paddingValues = paddingValues,
-                onSpellClick = onSpellClick,
-                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) },
-                onToggleVisibilityClick = { spell, isPublic ->
-                    viewModel.updateSpellVisibility(spell, isPublic)
-                },
-                onEditSpellClick = onEditSpellClick
-            )
-        }
+    if (isLandscape) {
+        TwoPaneSpellListScreen(navController = navController, viewModel = viewModel)
+    } else {
+        SinglePaneSpellListScreen(
+            viewModel = viewModel,
+            onSpellClick = onSpellClick,
+            onCreateSpellClick = onCreateSpellClick,
+            onEditSpellClick = onEditSpellClick,
+            navController = navController
+        )
     }
 }
 
@@ -140,7 +106,9 @@ private fun SpellListContent(
     onSpellClick: (Spell) -> Unit,
     onDeleteSpellClick: (Spell) -> Unit,
     onToggleVisibilityClick: (Spell, Boolean) -> Unit,
-    onEditSpellClick: (Spell) -> Unit
+    onEditSpellClick: (Spell) -> Unit,
+    isTwoPaneMode: Boolean = false,
+    navController: NavHostController? = null
 ) {
     LazyColumn(
         contentPadding = PaddingValues(
@@ -154,10 +122,13 @@ private fun SpellListContent(
         items(spells) { spell ->
             SpellListItem(
                 spell = spell,
-                onClick = { onSpellClick(spell) },
-                onDeleteClick = { onDeleteSpellClick(spell) },
+                isSelected = false, // O manejar selección si es necesario
+                onClick = onSpellClick,
+                onDeleteClick = onDeleteSpellClick,
                 onToggleVisibilityClick = { isPublic -> onToggleVisibilityClick(spell, isPublic) },
-                onEditClick = { onEditSpellClick(spell) }
+                onEditClick = onEditSpellClick,
+                isTwoPaneMode = isTwoPaneMode,
+                navController = navController
             )
         }
     }
@@ -196,12 +167,15 @@ public fun SearchBar(
 }
 
 @Composable
-private fun SpellListItem(
+fun SpellListItem(
     spell: Spell,
+    isSelected: Boolean = false,
     onClick: (Spell) -> Unit,
     onDeleteClick: (Spell) -> Unit,
     onToggleVisibilityClick: (Boolean) -> Unit,
-    onEditClick: (Spell) -> Unit
+    onEditClick: (Spell) -> Unit,
+    isTwoPaneMode: Boolean = false,
+    navController: NavHostController? = null
 ) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
@@ -291,7 +265,16 @@ private fun SpellListItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clickable { onClick(spell) }
+            .clickable {
+                if (isTwoPaneMode) {
+                    onClick(spell)
+                } else {
+                    navController?.let {
+                        val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                        it.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
+                    }
+                }
+            }
             .border(
                 width = 2.dp,
                 color = schoolData.color.copy(alpha = 0.8f),
@@ -434,6 +417,69 @@ private fun SpellListItem(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SinglePaneSpellListScreen(
+    viewModel: SpellListViewModel,
+    onSpellClick: (Spell) -> Unit,
+    onCreateSpellClick: () -> Unit,
+    onEditSpellClick: (Spell) -> Unit,
+    navController: NavHostController
+) {
+    val spells by viewModel.spells.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    Scaffold(
+        topBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChanged = viewModel::onSearchQueryChanged,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onCreateSpellClick) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Crear hechizo"
+                        )
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
+        }
+    ) { paddingValues ->
+        when {
+            isLoading -> LoadingIndicator()
+            error != null -> ErrorMessage(error!!, onDismiss = { viewModel.clearError() })
+            spells.isEmpty() -> EmptySpellsMessage()
+            else -> SpellListContent(
+                spells = spells,
+                paddingValues = paddingValues,
+                onSpellClick = onSpellClick,
+                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) },
+                onToggleVisibilityClick = { spell, isPublic ->
+                    viewModel.updateSpellVisibility(spell, isPublic)
+                },
+                onEditSpellClick = onEditSpellClick,
+                isTwoPaneMode = false,
+                navController = navController
+            )
         }
     }
 }

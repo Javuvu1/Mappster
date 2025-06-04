@@ -204,7 +204,7 @@ fun buildDiceRollBreakdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpellDetailScreen(spell: Spell) {
+fun SpellDetailScreen(spell: Spell, isTwoPaneMode: Boolean = false) {
 
     val schoolData = when (spell.school.uppercase()) {
         "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
@@ -227,22 +227,22 @@ fun SpellDetailScreen(spell: Spell) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = spell.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = schoolData.color,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+            if (!isTwoPaneMode) { // Solo mostrar topBar en modo pantalla completa
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = spell.name,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = schoolData.color,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
-            )
+            }
         },
-        modifier = Modifier.background(
-            Brush.verticalGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.background,
-                    schoolData.color.copy(alpha = 0.3f)
-                )
-            )
-        )
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier

@@ -85,7 +85,7 @@ fun NavGraph(navController: NavHostController) {
             }
             val spell = spellListViewModel.spells.value.find { it.name == spellName }
             spell?.let {
-                SpellDetailScreen(spell = it)
+                SpellDetailScreen(spell = it, isTwoPaneMode = false)
             } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
         }
         composable(Destinations.CREATE_SPELL) {
