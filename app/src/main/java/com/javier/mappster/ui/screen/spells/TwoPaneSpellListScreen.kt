@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.Spell
@@ -34,14 +35,18 @@ fun TwoPaneSpellListScreen(
     ) {
         // Panel izquierdo (lista)
         Surface(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // Barra de búsqueda
                 Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .weight(2f)
+                        .fillMaxHeight(),
+                    color = MaterialTheme.colorScheme.surface
                 ) {
                     Row(
                         modifier = Modifier
@@ -118,7 +123,6 @@ fun TwoPaneSpellListScreen(
             }
         }
 
-        // Panel derecho (detalle)
         Surface(
             modifier = Modifier
                 .weight(2f)
@@ -126,10 +130,25 @@ fun TwoPaneSpellListScreen(
             color = MaterialTheme.colorScheme.surface
         ) {
             selectedSpell?.let { spell ->
-                SpellDetailScreen(
-                    spell = spell,
-                    isTwoPaneMode = true
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Añadir título en el modo landscape
+                    Text(
+                        text = spell.name,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    SpellDetailScreen(
+                        spell = spell,
+                        isTwoPaneMode = true,
+                        modifier = Modifier.padding(start = 8.dp) // Añadir padding izquierdo
+                    )
+                }
             } ?: Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier

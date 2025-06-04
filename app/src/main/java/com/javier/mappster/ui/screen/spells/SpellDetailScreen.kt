@@ -204,7 +204,11 @@ fun buildDiceRollBreakdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpellDetailScreen(spell: Spell, isTwoPaneMode: Boolean = false) {
+fun SpellDetailScreen(
+    spell: Spell,
+    isTwoPaneMode: Boolean = false,
+    modifier: Modifier = Modifier
+) {
 
     val schoolData = when (spell.school.uppercase()) {
         "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
@@ -241,6 +245,7 @@ fun SpellDetailScreen(spell: Spell, isTwoPaneMode: Boolean = false) {
                         titleContentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
+
             }
         },
     ) { innerPadding ->
