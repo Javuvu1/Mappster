@@ -10,10 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -43,7 +43,7 @@ fun MonsterListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(start = 16.dp, end = 8.dp, top = 32.dp, bottom = 8.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -56,17 +56,12 @@ fun MonsterListScreen(
                     )
                     IconButton(
                         onClick = { navController.navigate(Destinations.CREATE_MONSTER) },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(8.dp)
-                            )
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Crear Monstruo",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -115,7 +110,11 @@ fun MonsterListScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(state.monsters) { monster ->
-                        MonsterItem(monster = monster, navController = navController)
+                        MonsterItem(
+                            monster = monster,
+                            navController = navController,
+                            onDeleteClick = { viewModel.deleteCustomMonster(monster) }
+                        )
                     }
                 }
             }
@@ -156,8 +155,34 @@ fun SearchBar(
 }
 
 @Composable
-fun MonsterItem(monster: UnifiedMonster, navController: NavHostController) {
+fun MonsterItem(
+    monster: UnifiedMonster,
+    navController: NavHostController,
+    onDeleteClick: (UnifiedMonster) -> Unit
+) {
     val defaultColor = MaterialTheme.colorScheme.primary
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Estás seguro de que quieres borrar el monstruo \"${monster.name}\"?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteClick(monster)
+                    showDeleteDialog = false
+                }) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -250,15 +275,34 @@ fun MonsterItem(monster: UnifiedMonster, navController: NavHostController) {
                     )
                 }
 
-                Text(
-                    text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Desconocido",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        fontStyle = FontStyle.Italic
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Desconocido",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontStyle = FontStyle.Italic
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(end = if (monster.isCustom) 8.dp else 0.dp)
+                    )
+
+                    if (monster.isCustom) {
+                        IconButton(
+                            onClick = { showDeleteDialog = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Borrar monstruo",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

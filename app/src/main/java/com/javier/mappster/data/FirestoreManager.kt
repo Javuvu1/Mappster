@@ -280,4 +280,9 @@ class FirestoreManager {
             emptyList()
         }
     }
+
+    suspend fun deleteCustomMonster(monsterId: String) {
+        monstersCollection.document(monsterId).delete().await()
+        Log.d("FirestoreManager", "CustomMonster deleted successfully: id=$monsterId")
+    }
 }

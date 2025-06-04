@@ -139,6 +139,26 @@ class MonsterListViewModel(
     fun refreshCustomMonsters() {
         loadMonsters()
     }
+
+    fun deleteCustomMonster(monster: UnifiedMonster) {
+        if (!monster.isCustom || monster.id == null) {
+            Log.e("MonsterListViewModel", "Cannot delete non-custom monster or monster without ID")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                firestoreManager.deleteCustomMonster(monster.id)
+                Log.d("MonsterListViewModel", "Monster ${monster.name} deleted successfully")
+                refreshCustomMonsters() // Recargar la lista después de eliminar
+            } catch (e: Exception) {
+                Log.e("MonsterListViewModel", "Error deleting monster: ${e.message}", e)
+                _state.update {
+                    it.copy(error = "Error al eliminar el monstruo: ${e.message}")
+                }
+            }
+        }
+    }
 }
 
 class MonsterListViewModelFactory(

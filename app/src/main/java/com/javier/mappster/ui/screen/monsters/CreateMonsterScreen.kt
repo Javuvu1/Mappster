@@ -23,8 +23,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
+import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.model.CustomMonster
 import androidx.compose.ui.platform.LocalContext
+import com.javier.mappster.navigation.Destinations
+import com.javier.mappster.viewmodel.MonsterListViewModel
+import com.javier.mappster.viewmodel.MonsterListViewModelFactory
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,6 +66,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
     val firestoreManager = remember { FirestoreManager() }
+    val dataManager = remember { LocalDataManager(context) }
+    val viewModel: MonsterListViewModel = viewModel(
+        factory = MonsterListViewModelFactory(dataManager, authManager)
+    )
     val coroutineScope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -174,7 +184,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     coroutineScope.launch {
                         try {
                             firestoreManager.saveCustomMonster(customMonster)
-                            navController.popBackStack()
+                            // Esperar a que la recarga se complete antes de navegar
+                            viewModel.refreshCustomMonsters()
+                            delay(500) // Pequeño retraso para asegurar la sincronización
+                            navController.popBackStack(route = Destinations.MONSTER_LIST, inclusive = false)
                         } catch (e: Exception) {
                             errorMessage = "Error al guardar: ${e.message}"
                             Log.e("CreateMonsterScreen", "Error saving monster: ${e.message}", e)
