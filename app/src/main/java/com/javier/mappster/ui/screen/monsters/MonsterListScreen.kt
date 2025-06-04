@@ -24,14 +24,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.javier.mappster.model.Monster
+import com.javier.mappster.model.UnifiedMonster
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 @Composable
 fun MonsterListScreen(
@@ -122,15 +118,14 @@ fun MonsterListScreen(
                         MonsterItem(
                             monster = monster,
                             onClick = {
-                                Log.d("MonsterListScreen", "Serializando monstruo: $monster")
-                                val monsterJson = try {
-                                    Json.encodeToString(monster)
-                                } catch (e: Exception) {
-                                    Log.e("MonsterListScreen", "Error de serialización: ${e.message}", e)
-                                    return@MonsterItem
+                                if (monster.isCustom) {
+                                    navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                                } else {
+                                    // Para Monster del JSON, usamos name y source
+                                    val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
+                                    val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
+                                    navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
                                 }
-                                val encodedJson = java.net.URLEncoder.encode(monsterJson, "UTF-8")
-                                navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedJson")
                             }
                         )
                     }
@@ -173,7 +168,7 @@ fun SearchBar(
 }
 
 @Composable
-fun MonsterItem(monster: Monster, onClick: () -> Unit) {
+fun MonsterItem(monster: UnifiedMonster, onClick: () -> Unit) {
     val defaultColor = MaterialTheme.colorScheme.primary
 
     Card(
@@ -206,7 +201,7 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = monster.name ?: "Desconocido",
+                    text = monster.name,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.1.sp
@@ -214,9 +209,8 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 monster.cr?.let { cr ->
-                    val crText = cr.value ?: "?"
                     Text(
-                        text = "CR: $crText",
+                        text = "CR: $cr",
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = defaultColor.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Bold,
@@ -237,7 +231,7 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val sizeText = monster.size?.firstOrNull()?.let { size ->
+                    val sizeText = monster.size?.let { size ->
                         when (size.uppercase()) {
                             "M" -> "Mediano"
                             "L" -> "Grande"
@@ -249,19 +243,9 @@ fun MonsterItem(monster: Monster, onClick: () -> Unit) {
                         }
                     } ?: "Desconocido"
 
-                    val typeText = monster.type?.type?.jsonPrimitive?.contentOrNull?.removeSurrounding("\"")?.replaceFirstChar { it.uppercase() } ?: "Desconocido"
+                    val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Desconocido"
 
-                    val alignmentText = monster.alignment?.joinToString(" ") { align ->
-                        when (align.uppercase()) {
-                            "L" -> "Legal"
-                            "N" -> "Neutral"
-                            "C" -> "Caótico"
-                            "G" -> "Bueno"
-                            "E" -> "Maligno"
-                            "A" -> "Cualquier alineamiento"
-                            else -> align
-                        }
-                    }?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
+                    val alignmentText = monster.alignment?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
 
                     Text(
                         text = "$sizeText $typeText$alignmentText",

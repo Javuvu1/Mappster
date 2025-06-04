@@ -18,6 +18,7 @@ import com.javier.mappster.model.Monster
 import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.screen.CreateMonsterScreen
+import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterListScreen
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
@@ -168,14 +169,15 @@ fun NavGraph(navController: NavHostController) {
                 MonsterDetailScreen(monster = it)
             } ?: navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
         }
-    }
-}
-
-@Composable
-fun provideSpellListViewModel(context: android.content.Context): SpellListViewModel {
-    val authManager = AuthManager.getInstance(context)
-    val firestoreManager = FirestoreManager()
-    return remember {
-        SpellListViewModel(authManager, firestoreManager)
+        composable(
+            route = "${Destinations.CUSTOM_MONSTER_DETAIL}/{monsterId}",
+            arguments = listOf(navArgument("monsterId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val monsterId = backStackEntry.arguments?.getString("monsterId") ?: ""
+            CustomMonsterDetailScreen(
+                navController = navController,
+                monsterId = monsterId
+            )
+        }
     }
 }

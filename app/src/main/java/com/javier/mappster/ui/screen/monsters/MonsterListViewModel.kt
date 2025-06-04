@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.data.LocalDataManager
+import com.javier.mappster.model.CustomMonster
 import com.javier.mappster.model.Monster
+import com.javier.mappster.model.UnifiedMonster
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 data class DataState(
-    val monsters: List<Monster> = emptyList(),
+    val monsters: List<UnifiedMonster> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -36,7 +38,7 @@ class MonsterListViewModel(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private var searchJob: Job? = null
-    private var allMonsters: List<Monster> = emptyList()
+    private var allMonsters: List<UnifiedMonster> = emptyList()
 
     init {
         loadMonsters()
@@ -49,21 +51,49 @@ class MonsterListViewModel(
                 // Cargar monstruos desde JSON local
                 val localResult = dataManager.loadMonsters()
                 val localMonsters = localResult.getOrDefault(emptyList())
+                val unifiedLocalMonsters = localMonsters.mapIndexed { index, monster ->
+                    UnifiedMonster(
+                        id = "local_$index",
+                        name = monster.name ?: "Desconocido",
+                        cr = monster.cr?.value,
+                        size = monster.size?.firstOrNull(),
+                        type = monster.type?.type?.toString()?.removeSurrounding("\""),
+                        alignment = monster.alignment?.joinToString(" "),
+                        source = monster.source,
+                        isCustom = false
+                    )
+                }
 
                 // Cargar monstruos personalizados desde Firestore
                 val userId = authManager.getCurrentUserId()
-                val customMonsters = firestoreManager.getMonsters(userId)
+                val customMonsters = if (userId != null) {
+                    firestoreManager.getCustomMonsters(userId)
+                } else {
+                    emptyList()
+                }
+                val unifiedCustomMonsters = customMonsters.map { customMonster ->
+                    UnifiedMonster(
+                        id = customMonster.id ?: "unknown_${customMonster.name}",
+                        name = customMonster.name,
+                        cr = customMonster.cr,
+                        size = customMonster.size,
+                        type = customMonster.type?.joinToString(", "),
+                        alignment = customMonster.alignment,
+                        source = customMonster.source,
+                        isCustom = true
+                    )
+                }
 
                 // Combinar y eliminar duplicados por nombre
-                allMonsters = (localMonsters + customMonsters)
-                    .distinctBy { it.name?.lowercase() }
-                    .sortedBy { it.name?.trim()?.lowercase() }
+                allMonsters = (unifiedLocalMonsters + unifiedCustomMonsters)
+                    .distinctBy { it.name.lowercase() }
+                    .sortedBy { it.name.trim().lowercase() }
 
                 _state.update {
                     it.copy(
                         isLoading = false,
                         monsters = allMonsters.filter {
-                            it.name?.contains(_searchQuery.value, ignoreCase = true) ?: false
+                            it.name.contains(_searchQuery.value, ignoreCase = true)
                         },
                         error = localResult.exceptionOrNull()?.message
                     )
@@ -99,14 +129,14 @@ class MonsterListViewModel(
             allMonsters
         } else {
             allMonsters.filter {
-                it.name?.contains(query, ignoreCase = true) == true
-            }.sortedBy { it.name?.lowercase() }
+                it.name.contains(query, ignoreCase = true)
+            }.sortedBy { it.name.lowercase() }
         }
         _state.update { it.copy(monsters = filtered) }
         Log.d("MonsterListViewModel", "Filtrados ${filtered.size} monstruos")
     }
 
-    fun refreshMonsters() {
+    fun refreshCustomMonsters() {
         loadMonsters()
     }
 }

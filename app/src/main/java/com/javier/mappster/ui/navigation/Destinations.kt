@@ -11,4 +11,5 @@ object Destinations {
     const val MONSTER_DETAIL = "monster_detail/{name}/{source}"
     const val CUSTOM_MONSTER_LISTS = "custom_monster_lists"
     const val CREATE_MONSTER = "create_monster"
+    const val CUSTOM_MONSTER_DETAIL = "custom_monster_detail/{monsterId}"
 }
