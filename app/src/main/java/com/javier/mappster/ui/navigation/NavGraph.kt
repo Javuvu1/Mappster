@@ -2,9 +2,21 @@ package com.javier.mappster.navigation
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -32,6 +44,7 @@ import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
+import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.net.URLDecoder
@@ -153,21 +166,72 @@ fun NavGraph(navController: NavHostController) {
             )
         }
         composable(
-            route = "${Destinations.MONSTER_DETAIL}/{monsterJson}",
-            arguments = listOf(navArgument("monsterJson") { type = NavType.StringType })
+            route = "${Destinations.MONSTER_DETAIL}/{name}/{source}",
+            arguments = listOf(
+                navArgument("name") { type = NavType.StringType },
+                navArgument("source") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
-            val monsterJson = backStackEntry.arguments?.getString("monsterJson")?.let {
+            val name = backStackEntry.arguments?.getString("name")?.let {
                 java.net.URLDecoder.decode(it, "UTF-8")
+            } ?: ""
+            val source = backStackEntry.arguments?.getString("source")?.let {
+                java.net.URLDecoder.decode(it, "UTF-8")
+            } ?: ""
+            var monster by remember { mutableStateOf<Monster?>(null) }
+            var isLoading by remember { mutableStateOf(true) }
+            var error by remember { mutableStateOf<String?>(null) }
+
+            LaunchedEffect(name, source) {
+                try {
+                    val loadedMonster = dataManager.getMonsterByNameAndSource(name, source)
+                    if (loadedMonster != null) {
+                        monster = loadedMonster
+                    } else {
+                        error = "Monstruo no encontrado."
+                    }
+                } catch (e: Exception) {
+                    Log.e("NavGraph", "Error loading monster: ${e.message}", e)
+                    error = "Error al cargar el monstruo: ${e.message}"
+                } finally {
+                    isLoading = false
+                }
             }
-            val monster = try {
-                monsterJson?.let { Json.decodeFromString<Monster>(it) }
-            } catch (e: Exception) {
-                Log.e("NavGraph", "Deserialization failed: ${e.message}", e)
-                null
+
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                error != null -> {
+                    Text(
+                        text = error ?: "Error desconocido.",
+                        modifier = Modifier.fillMaxSize(),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    LaunchedEffect(Unit) {
+                        delay(2000)
+                        navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
+                    }
+                }
+                monster != null -> {
+                    MonsterDetailScreen(monster = monster!!)
+                }
+                else -> {
+                    Text(
+                        text = "Monstruo no encontrado. Volviendo atrás...",
+                        modifier = Modifier.fillMaxSize(),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    LaunchedEffect(Unit) {
+                        delay(2000)
+                        navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
+                    }
+                }
             }
-            monster?.let {
-                MonsterDetailScreen(monster = it)
-            } ?: navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
         }
         composable(
             route = "${Destinations.CUSTOM_MONSTER_DETAIL}/{monsterId}",

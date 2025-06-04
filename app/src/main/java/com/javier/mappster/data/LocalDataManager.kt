@@ -35,4 +35,24 @@ class LocalDataManager(private val context: Context) {
             Result.failure(e)
         }
     }
+
+    suspend fun getMonsterByNameAndSource(name: String, source: String): Monster? = withContext(Dispatchers.IO) {
+        try {
+            if (cachedMonsters == null) {
+                loadMonsters() // Asegurarnos de que los monstruos estén cargados
+            }
+            val monster = cachedMonsters?.find {
+                it.name == name && (it.source == source || (it.source.isNullOrEmpty() && source.isEmpty()))
+            }
+            if (monster != null) {
+                Log.d("LocalDataManager", "Found monster: ${monster.name}, source: ${monster.source}")
+            } else {
+                Log.w("LocalDataManager", "Monster not found for name: $name, source: $source")
+            }
+            monster
+        } catch (e: Exception) {
+            Log.e("LocalDataManager", "Error finding monster by name and source: ${e.message}", e)
+            null
+        }
+    }
 }

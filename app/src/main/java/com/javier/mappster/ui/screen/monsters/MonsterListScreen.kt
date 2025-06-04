@@ -115,19 +115,7 @@ fun MonsterListScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(state.monsters) { monster ->
-                        MonsterItem(
-                            monster = monster,
-                            onClick = {
-                                if (monster.isCustom) {
-                                    navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
-                                } else {
-                                    // Para Monster del JSON, usamos name y source
-                                    val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
-                                    val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
-                                    navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
-                                }
-                            }
-                        )
+                        MonsterItem(monster = monster, navController = navController)
                     }
                 }
             }
@@ -168,14 +156,22 @@ fun SearchBar(
 }
 
 @Composable
-fun MonsterItem(monster: UnifiedMonster, onClick: () -> Unit) {
+fun MonsterItem(monster: UnifiedMonster, navController: NavHostController) {
     val defaultColor = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clickable { onClick() }
+            .clickable {
+                if (monster.isCustom) {
+                    navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                } else {
+                    val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
+                    val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
+                    navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                }
+            }
             .border(
                 width = 2.dp,
                 color = defaultColor.copy(alpha = 0.8f),
