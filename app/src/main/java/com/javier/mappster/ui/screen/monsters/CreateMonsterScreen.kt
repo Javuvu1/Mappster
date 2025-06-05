@@ -87,11 +87,21 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var ac by remember { mutableStateOf("") }
     var acError by remember { mutableStateOf<String?>(null) }
     var str by remember { mutableStateOf("") }
+    var strError by remember { mutableStateOf<String?>(null) }
     var dex by remember { mutableStateOf("") }
+    var dexError by remember { mutableStateOf<String?>(null) }
     var con by remember { mutableStateOf("") }
+    var conError by remember { mutableStateOf<String?>(null) }
     var int by remember { mutableStateOf("") }
+    var intError by remember { mutableStateOf<String?>(null) }
     var wis by remember { mutableStateOf("") }
+    var wisError by remember { mutableStateOf<String?>(null) }
     var cha by remember { mutableStateOf("") }
+    var chaError by remember { mutableStateOf<String?>(null) }
+    var source by remember { mutableStateOf("Custom") }
+    var sourceError by remember { mutableStateOf<String?>(null) }
+    var initiative by remember { mutableStateOf("") }
+    var initiativeError by remember { mutableStateOf<String?>(null) }
 
     val sizeOptions = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan")
     val type1Options = listOf("Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead")
@@ -109,22 +119,68 @@ fun CreateMonsterScreen(navController: NavHostController) {
             else -> null
         }
         hpError = when {
-            hp.isNotBlank() && !hp.matches(Regex("\\d{1,6}")) -> "Solo números, máximo 6 dígitos"
+            hp.isNotBlank() && !hp.matches(Regex("\\d{1,5}")) -> "Solo números, máximo 5 dígitos"
             else -> null
         }
         acError = when {
-            ac.isNotBlank() && !ac.matches(Regex("\\d{1,2}")) -> "Solo números, máximo 2 dígitos"
+            ac.isNotBlank() && ac.length > 25 -> "Máximo 25 caracteres"
+            else -> null
+        }
+        strError = when {
+            str.isBlank() -> "Fuerza es obligatoria"
+            !str.matches(Regex("\\d+")) -> "Solo números"
+            str.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            else -> null
+        }
+        dexError = when {
+            dex.isBlank() -> "Destreza es obligatoria"
+            !dex.matches(Regex("\\d+")) -> "Solo números"
+            dex.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            else -> null
+        }
+        conError = when {
+            con.isBlank() -> "Constitución es obligatoria"
+            !con.matches(Regex("\\d+")) -> "Solo números"
+            con.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            else -> null
+        }
+        intError = when {
+            int.isBlank() -> "Inteligencia es obligatoria"
+            !int.matches(Regex("\\d+")) -> "Solo números"
+            int.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            else -> null
+        }
+        wisError = when {
+            wis.isBlank() -> "Sabiduría es obligatoria"
+            !wis.matches(Regex("\\d+")) -> "Solo números"
+            wis.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            else -> null
+        }
+        chaError = when {
+            cha.isBlank() -> "Carisma es obligatorio"
+            !cha.matches(Regex("\\d+")) -> "Solo números"
+            cha.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            else -> null
+        }
+        sourceError = when {
+            source.length > 30 -> "Máximo 30 caracteres"
+            else -> null
+        }
+        initiativeError = when {
+            initiative.isNotBlank() && !initiative.matches(Regex("-?\\d+")) -> "Solo números enteros"
             else -> null
         }
     }
 
-    val isFormValid by remember(nameError, type2Error, hpError, acError) {
+    val isFormValid by remember(nameError, type2Error, hpError, acError, strError, dexError, conError, intError, wisError, chaError, sourceError, initiativeError) {
         derivedStateOf {
-            nameError == null && type2Error == null && hpError == null && acError == null
+            nameError == null && type2Error == null && hpError == null && acError == null &&
+                    strError == null && dexError == null && conError == null && intError == null &&
+                    wisError == null && chaError == null && sourceError == null && initiativeError == null
         }
     }
 
-    LaunchedEffect(name, type2, hp, ac) {
+    LaunchedEffect(name, type2, hp, ac, str, dex, con, int, wis, cha, source, initiative) {
         validateFields()
     }
 
@@ -177,16 +233,16 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         int = int.toIntOrNull(),
                         wis = wis.toIntOrNull(),
                         cha = cha.toIntOrNull(),
-                        source = "Custom",
+                        source = source,
+                        initiative = initiative.toIntOrNull(),
                         public = false
                     )
                     isSaving = true
                     coroutineScope.launch {
                         try {
                             firestoreManager.saveCustomMonster(customMonster)
-                            // Esperar a que la recarga se complete antes de navegar
                             viewModel.refreshCustomMonsters()
-                            delay(500) // Pequeño retraso para asegurar la sincronización
+                            delay(500)
                             navController.popBackStack(route = Destinations.MONSTER_LIST, inclusive = false)
                         } catch (e: Exception) {
                             errorMessage = "Error al guardar: ${e.message}"
@@ -388,6 +444,36 @@ fun CreateMonsterScreen(navController: NavHostController) {
                                 }
                             }
                         }
+
+                        OutlinedTextField(
+                            value = source,
+                            onValueChange = { if (it.length <= 30) source = it },
+                            label = { Text("Fuente") },
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = sourceError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = "${source.length}/30",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        )
+                        sourceError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                        OutlinedTextField(
+                            value = initiative,
+                            onValueChange = {
+                                if (it.isEmpty() || it.matches(Regex("-?\\d*"))) {
+                                    initiative = it
+                                }
+                            },
+                            label = { Text("Iniciativa") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = initiativeError != null
+                        )
+                        initiativeError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                     }
                 }
 
@@ -401,14 +487,14 @@ fun CreateMonsterScreen(navController: NavHostController) {
 
                         OutlinedTextField(
                             value = hp,
-                            onValueChange = { if (it.length <= 6) hp = it.filter { it.isDigit() } },
+                            onValueChange = { if (it.length <= 5) hp = it.filter { it.isDigit() } },
                             label = { Text("HP") },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = hpError != null,
                             trailingIcon = {
                                 Text(
-                                    text = "${hp.length}/6",
+                                    text = "${hp.length}/5",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -418,14 +504,13 @@ fun CreateMonsterScreen(navController: NavHostController) {
 
                         OutlinedTextField(
                             value = ac,
-                            onValueChange = { if (it.length <= 2) ac = it.filter { it.isDigit() } },
+                            onValueChange = { if (it.length <= 25) ac = it },
                             label = { Text("CA") },
                             modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = acError != null,
                             trailingIcon = {
                                 Text(
-                                    text = "${ac.length}/2",
+                                    text = "${ac.length}/25",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -439,18 +524,22 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         ) {
                             OutlinedTextField(
                                 value = str,
-                                onValueChange = { str = it.filter { it.isDigit() } },
+                                onValueChange = { if (it.length <= 2) str = it.filter { it.isDigit() } },
                                 label = { Text("Fuerza") },
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = strError != null
                             )
+                            strError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                             OutlinedTextField(
                                 value = dex,
-                                onValueChange = { dex = it.filter { it.isDigit() } },
+                                onValueChange = { if (it.length <= 2) dex = it.filter { it.isDigit() } },
                                 label = { Text("Destreza") },
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = dexError != null
                             )
+                            dexError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -458,18 +547,22 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         ) {
                             OutlinedTextField(
                                 value = con,
-                                onValueChange = { con = it.filter { it.isDigit() } },
+                                onValueChange = { if (it.length <= 2) con = it.filter { it.isDigit() } },
                                 label = { Text("Constitución") },
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = conError != null
                             )
+                            conError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                             OutlinedTextField(
                                 value = int,
-                                onValueChange = { int = it.filter { it.isDigit() } },
+                                onValueChange = { if (it.length <= 2) int = it.filter { it.isDigit() } },
                                 label = { Text("Inteligencia") },
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = intError != null
                             )
+                            intError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -477,18 +570,22 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         ) {
                             OutlinedTextField(
                                 value = wis,
-                                onValueChange = { wis = it.filter { it.isDigit() } },
+                                onValueChange = { if (it.length <= 2) wis = it.filter { it.isDigit() } },
                                 label = { Text("Sabiduría") },
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = wisError != null
                             )
+                            wisError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                             OutlinedTextField(
                                 value = cha,
-                                onValueChange = { cha = it.filter { it.isDigit() } },
+                                onValueChange = { if (it.length <= 2) cha = it.filter { it.isDigit() } },
                                 label = { Text("Carisma") },
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = chaError != null
                             )
+                            chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                         }
                     }
                 }

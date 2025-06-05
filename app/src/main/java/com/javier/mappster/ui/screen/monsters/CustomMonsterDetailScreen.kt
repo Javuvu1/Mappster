@@ -2,18 +2,22 @@ package com.javier.mappster.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.CustomMonster
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,7 +57,16 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
         topBar = {
             if (!isTwoPaneMode) { // Solo mostrar topBar en modo pantalla completa
                 TopAppBar(
-                    title = { Text("Detalles del Monstruo Personalizado") },
+                    title = {
+                        Text(
+                            text = customMonster?.name ?: "Unknown Monster",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
@@ -83,46 +96,29 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = if (isTwoPaneMode) 16.dp else 16.dp)
+                        .padding(top = if (!isTwoPaneMode) 0.dp else 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        Text(
-                            text = customMonster!!.name,
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                    }
-                    item {
-                        customMonster!!.size?.let { size ->
-                            Text("Tamaño: $size", style = MaterialTheme.typography.bodyLarge)
+                        customMonster?.source?.let { source ->
+                            Text(
+                                text = "Source: $source",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
                         }
                     }
                     item {
-                        customMonster!!.type?.joinToString(", ")?.let { type ->
-                            Text("Tipo: $type", style = MaterialTheme.typography.bodyLarge)
-                        }
+                        MonsterInfoSection(customMonster!!)
                     }
                     item {
-                        customMonster!!.alignment?.let { alignment ->
-                            Text("Alineamiento: $alignment", style = MaterialTheme.typography.bodyLarge)
-                        }
+                        MonsterCombatStats(customMonster!!)
                     }
                     item {
-                        customMonster!!.cr?.let { cr ->
-                            Text("CR: $cr", style = MaterialTheme.typography.bodyLarge)
-                        }
+                        MonsterStats(customMonster!!)
                     }
-                    item {
-                        customMonster!!.hp?.let { hp ->
-                            Text("HP: $hp", style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                    item {
-                        customMonster!!.ac?.let { ac ->
-                            Text("CA: $ac", style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                    // Añade más campos según necesites (str, dex, con, etc.)
                 }
             } else {
                 Text(
@@ -132,5 +128,169 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                 )
             }
         }
+    }
+}
+
+@Composable
+fun MonsterInfoSection(monster: CustomMonster) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val sizeText = monster.size ?: "Medium"
+                val typeText = monster.type?.joinToString(", ")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+                val alignmentText = monster.alignment?.let { ", $it" } ?: ""
+
+                Text(
+                    text = "$sizeText $typeText$alignmentText",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.End
+            ) {
+                monster.cr?.let { cr ->
+                    Text(
+                        text = "CR: $cr",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterCombatStats(monster: CustomMonster) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            monster.hp?.let { hp ->
+                Text(
+                    text = "Hit Points: $hp",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+            monster.initiative?.let { init ->
+                val initMod = if (init >= 0) "+$init" else "$init"
+                Text(
+                    text = "Initiative: $initMod",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            monster.ac?.let { ac ->
+                Text(
+                    text = "Armor Class: $ac",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterStats(monster: CustomMonster) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(
+                text = "Ability Scores & Saves:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatColumn("STR", monster.str, null)
+                StatColumn("DEX", monster.dex, null)
+                StatColumn("CON", monster.con, null)
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatColumn("INT", monster.int, null)
+                StatColumn("WIS", monster.wis, null)
+                StatColumn("CHA", monster.cha, null)
+            }
+        }
+    }
+}
+
+@Composable
+fun StatColumn(
+    label: String,
+    abilityValue: Int?,
+    saveValue: String?
+) {
+    val textSize = 20.sp
+    val modifierTextSize = 22.sp
+    val fontWeight = FontWeight.SemiBold
+
+    // Calcular el modificador usando la fórmula estándar de D&D: (puntuación - 10) / 2, redondeado hacia abajo
+    val modifier = abilityValue?.let { ((it - 10) / 2) } ?: 0
+    // La tirada de salvación usa el modificador a menos que se proporcione un valor específico
+    val saveDisplayText = saveValue ?: (if (modifier >= 0) "+$modifier" else "$modifier")
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
+    ) {
+        Text(
+            text = "$label: ${abilityValue?.toString() ?: "–"}",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = fontWeight,
+                fontSize = textSize
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "Save: $saveDisplayText",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Normal,
+                fontSize = modifierTextSize,
+                color = MaterialTheme.colorScheme.primary
+            )
+        )
+        Text(
+            text = "Mod: ${if (modifier >= 0) "+$modifier" else "$modifier"}",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Normal,
+                fontSize = modifierTextSize,
+                color = MaterialTheme.colorScheme.primary
+            )
+        )
     }
 }
