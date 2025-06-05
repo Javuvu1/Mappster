@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -35,7 +36,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Hechizos") },
-            label = { Text("Hechizos") },
+            label = { Text("Spells") },
             selected = currentRoute == Destinations.SPELL_LIST,
             onClick = {
                 navController.navigate(Destinations.SPELL_LIST) {
@@ -48,7 +49,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Listas Hechizos") },
-            label = { Text("Listas H.") },
+            label = { Text("Spell Ls.") },
             selected = currentRoute == Destinations.CUSTOM_SPELL_LISTS,
             onClick = {
                 navController.navigate(Destinations.CUSTOM_SPELL_LISTS) {
@@ -61,7 +62,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Pets, contentDescription = "Monstruos") },
-            label = { Text("Monstruos") },
+            label = { Text("Monsters") },
             selected = currentRoute == Destinations.MONSTER_LIST,
             onClick = {
                 navController.navigate(Destinations.MONSTER_LIST) {
@@ -74,11 +75,29 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = "Listas Monstruos") },
-            label = { Text("Listas M.") },
+            label = { Text("Monster Ls.") },
             selected = currentRoute == Destinations.CUSTOM_MONSTER_LISTS,
             onClick = {
                 navController.navigate(Destinations.CUSTOM_MONSTER_LISTS) {
                     if (currentRoute != Destinations.CUSTOM_MONSTER_LISTS) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                    }
+                    launchSingleTop = true
+                }
+            }
+        )
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Timer, // Usa el icono de reloj que prefieras
+                    contentDescription = "Initiative Tracker"
+                )
+            },
+            label = { Text("Initiative") },
+            selected = currentRoute == Destinations.INITIATIVE_TRACKER,
+            onClick = {
+                navController.navigate(Destinations.INITIATIVE_TRACKER) {
+                    if (currentRoute != Destinations.INITIATIVE_TRACKER) {
                         popUpTo(navController.graph.startDestinationId) { inclusive = false }
                     }
                     launchSingleTop = true

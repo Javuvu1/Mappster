@@ -9,7 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -25,13 +26,13 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.model.CustomMonster
-import androidx.compose.ui.platform.LocalContext
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.floor
 
 @Composable
 private fun LoadingIndicator() {
@@ -98,121 +99,123 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var wisError by remember { mutableStateOf<String?>(null) }
     var cha by remember { mutableStateOf("") }
     var chaError by remember { mutableStateOf<String?>(null) }
+    var proficiencyBonus by remember { mutableStateOf("2") }
+    var proficiencyBonusError by remember { mutableStateOf<String?>(null) }
     var source by remember { mutableStateOf("Custom") }
     var sourceError by remember { mutableStateOf<String?>(null) }
     var initiative by remember { mutableStateOf("") }
     var initiativeError by remember { mutableStateOf<String?>(null) }
-    var proficiencyBonus by remember { mutableStateOf("2") }
-    var proficiencyBonusError by remember { mutableStateOf<String?>(null) }
-    var strSaveProficiency by remember { mutableStateOf(false) }
-    var dexSaveProficiency by remember { mutableStateOf(false) }
-    var conSaveProficiency by remember { mutableStateOf(false) }
-    var intSaveProficiency by remember { mutableStateOf(false) }
-    var wisSaveProficiency by remember { mutableStateOf(false) }
-    var chaSaveProficiency by remember { mutableStateOf(false) }
+    var saveStr by remember { mutableStateOf(false) }
+    var saveDex by remember { mutableStateOf(false) }
+    var saveCon by remember { mutableStateOf(false) }
+    var saveInt by remember { mutableStateOf(false) }
+    var saveWis by remember { mutableStateOf(false) }
+    var saveCha by remember { mutableStateOf(false) }
 
     val sizeOptions = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan")
-    val type1Options = listOf("Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead")
-    val alignmentOptions = listOf("Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil", "Unaligned")
+    val type1Options = listOf(
+        "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental",
+        "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead"
+    )
+    val alignmentOptions = listOf(
+        "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "Neutral",
+        "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil", "Unaligned"
+    )
     val crOptions = listOf("0", "1/8", "1/4", "1/2", "1") + (2..30).map { it.toString() }
 
-    // Calcular modificadores de características
-    fun calculateModifier(stat: String): Int {
-        return stat.toIntOrNull()?.let { (it - 10) / 2 } ?: 0
-    }
-
-    // Calcular tirada de salvación
-    fun calculateSave(stat: String, hasProficiency: Boolean, profBonus: Int): String? {
-        if (!hasProficiency) return null
-        val modifier = calculateModifier(stat)
-        val total = modifier + profBonus
-        return if (total >= 0) "+$total" else total.toString()
+    fun calculateModifier(score: String, proficiencyBonus: Int): String? {
+        return score.toIntOrNull()?.let {
+            if (it in 1..30) {
+                val modifier = floor((it - 10.0) / 2).toInt() + proficiencyBonus
+                "+$modifier"
+            } else null
+        }
     }
 
     fun validateFields() {
         nameError = when {
-            name.isBlank() -> "El nombre es obligatorio"
-            name.length > 35 -> "Máximo 35 caracteres"
+            name.isBlank() -> "Name is required"
+            name.length > 35 -> "Maximum 35 characters"
             else -> null
         }
         type2Error = when {
-            type2.length > 20 -> "Máximo 20 caracteres"
+            type2.length > 20 -> "Maximum 20 characters"
             else -> null
         }
         hpError = when {
-            hp.isNotBlank() && !hp.matches(Regex("\\d{1,5}")) -> "Solo números, máximo 5 dígitos"
+            hp.isNotBlank() && !hp.matches(Regex("\\d{1,5}")) -> "Numbers only, max 5 digits"
             else -> null
         }
         acError = when {
-            ac.isNotBlank() && ac.length > 25 -> "Máximo 25 caracteres"
+            ac.isNotBlank() && ac.length > 25 -> "Maximum 25 characters"
             else -> null
         }
         strError = when {
-            str.isBlank() -> "Fuerza es obligatoria"
-            !str.matches(Regex("\\d+")) -> "Solo números"
-            str.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            str.isBlank() -> "Strength is required"
+            !str.matches(Regex("\\d+")) -> "Numbers only"
+            str.toInt() !in 1..30 -> "Must be between 1 and 30"
             else -> null
         }
         dexError = when {
-            dex.isBlank() -> "Destreza es obligatoria"
-            !dex.matches(Regex("\\d+")) -> "Solo números"
-            dex.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            dex.isBlank() -> "Dexterity is required"
+            !dex.matches(Regex("\\d+")) -> "Numbers only"
+            dex.toInt() !in 1..30 -> "Must be between 1 and 30"
             else -> null
         }
         conError = when {
-            con.isBlank() -> "Constitución es obligatoria"
-            !con.matches(Regex("\\d+")) -> "Solo números"
-            con.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            con.isBlank() -> "Constitution is required"
+            !con.matches(Regex("\\d+")) -> "Numbers only"
+            con.toInt() !in 1..30 -> "Must be between 1 and 30"
             else -> null
         }
         intError = when {
-            int.isBlank() -> "Inteligencia es obligatoria"
-            !int.matches(Regex("\\d+")) -> "Solo números"
-            int.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            int.isBlank() -> "Intelligence is required"
+            !int.matches(Regex("\\d+")) -> "Numbers only"
+            int.toInt() !in 1..30 -> "Must be between 1 and 30"
             else -> null
         }
         wisError = when {
-            wis.isBlank() -> "Sabiduría es obligatoria"
-            !wis.matches(Regex("\\d+")) -> "Solo números"
-            wis.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
+            wis.isBlank() -> "Wisdom is required"
+            !wis.matches(Regex("\\d+")) -> "Numbers only"
+            wis.toInt() !in 1..30 -> "Must be between 1 and 30"
             else -> null
         }
         chaError = when {
-            cha.isBlank() -> "Carisma es obligatorio"
-            !cha.matches(Regex("\\d+")) -> "Solo números"
-            cha.toInt() !in 1..30 -> "Debe estar entre 1 y 30"
-            else -> null
-        }
-        sourceError = when {
-            source.length > 30 -> "Máximo 30 caracteres"
-            else -> null
-        }
-        initiativeError = when {
-            initiative.isNotBlank() && !initiative.matches(Regex("-?\\d+")) -> "Solo números enteros"
+            cha.isBlank() -> "Charisma is required"
+            !cha.matches(Regex("\\d+")) -> "Numbers only"
+            cha.toInt() !in 1..30 -> "Must be between 1 and 30"
             else -> null
         }
         proficiencyBonusError = when {
-            proficiencyBonus.isBlank() -> "Bonificador de competencia es obligatorio"
-            !proficiencyBonus.matches(Regex("\\d+")) -> "Solo números"
-            proficiencyBonus.toInt() !in 2..9 -> "Debe estar entre 2 y 9"
+            proficiencyBonus.isBlank() -> "Proficiency bonus is required"
+            !proficiencyBonus.matches(Regex("\\d+")) -> "Numbers only"
+            proficiencyBonus.toInt() !in 2..9 -> "Must be between 2 and 9"
+            else -> null
+        }
+        sourceError = when {
+            source.length > 30 -> "Maximum 30 characters"
+            else -> null
+        }
+        initiativeError = when {
+            initiative.isNotBlank() && !initiative.matches(Regex("-?\\d+")) -> "Integers only"
             else -> null
         }
     }
 
     val isFormValid by remember(
-        nameError, type2Error, hpError, acError, strError, dexError, conError, intError, wisError, chaError,
-        sourceError, initiativeError, proficiencyBonusError
+        nameError, type2Error, hpError, acError, strError, dexError, conError, intError,
+        wisError, chaError, proficiencyBonusError, sourceError, initiativeError
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
                     strError == null && dexError == null && conError == null && intError == null &&
-                    wisError == null && chaError == null && sourceError == null && initiativeError == null &&
-                    proficiencyBonusError == null
+                    wisError == null && chaError == null && proficiencyBonusError == null &&
+                    sourceError == null && initiativeError == null
         }
     }
 
     LaunchedEffect(
-        name, type2, hp, ac, str, dex, con, int, wis, cha, source, initiative, proficiencyBonus
+        name, type2, hp, ac, str, dex, con, int, wis, cha, proficiencyBonus, source, initiative
     ) {
         validateFields()
     }
@@ -220,10 +223,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Crear Monstruo Personalizado") },
+                title = { Text("Create Custom Monster") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -247,19 +250,18 @@ fun CreateMonsterScreen(navController: NavHostController) {
 
                     val userId = authManager.getCurrentUserId()
                     if (userId == null) {
-                        errorMessage = "Debes iniciar sesión para guardar."
+                        errorMessage = "You must be logged in to save."
                         return@Button
                     }
 
-                    val profBonus = proficiencyBonus.toInt()
-                    val saves = buildMap {
-                        if (strSaveProficiency) put("str", calculateSave(str, true, profBonus))
-                        if (dexSaveProficiency) put("dex", calculateSave(dex, true, profBonus))
-                        if (conSaveProficiency) put("con", calculateSave(con, true, profBonus))
-                        if (intSaveProficiency) put("int", calculateSave(int, true, profBonus))
-                        if (wisSaveProficiency) put("wis", calculateSave(wis, true, profBonus))
-                        if (chaSaveProficiency) put("cha", calculateSave(cha, true, profBonus))
-                    }.takeIf { it.isNotEmpty() }
+                    val savesMap = mutableMapOf<String, String?>()
+                    val pb = proficiencyBonus.toInt()
+                    if (saveStr) savesMap["str"] = calculateModifier(str, pb)
+                    if (saveDex) savesMap["dex"] = calculateModifier(dex, pb)
+                    if (saveCon) savesMap["con"] = calculateModifier(con, pb)
+                    if (saveInt) savesMap["int"] = calculateModifier(int, pb)
+                    if (saveWis) savesMap["wis"] = calculateModifier(wis, pb)
+                    if (saveCha) savesMap["cha"] = calculateModifier(cha, pb)
 
                     val customMonster = CustomMonster(
                         userId = userId,
@@ -276,10 +278,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         int = int.toIntOrNull(),
                         wis = wis.toIntOrNull(),
                         cha = cha.toIntOrNull(),
+                        proficiencyBonus = pb,
+                        saves = savesMap.takeIf { it.isNotEmpty() },
                         source = source,
                         initiative = initiative.toIntOrNull(),
-                        proficiencyBonus = profBonus,
-                        saves = saves,
                         public = false
                     )
                     isSaving = true
@@ -290,7 +292,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             delay(500)
                             navController.popBackStack(route = Destinations.MONSTER_LIST, inclusive = false)
                         } catch (e: Exception) {
-                            errorMessage = "Error al guardar: ${e.message}"
+                            errorMessage = "Error saving: ${e.message}"
                             Log.e("CreateMonsterScreen", "Error saving monster: ${e.message}", e)
                         } finally {
                             isSaving = false
@@ -306,7 +308,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text("Guardar Monstruo")
+                Text("Save Monster")
             }
         }
     ) { paddingValues ->
@@ -330,18 +332,18 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Información General
+                // General Information
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Información General", Icons.Default.Info)
+                        SectionTitle("General Information", Icons.Default.Info)
 
                         OutlinedTextField(
                             value = name,
                             onValueChange = { if (it.length <= 35) name = it },
-                            label = { Text("Nombre") },
+                            label = { Text("Name") },
                             modifier = Modifier.fillMaxWidth(),
                             isError = nameError != null,
                             trailingIcon = {
@@ -362,9 +364,11 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             OutlinedTextField(
                                 value = size,
                                 onValueChange = {},
-                                label = { Text("Tamaño") },
+                                label = { Text("Size") },
                                 readOnly = true,
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sizeExpanded) }
                             )
                             ExposedDropdownMenu(
@@ -392,9 +396,11 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             OutlinedTextField(
                                 value = type1,
                                 onValueChange = {},
-                                label = { Text("Tipo Principal") },
+                                label = { Text("Primary Type") },
                                 readOnly = true,
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = type1Expanded) }
                             )
                             ExposedDropdownMenu(
@@ -417,7 +423,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         OutlinedTextField(
                             value = type2,
                             onValueChange = { if (it.length <= 20) type2 = it },
-                            label = { Text("Subtipo (opcional)") },
+                            label = { Text("Subtype (optional)") },
                             modifier = Modifier.fillMaxWidth(),
                             isError = type2Error != null,
                             trailingIcon = {
@@ -438,9 +444,11 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             OutlinedTextField(
                                 value = alignment,
                                 onValueChange = {},
-                                label = { Text("Alineamiento") },
+                                label = { Text("Alignment") },
                                 readOnly = true,
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alignmentExpanded) }
                             )
                             ExposedDropdownMenu(
@@ -470,7 +478,9 @@ fun CreateMonsterScreen(navController: NavHostController) {
                                 onValueChange = {},
                                 label = { Text("CR") },
                                 readOnly = true,
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = crExpanded) }
                             )
                             ExposedDropdownMenu(
@@ -493,7 +503,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         OutlinedTextField(
                             value = source,
                             onValueChange = { if (it.length <= 30) source = it },
-                            label = { Text("Fuente") },
+                            label = { Text("Source") },
                             modifier = Modifier.fillMaxWidth(),
                             isError = sourceError != null,
                             trailingIcon = {
@@ -513,32 +523,32 @@ fun CreateMonsterScreen(navController: NavHostController) {
                                     initiative = it
                                 }
                             },
-                            label = { Text("Iniciativa") },
+                            label = { Text("Initiative") },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = initiativeError != null
                         )
                         initiativeError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-
-                        OutlinedTextField(
-                            value = proficiencyBonus,
-                            onValueChange = { if (it.length <= 1) proficiencyBonus = it.filter { it.isDigit() } },
-                            label = { Text("Bonificador de Competencia") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = proficiencyBonusError != null
-                        )
-                        proficiencyBonusError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                     }
                 }
 
-                // Estadísticas
+                // Statistics
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Estadísticas", Icons.Default.Settings)
+                        SectionTitle("Statistics", Icons.Default.Settings)
+
+                        OutlinedTextField(
+                            value = proficiencyBonus,
+                            onValueChange = { if (it.length <= 1) proficiencyBonus = it.filter { it.isDigit() } },
+                            label = { Text("Proficiency Bonus") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = proficiencyBonusError != null
+                        )
+                        proficiencyBonusError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
 
                         OutlinedTextField(
                             value = hp,
@@ -560,7 +570,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         OutlinedTextField(
                             value = ac,
                             onValueChange = { if (it.length <= 25) ac = it },
-                            label = { Text("CA") },
+                            label = { Text("AC") },
                             modifier = Modifier.fillMaxWidth(),
                             isError = acError != null,
                             trailingIcon = {
@@ -580,21 +590,26 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             OutlinedTextField(
                                 value = str,
                                 onValueChange = { if (it.length <= 2) str = it.filter { it.isDigit() } },
-                                label = { Text("Fuerza") },
+                                label = { Text("Strength") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 isError = strError != null
                             )
-                            strError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                             OutlinedTextField(
                                 value = dex,
                                 onValueChange = { if (it.length <= 2) dex = it.filter { it.isDigit() } },
-                                label = { Text("Destreza") },
+                                label = { Text("Dexterity") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 isError = dexError != null
                             )
-                            dexError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            strError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                            dexError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -603,21 +618,26 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             OutlinedTextField(
                                 value = con,
                                 onValueChange = { if (it.length <= 2) con = it.filter { it.isDigit() } },
-                                label = { Text("Constitución") },
+                                label = { Text("Constitution") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 isError = conError != null
                             )
-                            conError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                             OutlinedTextField(
                                 value = int,
                                 onValueChange = { if (it.length <= 2) int = it.filter { it.isDigit() } },
-                                label = { Text("Inteligencia") },
+                                label = { Text("Intelligence") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 isError = intError != null
                             )
-                            intError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            conError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                            intError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -626,98 +646,94 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             OutlinedTextField(
                                 value = wis,
                                 onValueChange = { if (it.length <= 2) wis = it.filter { it.isDigit() } },
-                                label = { Text("Sabiduría") },
+                                label = { Text("Wisdom") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 isError = wisError != null
                             )
-                            wisError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
                             OutlinedTextField(
                                 value = cha,
                                 onValueChange = { if (it.length <= 2) cha = it.filter { it.isDigit() } },
-                                label = { Text("Carisma") },
+                                label = { Text("Charisma") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 isError = chaError != null
                             )
-                            chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            wisError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                            chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }
 
-                // Tiradas de Salvación
+                // Saving Throws
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Tiradas de Salvación", Icons.Default.Save)
-
-                        fun displaySaveValue(stat: String, hasProficiency: Boolean): String {
-                            if (!hasProficiency || stat.isBlank()) return "0"
-                            val profBonus = proficiencyBonus.toIntOrNull() ?: 2
-                            return calculateSave(stat, hasProficiency, profBonus) ?: "0"
-                        }
-
+                        SectionTitle("Saving Throws", Icons.Default.Security)
+                        val pb = proficiencyBonus.toIntOrNull() ?: 2
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Checkbox(
-                                checked = strSaveProficiency,
-                                onCheckedChange = { strSaveProficiency = it }
-                            )
-                            Text("Fuerza: ${displaySaveValue(str, strSaveProficiency)}")
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = dexSaveProficiency,
-                                onCheckedChange = { dexSaveProficiency = it }
-                            )
-                            Text("Destreza: ${displaySaveValue(dex, dexSaveProficiency)}")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = saveStr,
+                                    onCheckedChange = { saveStr = it }
+                                )
+                                Text("Strength ${if (saveStr) calculateModifier(str, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = saveDex,
+                                    onCheckedChange = { saveDex = it }
+                                )
+                                Text("Dexterity ${if (saveDex) calculateModifier(dex, pb) ?: "" else ""}")
+                            }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Checkbox(
-                                checked = conSaveProficiency,
-                                onCheckedChange = { conSaveProficiency = it }
-                            )
-                            Text("Constitución: ${displaySaveValue(con, conSaveProficiency)}")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = saveCon,
+                                    onCheckedChange = { saveCon = it }
+                                )
+                                Text("Constitution ${if (saveCon) calculateModifier(con, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = saveInt,
+                                    onCheckedChange = { saveInt = it }
+                                )
+                                Text("Intelligence ${if (saveInt) calculateModifier(int, pb) ?: "" else ""}")
+                            }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Checkbox(
-                                checked = intSaveProficiency,
-                                onCheckedChange = { intSaveProficiency = it }
-                            )
-                            Text("Inteligencia: ${displaySaveValue(int, intSaveProficiency)}")
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = wisSaveProficiency,
-                                onCheckedChange = { wisSaveProficiency = it }
-                            )
-                            Text("Sabiduría: ${displaySaveValue(wis, wisSaveProficiency)}")
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = chaSaveProficiency,
-                                onCheckedChange = { chaSaveProficiency = it }
-                            )
-                            Text("Carisma: ${displaySaveValue(cha, chaSaveProficiency)}")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = saveWis,
+                                    onCheckedChange = { saveWis = it }
+                                )
+                                Text("Wisdom ${if (saveWis) calculateModifier(wis, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = saveCha,
+                                    onCheckedChange = { saveCha = it }
+                                )
+                                Text("Charisma ${if (saveCha) calculateModifier(cha, pb) ?: "" else ""}")
+                            }
                         }
                     }
                 }

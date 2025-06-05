@@ -30,6 +30,7 @@ import com.javier.mappster.ui.screen.CreateMonsterScreen
 import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterListScreen
+import com.javier.mappster.ui.screen.initiativeTracker.InitiativeTrackerScreen
 import com.javier.mappster.ui.screen.monsters.TwoPaneMonsterListScreen
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
@@ -247,6 +248,15 @@ fun NavGraph(navController: NavHostController) {
                 navController = navController,
                 monsterId = monsterId,
                 isTwoPaneMode = false
+            )
+        }
+        composable(Destinations.INITIATIVE_TRACKER) {
+            val monsterViewModel: MonsterListViewModel = viewModel(
+                factory = MonsterListViewModelFactory(dataManager, authManager)
+            )
+            InitiativeTrackerScreen(
+                navController = navController,
+                monsterViewModel = monsterViewModel
             )
         }
     }

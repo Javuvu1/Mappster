@@ -60,7 +60,10 @@ class MonsterListViewModel(
                         type = monster.type?.type?.toString()?.removeSurrounding("\""),
                         alignment = monster.alignment?.joinToString(" "),
                         source = monster.source,
-                        isCustom = false
+                        isCustom = false,
+                        ac = monster.ac?.firstOrNull()?.ac?.toString(),
+                        hp = monster.hp?.average,
+                        initiative = monster.initiative?.proficiency
                     )
                 }
 
@@ -80,7 +83,10 @@ class MonsterListViewModel(
                         type = customMonster.type?.joinToString(", "),
                         alignment = customMonster.alignment,
                         source = customMonster.source,
-                        isCustom = true
+                        isCustom = true,
+                        ac = customMonster.ac,
+                        hp = customMonster.hp,
+                        initiative = customMonster.initiative
                     )
                 }
 
