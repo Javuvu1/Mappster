@@ -55,7 +55,7 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
 
     Scaffold(
         topBar = {
-            if (!isTwoPaneMode) { // Solo mostrar topBar en modo pantalla completa
+            if (!isTwoPaneMode) {
                 TopAppBar(
                     title = {
                         Text(
@@ -214,6 +214,11 @@ fun MonsterCombatStats(monster: CustomMonster) {
 
 @Composable
 fun MonsterStats(monster: CustomMonster) {
+    // Función para calcular el modificador
+    fun calculateModifier(score: Int?): Int {
+        return score?.let { (it - 10) / 2 } ?: 0
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -222,28 +227,73 @@ fun MonsterStats(monster: CustomMonster) {
         Column(modifier = Modifier.padding(8.dp)) {
             Text(
                 text = "Ability Scores & Saves:",
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
                 color = MaterialTheme.colorScheme.onSurface
             )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                StatColumn("STR", monster.str, null)
-                StatColumn("DEX", monster.dex, null)
-                StatColumn("CON", monster.con, null)
+                // STR
+                StatColumn(
+                    label = "STR",
+                    abilityValue = monster.str,
+                    saveValue = monster.saves?.get("str"),
+                    modifier = calculateModifier(monster.str)
+                )
+
+                // DEX
+                StatColumn(
+                    label = "DEX",
+                    abilityValue = monster.dex,
+                    saveValue = monster.saves?.get("dex"),
+                    modifier = calculateModifier(monster.dex)
+                )
+
+                // CON
+                StatColumn(
+                    label = "CON",
+                    abilityValue = monster.con,
+                    saveValue = monster.saves?.get("con"),
+                    modifier = calculateModifier(monster.con)
+                )
             }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                StatColumn("INT", monster.int, null)
-                StatColumn("WIS", monster.wis, null)
-                StatColumn("CHA", monster.cha, null)
+                // INT
+                StatColumn(
+                    label = "INT",
+                    abilityValue = monster.int,
+                    saveValue = monster.saves?.get("int"),
+                    modifier = calculateModifier(monster.int)
+                )
+
+                // WIS
+                StatColumn(
+                    label = "WIS",
+                    abilityValue = monster.wis,
+                    saveValue = monster.saves?.get("wis"),
+                    modifier = calculateModifier(monster.wis)
+                )
+
+                // CHA
+                StatColumn(
+                    label = "CHA",
+                    abilityValue = monster.cha,
+                    saveValue = monster.saves?.get("cha"),
+                    modifier = calculateModifier(monster.cha)
+                )
             }
         }
     }
@@ -253,21 +303,22 @@ fun MonsterStats(monster: CustomMonster) {
 fun StatColumn(
     label: String,
     abilityValue: Int?,
-    saveValue: String?
+    saveValue: String?,
+    modifier: Int
 ) {
     val textSize = 20.sp
     val modifierTextSize = 22.sp
     val fontWeight = FontWeight.SemiBold
 
-    // Calcular el modificador usando la fórmula estándar de D&D: (puntuación - 10) / 2, redondeado hacia abajo
-    val modifier = abilityValue?.let { ((it - 10) / 2) } ?: 0
-    // La tirada de salvación usa el modificador a menos que se proporcione un valor específico
-    val saveDisplayText = saveValue ?: (if (modifier >= 0) "+$modifier" else "$modifier")
+    // Mostrar el saveValue si existe, de lo contrario mostrar el modificador
+    val saveDisplayText = saveValue ?: if (modifier >= 0) "+$modifier" else "$modifier"
+    val modifierText = if (modifier >= 0) "+$modifier" else "$modifier"
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
     ) {
+        // Puntuación de habilidad
         Text(
             text = "$label: ${abilityValue?.toString() ?: "–"}",
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -276,6 +327,8 @@ fun StatColumn(
             ),
             color = MaterialTheme.colorScheme.onSurface
         )
+
+        // Tirada de salvación (usa el valor guardado o el modificador)
         Text(
             text = "Save: $saveDisplayText",
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -284,8 +337,10 @@ fun StatColumn(
                 color = MaterialTheme.colorScheme.primary
             )
         )
+
+        // Modificador (siempre mostrado)
         Text(
-            text = "Mod: ${if (modifier >= 0) "+$modifier" else "$modifier"}",
+            text = "Mod: $modifierText",
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontWeight = FontWeight.Normal,
                 fontSize = modifierTextSize,

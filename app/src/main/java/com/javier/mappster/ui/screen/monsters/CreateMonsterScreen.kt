@@ -77,7 +77,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var name by remember { mutableStateOf("") }
     var nameError by remember { mutableStateOf<String?>(null) }
     var size by remember { mutableStateOf("Medium") }
-    var type1 by remember { mutableStateOf("humanoid") }
+    var type1 by remember { mutableStateOf("Humanoid") }
     var type2 by remember { mutableStateOf("") }
     var type2Error by remember { mutableStateOf<String?>(null) }
     var alignment by remember { mutableStateOf("Neutral") }
@@ -102,11 +102,32 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var sourceError by remember { mutableStateOf<String?>(null) }
     var initiative by remember { mutableStateOf("") }
     var initiativeError by remember { mutableStateOf<String?>(null) }
+    var proficiencyBonus by remember { mutableStateOf("2") }
+    var proficiencyBonusError by remember { mutableStateOf<String?>(null) }
+    var strSaveProficiency by remember { mutableStateOf(false) }
+    var dexSaveProficiency by remember { mutableStateOf(false) }
+    var conSaveProficiency by remember { mutableStateOf(false) }
+    var intSaveProficiency by remember { mutableStateOf(false) }
+    var wisSaveProficiency by remember { mutableStateOf(false) }
+    var chaSaveProficiency by remember { mutableStateOf(false) }
 
     val sizeOptions = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan")
     val type1Options = listOf("Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead")
     val alignmentOptions = listOf("Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil", "Unaligned")
     val crOptions = listOf("0", "1/8", "1/4", "1/2", "1") + (2..30).map { it.toString() }
+
+    // Calcular modificadores de características
+    fun calculateModifier(stat: String): Int {
+        return stat.toIntOrNull()?.let { (it - 10) / 2 } ?: 0
+    }
+
+    // Calcular tirada de salvación
+    fun calculateSave(stat: String, hasProficiency: Boolean, profBonus: Int): String? {
+        if (!hasProficiency) return null
+        val modifier = calculateModifier(stat)
+        val total = modifier + profBonus
+        return if (total >= 0) "+$total" else total.toString()
+    }
 
     fun validateFields() {
         nameError = when {
@@ -170,17 +191,29 @@ fun CreateMonsterScreen(navController: NavHostController) {
             initiative.isNotBlank() && !initiative.matches(Regex("-?\\d+")) -> "Solo números enteros"
             else -> null
         }
-    }
-
-    val isFormValid by remember(nameError, type2Error, hpError, acError, strError, dexError, conError, intError, wisError, chaError, sourceError, initiativeError) {
-        derivedStateOf {
-            nameError == null && type2Error == null && hpError == null && acError == null &&
-                    strError == null && dexError == null && conError == null && intError == null &&
-                    wisError == null && chaError == null && sourceError == null && initiativeError == null
+        proficiencyBonusError = when {
+            proficiencyBonus.isBlank() -> "Bonificador de competencia es obligatorio"
+            !proficiencyBonus.matches(Regex("\\d+")) -> "Solo números"
+            proficiencyBonus.toInt() !in 2..9 -> "Debe estar entre 2 y 9"
+            else -> null
         }
     }
 
-    LaunchedEffect(name, type2, hp, ac, str, dex, con, int, wis, cha, source, initiative) {
+    val isFormValid by remember(
+        nameError, type2Error, hpError, acError, strError, dexError, conError, intError, wisError, chaError,
+        sourceError, initiativeError, proficiencyBonusError
+    ) {
+        derivedStateOf {
+            nameError == null && type2Error == null && hpError == null && acError == null &&
+                    strError == null && dexError == null && conError == null && intError == null &&
+                    wisError == null && chaError == null && sourceError == null && initiativeError == null &&
+                    proficiencyBonusError == null
+        }
+    }
+
+    LaunchedEffect(
+        name, type2, hp, ac, str, dex, con, int, wis, cha, source, initiative, proficiencyBonus
+    ) {
         validateFields()
     }
 
@@ -218,6 +251,16 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         return@Button
                     }
 
+                    val profBonus = proficiencyBonus.toInt()
+                    val saves = buildMap {
+                        if (strSaveProficiency) put("str", calculateSave(str, true, profBonus))
+                        if (dexSaveProficiency) put("dex", calculateSave(dex, true, profBonus))
+                        if (conSaveProficiency) put("con", calculateSave(con, true, profBonus))
+                        if (intSaveProficiency) put("int", calculateSave(int, true, profBonus))
+                        if (wisSaveProficiency) put("wis", calculateSave(wis, true, profBonus))
+                        if (chaSaveProficiency) put("cha", calculateSave(cha, true, profBonus))
+                    }.takeIf { it.isNotEmpty() }
+
                     val customMonster = CustomMonster(
                         userId = userId,
                         name = name,
@@ -235,6 +278,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         cha = cha.toIntOrNull(),
                         source = source,
                         initiative = initiative.toIntOrNull(),
+                        proficiencyBonus = profBonus,
+                        saves = saves,
                         public = false
                     )
                     isSaving = true
@@ -474,6 +519,16 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             isError = initiativeError != null
                         )
                         initiativeError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                        OutlinedTextField(
+                            value = proficiencyBonus,
+                            onValueChange = { if (it.length <= 1) proficiencyBonus = it.filter { it.isDigit() } },
+                            label = { Text("Bonificador de Competencia") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = proficiencyBonusError != null
+                        )
+                        proficiencyBonusError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                     }
                 }
 
@@ -586,6 +641,83 @@ fun CreateMonsterScreen(navController: NavHostController) {
                                 isError = chaError != null
                             )
                             chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
+                        }
+                    }
+                }
+
+                // Tiradas de Salvación
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("Tiradas de Salvación", Icons.Default.Save)
+
+                        fun displaySaveValue(stat: String, hasProficiency: Boolean): String {
+                            if (!hasProficiency || stat.isBlank()) return "0"
+                            val profBonus = proficiencyBonus.toIntOrNull() ?: 2
+                            return calculateSave(stat, hasProficiency, profBonus) ?: "0"
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = strSaveProficiency,
+                                onCheckedChange = { strSaveProficiency = it }
+                            )
+                            Text("Fuerza: ${displaySaveValue(str, strSaveProficiency)}")
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = dexSaveProficiency,
+                                onCheckedChange = { dexSaveProficiency = it }
+                            )
+                            Text("Destreza: ${displaySaveValue(dex, dexSaveProficiency)}")
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = conSaveProficiency,
+                                onCheckedChange = { conSaveProficiency = it }
+                            )
+                            Text("Constitución: ${displaySaveValue(con, conSaveProficiency)}")
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = intSaveProficiency,
+                                onCheckedChange = { intSaveProficiency = it }
+                            )
+                            Text("Inteligencia: ${displaySaveValue(int, intSaveProficiency)}")
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = wisSaveProficiency,
+                                onCheckedChange = { wisSaveProficiency = it }
+                            )
+                            Text("Sabiduría: ${displaySaveValue(wis, wisSaveProficiency)}")
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = chaSaveProficiency,
+                                onCheckedChange = { chaSaveProficiency = it }
+                            )
+                            Text("Carisma: ${displaySaveValue(cha, chaSaveProficiency)}")
                         }
                     }
                 }

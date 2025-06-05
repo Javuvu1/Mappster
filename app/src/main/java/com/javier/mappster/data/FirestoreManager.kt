@@ -239,10 +239,9 @@ class FirestoreManager {
             }
 
             val userCustomQuery = monstersCollection
-                .whereEqualTo("source", "Custom")
-                .whereEqualTo("userId", userId)
+                .whereEqualTo("userId", userId)  // Elimina el filtro de source
+
             val publicCustomQuery = monstersCollection
-                .whereEqualTo("source", "Custom")
                 .whereEqualTo("public", true)
 
             val results = listOf(

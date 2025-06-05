@@ -22,6 +22,7 @@ data class CustomMonster(
     val int: Int? = null, // Inteligencia
     val wis: Int? = null, // Sabiduría
     val cha: Int? = null, // Carisma
+    val proficiencyBonus: Int? = null, // Bonificador de competencia, obligatorio
     val saves: Map<String, String?>? = null, // Tiradas de salvación (ej. {"dex": "+6", "con": "+10"})
     val skills: Map<String, String>? = null, // Habilidades (ej. {"arcana": "+5", "perception": "+7"})
     val passive: Int? = null, // Percepción pasiva
