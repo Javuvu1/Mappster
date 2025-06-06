@@ -185,7 +185,7 @@ fun InitiativeTrackerScreen(
                 confirmButton = {
                     Button(
                         onClick = { trackerViewModel.confirmHpChange() },
-                        enabled = dialogState.hpChange.toIntOrNull() != null || dialogState.hpChange.matches(Regex("^[+-]\\d+\$"))
+                        enabled = dialogState.hpChange.matches(Regex("^[+-]?\\d+\$"))
                     ) {
                         Text("Confirm")
                     }
@@ -319,13 +319,22 @@ fun InitiativeEntryItem(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "HP: ${entry.hp ?: "?"}",
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable {
-                                onHpClick(entry.hp, entry.id)
-                            }
-                        )
+                        Row(
+                            modifier = Modifier.clickable { onHpClick(entry.hp, entry.id) },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "HP: ",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${entry.hp ?: "?"}",
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary, // Color destacado
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                         Text("AC: ${entry.ac ?: "?"}", fontSize = 14.sp)
                         Text(
                             "Init: ${entry.baseInitiative?.let {
