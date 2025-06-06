@@ -48,100 +48,108 @@ data class DiceRollData(
     val levelRange: String? = null // Rango de niveles para escalar (ej. "3-9")
 )
 
-// Construye un AnnotatedString con partes clicables para los daños, dados y condiciones
+// Construye un AnnotatedString con partes clicables para los daños, dados, condiciones y hechizos
 fun buildDamageAnnotatedString(
     text: String,
-    diceDataList: MutableList<DiceRollData>
+    diceDataList: MutableList<DiceRollData>,
+    schoolColor: Color
 ): AnnotatedString {
-    // Patrones para detectar {@damage}, {@dice}, {@scaledice}, {@scaledamage}, y {@condition}
+    // Patrones para detectar {@damage}, {@dice}, {@scaledice}, {@scaledamage}, {@condition}, y {@spell ...}
     val pattern = Regex(
         "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" + // Para {@damage 1d4+1} o {@damage 8d8}
                 "\\{@dice\\s*(\\d*d\\d+)\\}|" + // Para {@dice 2d6} o {@dice d20}
                 "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" + // Para {@scaledice 8d6|3-9|1d6}
                 "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" + // Para {@scaledamage 8d6|3-9|1d6}
-                "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}" // Para {@condition <estado>}
+                "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" + // Para {@condition <estado>}
+                "\\{@spell\\s*([^\\}]+)\\}" // Para {@spell magic missile}
     )
     val matches = pattern.findAll(text).toList()
     diceDataList.clear()
 
-    matches.forEach { match ->
-        if (match.value.startsWith("{@damage")) {
-            val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
-            val parts = damage.split("+")
-            if (parts.size == 1) {
-                val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
-                diceDataList.add(DiceRollData(numDice, dieSides, type = "damage"))
-            } else {
-                val (dicePart, bonusPart) = parts
-                val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
-                val bonus = bonusPart.toInt()
-                diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
-            }
-        } else if (match.value.startsWith("{@dice")) {
-            val dice = match.groupValues[2].replace("\\s+".toRegex(), "")
-            val parts = dice.split("d")
-            val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt()
-            val dieSides = parts[1].toInt()
-            diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
-        } else if (match.value.startsWith("{@scaledice")) {
-            val initialDice = match.groupValues[3].replace("\\s+".toRegex(), "")
-            val levelRange = match.groupValues[4]
-            val scaledDie = match.groupValues[5].replace("\\s+".toRegex(), "")
-            val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
-            diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledice", scaledDie = scaledDie, levelRange = levelRange))
-        } else if (match.value.startsWith("{@scaledamage")) {
-            val initialDice = match.groupValues[6].replace("\\s+".toRegex(), "")
-            val levelRange = match.groupValues[7]
-            val scaledDie = match.groupValues[8].replace("\\s+".toRegex(), "")
-            val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
-            diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledamage", scaledDie = scaledDie, levelRange = levelRange))
-        } else if (match.value.startsWith("{@condition")) {
-            // No añadimos a diceDataList, solo procesamos el texto de la condición
-        }
-    }
-
     return buildAnnotatedString {
         var lastIndex = 0
-        matches.forEachIndexed { index, matchResult ->
-            val start = matchResult.range.first
-            val end = matchResult.range.last + 1
+        matches.forEachIndexed { index, match ->
+            val start = match.range.first
+            val end = match.range.last + 1
 
             // Determinar el texto a mostrar
             val displayText = when {
-                matchResult.value.startsWith("{@damage") -> matchResult.groupValues[1].replace("\\s+".toRegex(), "")
-                matchResult.value.startsWith("{@dice") -> matchResult.groupValues[2].replace("\\s+".toRegex(), "")
-                matchResult.value.startsWith("{@scaledice") -> {
-                    val scaledDie = matchResult.groupValues[5].replace("\\s+".toRegex(), "")
+                match.value.startsWith("{@damage") -> {
+                    val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
+                    val parts = damage.split("+")
+                    if (parts.size == 1) {
+                        val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
+                        diceDataList.add(DiceRollData(numDice, dieSides, type = "damage"))
+                    } else {
+                        val (dicePart, bonusPart) = parts
+                        val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
+                        val bonus = bonusPart.toInt()
+                        diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
+                    }
+                    damage
+                }
+                match.value.startsWith("{@dice") -> {
+                    val dice = match.groupValues[2].replace("\\s+".toRegex(), "")
+                    val parts = dice.split("d")
+                    val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt()
+                    val dieSides = parts[1].toInt()
+                    diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
+                    dice
+                }
+                match.value.startsWith("{@scaledice") -> {
+                    val initialDice = match.groupValues[3].replace("\\s+".toRegex(), "")
+                    val levelRange = match.groupValues[4]
+                    val scaledDie = match.groupValues[5].replace("\\s+".toRegex(), "")
+                    val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
+                    diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledice", scaledDie = scaledDie, levelRange = levelRange))
                     scaledDie
                 }
-                matchResult.value.startsWith("{@scaledamage") -> {
-                    val scaledDie = matchResult.groupValues[8].replace("\\s+".toRegex(), "")
+                match.value.startsWith("{@scaledamage") -> {
+                    val initialDice = match.groupValues[6].replace("\\s+".toRegex(), "")
+                    val levelRange = match.groupValues[7]
+                    val scaledDie = match.groupValues[8].replace("\\s+".toRegex(), "")
+                    val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
+                    diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledamage", scaledDie = scaledDie, levelRange = levelRange))
                     scaledDie
                 }
-                matchResult.value.startsWith("{@condition") -> {
-                    val condition = matchResult.groupValues[9]
+                match.value.startsWith("{@condition") -> {
+                    val condition = match.groupValues[9]
                     when (condition) {
                         "deafened||deaf" -> "deafened"
                         "blinded||blind" -> "blinded"
                         else -> condition
                     }
                 }
+                match.value.startsWith("{@spell") -> {
+                    match.groupValues[10].trim() // Extract spell name (e.g., "magic missile")
+                }
                 else -> ""
             }
 
             append(text.substring(lastIndex, start))
-            if (matchResult.value.startsWith("{@condition")) {
-                pushStringAnnotation(tag = "condition", annotation = matchResult.groupValues[9])
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(displayText)
+            when {
+                match.value.startsWith("{@condition") -> {
+                    pushStringAnnotation(tag = "condition", annotation = match.groupValues[9])
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
+                        append(displayText)
+                    }
+                    pop()
                 }
-                pop()
-            } else {
-                pushStringAnnotation(tag = "damage", annotation = index.toString())
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(displayText)
+                match.value.startsWith("{@damage") || match.value.startsWith("{@dice") ||
+                        match.value.startsWith("{@scaledice") || match.value.startsWith("{@scaledamage") -> {
+                    pushStringAnnotation(tag = "damage", annotation = index.toString())
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
+                        append(displayText)
+                    }
+                    pop()
                 }
-                pop()
+                match.value.startsWith("{@spell") -> {
+                    pushStringAnnotation(tag = "spell", annotation = displayText)
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
+                        append(displayText)
+                    }
+                    pop()
+                }
             }
             lastIndex = end
         }
@@ -209,7 +217,6 @@ fun SpellDetailScreen(
     isTwoPaneMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-
     val schoolData = when (spell.school.uppercase()) {
         "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
         "C" -> SchoolData("Conjuración", Color(0xFF9C27B0), Icons.Default.CallMerge)
@@ -228,6 +235,8 @@ fun SpellDetailScreen(
     var currentDiceData by remember { mutableStateOf<DiceRollData?>(null) }
     var showConditionDialog by remember { mutableStateOf(false) }
     var currentCondition by remember { mutableStateOf("") }
+    var showSpellDialog by remember { mutableStateOf(false) }
+    var currentSpellName by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -245,7 +254,6 @@ fun SpellDetailScreen(
                         titleContentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
-
             }
         },
     ) { innerPadding ->
@@ -322,7 +330,7 @@ fun SpellDetailScreen(
                         spell.entries.forEach { entry ->
                             val diceDataList = remember { mutableListOf<DiceRollData>() }
                             val annotatedText = remember(entry) {
-                                buildDamageAnnotatedString(entry, diceDataList)
+                                buildDamageAnnotatedString(entry, diceDataList, schoolData.color)
                             }
 
                             Row(
@@ -347,6 +355,11 @@ fun SpellDetailScreen(
                                             .firstOrNull()?.let { annotation ->
                                                 currentCondition = annotation.item
                                                 showConditionDialog = true
+                                            }
+                                        annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                currentSpellName = annotation.item
+                                                showSpellDialog = true
                                             }
                                     },
                                     style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
@@ -390,7 +403,7 @@ fun SpellDetailScreen(
                                 entryHigherLevel.entries.forEach { entry ->
                                     val diceDataList = remember { mutableListOf<DiceRollData>() }
                                     val annotatedText = remember(entry) {
-                                        buildDamageAnnotatedString(entry, diceDataList)
+                                        buildDamageAnnotatedString(entry, diceDataList, schoolData.color)
                                     }
 
                                     Row(
@@ -415,6 +428,11 @@ fun SpellDetailScreen(
                                                     .firstOrNull()?.let { annotation ->
                                                         currentCondition = annotation.item
                                                         showConditionDialog = true
+                                                    }
+                                                annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        currentSpellName = annotation.item
+                                                        showSpellDialog = true
                                                     }
                                             },
                                             style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
@@ -519,7 +537,8 @@ fun SpellDetailScreen(
                         item {
                             val description = buildDamageAnnotatedString(
                                 conditionDescriptions[currentCondition] ?: "No description available",
-                                mutableListOf()
+                                mutableListOf(),
+                                schoolData.color
                             )
                             Text(
                                 text = description,
@@ -532,6 +551,49 @@ fun SpellDetailScreen(
                 confirmButton = {
                     TextButton(
                         onClick = { showConditionDialog = false },
+                        colors = ButtonDefaults.textButtonColors(contentColor = schoolData.color)
+                    ) {
+                        Text("Cerrar")
+                    }
+                },
+                containerColor = Color.Transparent,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                schoolData.color,
+                                MaterialTheme.colorScheme.surface
+                            )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(16.dp)
+            )
+        }
+
+        // Diálogo placeholder para hechizos
+        if (showSpellDialog) {
+            AlertDialog(
+                onDismissRequest = { showSpellDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = schoolData.color)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(currentSpellName.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                },
+                text = {
+                    Text(
+                        text = "Detalles para el hechizo '$currentSpellName' no disponibles en este diálogo. Implementar navegación en el futuro.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showSpellDialog = false },
                         colors = ButtonDefaults.textButtonColors(contentColor = schoolData.color)
                     ) {
                         Text("Cerrar")
