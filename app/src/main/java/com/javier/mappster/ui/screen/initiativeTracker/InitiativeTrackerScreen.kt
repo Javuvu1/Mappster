@@ -91,7 +91,12 @@ fun InitiativeTrackerScreen(
                                 onInitiativeChange = { newValue ->
                                     trackerViewModel.updateEntryInitiative(entry.id, newValue)
                                 },
-                                onRemove = { trackerViewModel.removeEntry(entry.id) }
+                                onRemove = { trackerViewModel.removeEntry(entry.id) },
+                                onHpClick = { hp, id ->
+                                    if (entry is InitiativeEntry.MonsterEntry) {
+                                        trackerViewModel.showHpDialog(id, hp)
+                                    }
+                                }
                             )
                             Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
                         }
@@ -148,6 +153,40 @@ fun InitiativeTrackerScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showAddPlayerDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Diálogo para modificar HP
+        trackerViewModel.hpDialogState?.let { dialogState ->
+            AlertDialog(
+                onDismissRequest = { trackerViewModel.closeHpDialog() },
+                title = { Text("Modify HP") },
+                text = {
+                    Column {
+                        Text("Current HP: ${dialogState.currentHp ?: "Unknown"}")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextField(
+                            value = dialogState.hpChange,
+                            onValueChange = { trackerViewModel.updateHpChange(it) },
+                            label = { Text("Change HP (e.g., +10, -5)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { trackerViewModel.confirmHpChange() },
+                        enabled = dialogState.hpChange.toIntOrNull() != null
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { trackerViewModel.closeHpDialog() }) {
                         Text("Cancel")
                     }
                 }
@@ -229,7 +268,8 @@ fun MonsterSearchDialog(
 fun InitiativeEntryItem(
     entry: InitiativeEntry,
     onInitiativeChange: (Int?) -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onHpClick: (Int?, String) -> Unit // Nuevo callback para clic en HP
 ) {
     Card(
         modifier = Modifier
@@ -274,9 +314,14 @@ fun InitiativeEntryItem(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("HP: ${entry.hp ?: "?"}", fontSize = 14.sp)
+                        Text(
+                            text = "HP: ${entry.hp ?: "?"}",
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable {
+                                onHpClick(entry.hp, entry.id)
+                            }
+                        )
                         Text("AC: ${entry.ac ?: "?"}", fontSize = 14.sp)
-                        // In InitiativeEntryItem composable
                         Text(
                             "Init: ${entry.baseInitiative?.let {
                                 if (it >= 0) "+$it" else "$it"

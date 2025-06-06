@@ -16,6 +16,13 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.floor
 
+// Estado para el diálogo de HP
+data class HpDialogState(
+    val entryId: String,
+    val currentHp: Int?,
+    val hpChange: String
+)
+
 class InitiativeTrackerViewModel : ViewModel() {
     private val _entries = mutableStateOf(InitiativeTrackerStore.getEntries())
     private val _uiState = MutableStateFlow<InitiativeTrackerUiState>(InitiativeTrackerUiState.Success(_entries.value))
@@ -23,6 +30,10 @@ class InitiativeTrackerViewModel : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // Estado del diálogo de HP
+    private val _hpDialogState = mutableStateOf<HpDialogState?>(null)
+    val hpDialogState: HpDialogState? get() = _hpDialogState.value
 
     init {
         updateUiState()
@@ -138,7 +149,7 @@ class InitiativeTrackerViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update {
                 InitiativeTrackerUiState.Success(
-                    entries = _entries.value.sortedByDescending { it.initiative ?: Int.MIN_VALUE }
+                    entries = _entries.value.sortedByDescending { it.initiative ?: 0 }
                 )
             }
         }
@@ -164,5 +175,43 @@ class InitiativeTrackerViewModel : ViewModel() {
             InitiativeTrackerStore.clearEntries()
             updateUiState()
         }
+    }
+
+    // Funciones para el diálogo de HP
+    fun showHpDialog(entryId: String, currentHp: Int?) {
+        _hpDialogState.value = HpDialogState(
+            entryId = entryId,
+            currentHp = currentHp,
+            hpChange = ""
+        )
+    }
+
+    fun updateHpChange(hpChange: String) {
+        _hpDialogState.value = _hpDialogState.value?.copy(hpChange = hpChange)
+    }
+
+    fun confirmHpChange() {
+        _hpDialogState.value?.let { dialogState ->
+            viewModelScope.launch {
+                val change = dialogState.hpChange.toIntOrNull() ?: 0
+                _entries.value = _entries.value.map { entry ->
+                    if (entry.id == dialogState.entryId && entry is InitiativeEntry.MonsterEntry) {
+                        val currentHp = entry.hp ?: 0
+                        val newHp = (currentHp + change).coerceAtLeast(0) // No permitir HP negativo
+                        Log.d("HpDebug", "Updating HP for ${entry.name}: $currentHp + $change = $newHp")
+                        entry.copy(hp = newHp)
+                    } else {
+                        entry
+                    }
+                }
+                InitiativeTrackerStore.setEntries(_entries.value)
+                updateUiState()
+                closeHpDialog()
+            }
+        }
+    }
+
+    fun closeHpDialog() {
+        _hpDialogState.value = null
     }
 }
