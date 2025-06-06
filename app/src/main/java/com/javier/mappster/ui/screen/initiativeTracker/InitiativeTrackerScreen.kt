@@ -2,6 +2,7 @@ package com.javier.mappster.ui.screen.initiativeTracker
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +26,7 @@ import com.javier.mappster.model.InitiativeEntry
 import com.javier.mappster.model.InitiativeTrackerUiState
 import com.javier.mappster.model.Monster
 import com.javier.mappster.model.UnifiedMonster
+import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.BottomNavigationBar
 import com.javier.mappster.viewmodel.MonsterListViewModel
 
@@ -96,7 +98,8 @@ fun InitiativeTrackerScreen(
                                     if (entry is InitiativeEntry.MonsterEntry) {
                                         trackerViewModel.showHpDialog(id, hp)
                                     }
-                                }
+                                },
+                                navController = navController // Añadido para navegación
                             )
                             Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
                         }
@@ -274,12 +277,26 @@ fun InitiativeEntryItem(
     entry: InitiativeEntry,
     onInitiativeChange: (Int?) -> Unit,
     onRemove: () -> Unit,
-    onHpClick: (Int?, String) -> Unit
+    onHpClick: (Int?, String) -> Unit,
+    navController: NavHostController // Añadido para navegación
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .clickable {
+                // Navegación solo para monstruos
+                if (entry is InitiativeEntry.MonsterEntry) {
+                    val monster = entry.monster
+                    if (monster.isCustom) {
+                        navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                    } else {
+                        val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
+                        val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
+                        navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                    }
+                }
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -320,7 +337,11 @@ fun InitiativeEntryItem(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
-                            modifier = Modifier.clickable { onHpClick(entry.hp, entry.id) },
+                            modifier = Modifier.clickable(
+                                // Priorizar el diálogo de HP sobre la navegación
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onHpClick(entry.hp, entry.id) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -331,7 +352,7 @@ fun InitiativeEntryItem(
                             Text(
                                 text = "${entry.hp ?: "?"}",
                                 fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.primary, // Color destacado
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Medium
                             )
                         }
