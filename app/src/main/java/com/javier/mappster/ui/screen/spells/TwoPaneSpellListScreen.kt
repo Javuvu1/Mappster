@@ -1,5 +1,6 @@
 package com.javier.mappster.ui.screen.spells
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,7 +38,7 @@ fun TwoPaneSpellListScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(paddingValues)
+                    .padding(paddingValues) // Usar paddingValues aquí
             ) {
                 // Panel izquierdo (lista)
                 Surface(
@@ -109,7 +110,10 @@ fun TwoPaneSpellListScreen(
                                         SpellListItem(
                                             spell = spell,
                                             isSelected = selectedSpell?.name == spell.name,
-                                            onClick = { selectedSpell = spell },
+                                            onClick = {
+                                                Log.d("TwoPaneSpellListScreen", "Spell clicked in list: ${spell.name}")
+                                                selectedSpell = spell
+                                            },
                                             onDeleteClick = { viewModel.deleteSpell(it) },
                                             onToggleVisibilityClick = { isPublic ->
                                                 viewModel.updateSpellVisibility(spell, isPublic)
@@ -153,7 +157,11 @@ fun TwoPaneSpellListScreen(
                                 isTwoPaneMode = true,
                                 navController = navController,
                                 viewModel = viewModel,
-                                modifier = Modifier.padding(start = 8.dp)
+                                modifier = Modifier.padding(8.dp),
+                                onSpellSelected = { newSpell ->
+                                    Log.d("TwoPaneSpellListScreen", "Spell selected via callback: ${newSpell.name}")
+                                    selectedSpell = newSpell
+                                }
                             )
                         }
                     } ?: Box(

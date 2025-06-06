@@ -223,7 +223,8 @@ fun SpellDetailScreen(
     isTwoPaneMode: Boolean = false,
     navController: NavHostController,
     viewModel: SpellListViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSpellSelected: (Spell) -> Unit = {} // Callback para modo dos paneles
 ) {
     val context = LocalContext.current
     val schoolData = when (spell.school.uppercase()) {
@@ -367,13 +368,18 @@ fun SpellDetailScreen(
                                         annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
                                                 val spellName = annotation.item.trim()
-                                                Log.d("SpellDetailScreen", "Clicked spell: '$spellName', searchQuery: '${viewModel.searchQuery.value}'")
+                                                Log.d("SpellDetailScreen", "Clicked spell: '$spellName', isTwoPaneMode: $isTwoPaneMode")
                                                 val targetSpell = viewModel.getSpellByName(spellName)
                                                 Log.d("SpellDetailScreen", "Target spell: $targetSpell")
                                                 if (targetSpell != null) {
-                                                    val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
-                                                    Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
-                                                    navController.navigate("spell_detail/$encodedName")
+                                                    if (isTwoPaneMode) {
+                                                        Log.d("SpellDetailScreen", "Selecting spell in two-pane mode: ${targetSpell.name}")
+                                                        onSpellSelected(targetSpell)
+                                                    } else {
+                                                        val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                        Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                        navController.navigate("spell_detail/$encodedName")
+                                                    }
                                                 } else {
                                                     Toast.makeText(
                                                         context,
@@ -453,13 +459,18 @@ fun SpellDetailScreen(
                                                 annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
                                                         val spellName = annotation.item.trim()
-                                                        Log.d("SpellDetailScreen", "Clicked spell (higher level): '$spell', searchQuery: ${viewModel.searchQuery.value}")
+                                                        Log.d("SpellDetailScreen", "Clicked spell (higher level): '$spellName', isTwoPaneMode: $isTwoPaneMode")
                                                         val targetSpell = viewModel.getSpellByName(spellName)
                                                         Log.d("SpellDetailScreen", "Target spell (higher level): $targetSpell")
                                                         if (targetSpell != null) {
-                                                            val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
-                                                            Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
-                                                            navController.navigate("spell_detail/$encodedName")
+                                                            if (isTwoPaneMode) {
+                                                                Log.d("SpellDetailScreen", "Selecting spell in two-pane mode: ${targetSpell.name}")
+                                                                onSpellSelected(targetSpell)
+                                                            } else {
+                                                                val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                                Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                                navController.navigate("spell_detail/$encodedName")
+                                                            }
                                                         } else {
                                                             Toast.makeText(
                                                                 context,
@@ -541,7 +552,7 @@ fun SpellDetailScreen(
                         Brush.verticalGradient(
                             colors = listOf(
                                 schoolData.color,
-                                MaterialTheme.colorScheme.background
+                                MaterialTheme.colorScheme.surface
                             )
                         ),
                         shape = RoundedCornerShape(20.dp)
@@ -591,16 +602,16 @@ fun SpellDetailScreen(
                     }
                 },
                 containerColor = Color.Transparent,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(20.dp),
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 schoolData.color,
-                                MaterialTheme.colorScheme.background
+                                MaterialTheme.colorScheme.surface
                             )
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(20.dp)
                     )
                     .padding(16.dp)
             )
