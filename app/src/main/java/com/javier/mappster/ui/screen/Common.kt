@@ -2,7 +2,7 @@ package com.javier.mappster.ui.screen
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -14,8 +14,11 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -31,12 +34,24 @@ fun BottomNavigationBar(navController: NavHostController) {
 
     NavigationBar(
         containerColor = Color(0xFF0D47A1), // Azul oscuro
-        contentColor = MaterialTheme.colorScheme.onSurface
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .height(96.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(24.dp))
     ) {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Hechizos") },
-            label = { Text("Spells") },
+            label = {
+                Text(
+                    text = "Spells",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == Destinations.SPELL_LIST,
             onClick = {
                 navController.navigate(Destinations.SPELL_LIST) {
@@ -45,11 +60,18 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                     launchSingleTop = true
                 }
-            }
+            },
+            modifier = Modifier.padding(horizontal = 8.dp)
         )
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Listas Hechizos") },
-            label = { Text("Spell Ls.") },
+            label = {
+                Text(
+                    text = "Spell Ls.",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == Destinations.CUSTOM_SPELL_LISTS,
             onClick = {
                 navController.navigate(Destinations.CUSTOM_SPELL_LISTS) {
@@ -58,11 +80,18 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                     launchSingleTop = true
                 }
-            }
+            },
+            modifier = Modifier.padding(horizontal = 8.dp)
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Pets, contentDescription = "Monstruos") },
-            label = { Text("Monsters") },
+            label = {
+                Text(
+                    text = "Monsters",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == Destinations.MONSTER_LIST,
             onClick = {
                 navController.navigate(Destinations.MONSTER_LIST) {
@@ -71,29 +100,37 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                     launchSingleTop = true
                 }
-            }
+            },
+            modifier = Modifier.padding(horizontal = 8.dp)
         )
-        NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = "Listas Monstruos") },
-            label = { Text("Monster Ls.") },
-            selected = currentRoute == Destinations.CUSTOM_MONSTER_LISTS,
-            onClick = {
-                navController.navigate(Destinations.CUSTOM_MONSTER_LISTS) {
-                    if (currentRoute != Destinations.CUSTOM_MONSTER_LISTS) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                    }
-                    launchSingleTop = true
-                }
-            }
-        )
+        // Pendiente de implementar en un futuro, no borrar
+        // NavigationBarItem(
+        //     icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = "Listas Monstruos") },
+        //     label = { Text("Monster Ls.") },
+        //     selected = currentRoute == Destinations.CUSTOM_MONSTER_LISTS,
+        //     onClick = {
+        //         navController.navigate(Destinations.CUSTOM_MONSTER_LISTS) {
+        //             if (currentRoute != Destinations.CUSTOM_MONSTER_LISTS) {
+        //                 popUpTo(navController.graph.startDestinationId) { inclusive = false }
+        //             }
+        //             launchSingleTop = true
+        //         }
+        //     }
+        // )
         NavigationBarItem(
             icon = {
                 Icon(
-                    imageVector = Icons.Default.Timer, // Usa el icono de reloj que prefieras
+                    imageVector = Icons.Default.Timer,
                     contentDescription = "Initiative Tracker"
                 )
             },
-            label = { Text("Initiative") },
+            label = {
+                Text(
+                    text = "Initiative",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == Destinations.INITIATIVE_TRACKER,
             onClick = {
                 navController.navigate(Destinations.INITIATIVE_TRACKER) {
@@ -102,15 +139,23 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                     launchSingleTop = true
                 }
-            }
+            },
+            modifier = Modifier.padding(horizontal = 8.dp)
         )
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar Sesión") },
-            label = { Text("C.Sesión") },
+            label = {
+                Text(
+                    text = "C.Sesión",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == Destinations.LOGIN,
             onClick = {
                 showLogoutDialog = true
-            }
+            },
+            modifier = Modifier.padding(horizontal = 8.dp)
         )
     }
 
