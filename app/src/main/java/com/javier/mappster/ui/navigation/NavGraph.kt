@@ -3,7 +3,6 @@ package com.javier.mappster.navigation
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.util.Log
-import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,9 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.javier.mappster.data.AuthManager
-import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.data.LocalDataManager
-import com.javier.mappster.model.Monster
 import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.screen.CreateMonsterScreen
@@ -41,12 +38,8 @@ import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
 import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
-import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
-import kotlinx.coroutines.delay
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import java.net.URLDecoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -66,13 +59,16 @@ fun NavGraph(navController: NavHostController) {
                 viewModel = spellListViewModel,
                 onSpellClick = { spell ->
                     val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                    Log.d("NavGraph", "Navigating to spell_detail/$encodedName from spell_list")
                     navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
                 },
                 onCreateSpellClick = {
+                    Log.d("NavGraph", "Navigating to create_spell")
                     navController.navigate(Destinations.CREATE_SPELL)
                 },
                 onEditSpellClick = { spell ->
                     val encodedName = java.net.URLEncoder.encode(spell.name, "UTF-8")
+                    Log.d("NavGraph", "Navigating to edit_spell/$encodedName")
                     navController.navigate("${Destinations.EDIT_SPELL.replace("{spellName}", encodedName)}")
                 },
                 navController = navController
@@ -96,7 +92,7 @@ fun NavGraph(navController: NavHostController) {
                     viewModel = spellListViewModel
                 )
             } ?: run {
-                Log.d("NavGraph", "Spell '$spellName' not found, popping back to SPELL_LIST")
+                Log.e("NavGraph", "Spell '$spellName' not found, popping back to SPELL_LIST")
                 navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
             }
         }
@@ -110,24 +106,30 @@ fun NavGraph(navController: NavHostController) {
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
                 URLDecoder.decode(it, "UTF-8")
             }
+            Log.d("NavGraph", "Navigating to edit_spell, spellName: '$spellName'")
             val spell = spellName?.let { spellListViewModel.getSpellByName(it) }
             spell?.let {
                 EditSpellScreen(
                     spell = it,
                     viewModel = spellListViewModel,
                     onSpellUpdated = {
+                        Log.d("NavGraph", "Spell updated, popping back to SPELL_LIST")
                         navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
                     }
                 )
-            } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+            } ?: run {
+                Log.e("NavGraph", "Spell '$spellName' not found, popping back to SPELL_LIST")
+                navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+            }
         }
         composable(Destinations.CUSTOM_SPELL_LISTS) {
+            Log.d("NavGraph", "Navigating to custom_spell_lists")
             CustomSpellListsScreen(navController = navController)
         }
         composable(Destinations.MONSTER_LIST) {
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
+            Log.d("NavGraph", "Navigating to monster_list, isLandscape: $isLandscape")
             if (isLandscape) {
                 TwoPaneMonsterListScreen(navController = navController)
             } else {
@@ -137,6 +139,106 @@ fun NavGraph(navController: NavHostController) {
                 MonsterListScreen(
                     navController = navController,
                     viewModel = monsterViewModel
+                )
+            }
+        }
+        composable(Destinations.CUSTOM_MONSTER_LISTS) {
+            Log.d("NavGraph", "Navigating to custom_monster_lists")
+            CustomMonsterListsScreen(navController = navController)
+        }
+        composable(
+            route = "${Destinations.MONSTER_DETAIL}/{name}/{source}",
+            arguments = listOf(
+                navArgument("name") { type = NavType.StringType },
+                navArgument("source") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val name = backStackEntry.arguments?.getString("name")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+            val source = backStackEntry.arguments?.getString("source")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+            Log.d("NavGraph", "Navigating to monster_detail, name: '$name', source: '$source'")
+            if (name != null && source != null) {
+                var monster by remember { mutableStateOf<com.javier.mappster.model.Monster?>(null) }
+                var isLoading by remember { mutableStateOf(true) }
+                var error by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(name, source) {
+                    try {
+                        val result = dataManager.getMonsterByNameAndSource(name, source)
+                        monster = result
+                    } catch (e: Exception) {
+                        error = "Error al cargar el monstruo: ${e.message}"
+                    } finally {
+                        isLoading = false
+                    }
+                }
+
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        isLoading -> CircularProgressIndicator()
+                        error != null -> Text(
+                            text = error ?: "Error desconocido",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        monster != null -> MonsterDetailScreen(
+                            monster = monster!!,
+                            isTwoPaneMode = false
+                        )
+                        else -> Text(
+                            text = "Monstruo no encontrado",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            } else {
+                Log.e("NavGraph", "Invalid monster_detail arguments, popping back to MONSTER_LIST")
+                navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
+            }
+        }
+        composable(Destinations.CREATE_MONSTER) {
+            Log.d("NavGraph", "Navigating to create_monster")
+            CreateMonsterScreen(navController = navController)
+        }
+        composable(
+            route = "${Destinations.CUSTOM_MONSTER_DETAIL}/{monsterId}",
+            arguments = listOf(navArgument("monsterId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val monsterId = backStackEntry.arguments?.getString("monsterId")
+            Log.d("NavGraph", "Navigating to custom_monster_detail, monsterId: '$monsterId'")
+            if (monsterId != null) {
+                CustomMonsterDetailScreen(
+                    monsterId = monsterId,
+                    navController = navController,
+                    isTwoPaneMode = false
+                )
+            } else {
+                Log.e("NavGraph", "Invalid custom_monster_detail arguments, popping back to CUSTOM_MONSTER_LISTS")
+                navController.popBackStack(Destinations.CUSTOM_MONSTER_LISTS, inclusive = false)
+            }
+        }
+        composable(Destinations.INITIATIVE_TRACKER) {
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val monsterViewModel: MonsterListViewModel = viewModel(
+                factory = MonsterListViewModelFactory(dataManager, authManager)
+            )
+            Log.d("NavGraph", "Navigating to initiative_tracker, isLandscape: $isLandscape")
+            if (isLandscape) {
+                TwoPaneInitiativeTrackerScreen(
+                    navController = navController,
+                    monsterViewModel = monsterViewModel
+                )
+            } else {
+                InitiativeTrackerScreen(
+                    navController = navController,
+                    monsterViewModel = monsterViewModel,
+                    isTwoPaneMode = false
                 )
             }
         }
