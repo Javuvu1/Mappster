@@ -1,5 +1,6 @@
 package com.javier.mappster.ui.screen.spellList
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -150,7 +151,8 @@ fun SpellListViewScreen(
             else -> {
                 val listSpells = spells.filter { spell ->
                     spellList!!.spellIds.contains(normalizeSpellName(spell.name))
-                }
+                }.sortedBy { it.level }
+                Log.d("SpellListViewScreen", "Sorted spells: ${listSpells.map { "${it.name} (Level ${it.level})" }}")
                 if (listSpells.isEmpty()) {
                     EmptySpellsMessage()
                 } else {
