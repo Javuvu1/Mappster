@@ -56,7 +56,7 @@ class SpellListViewModel(
         try {
             Log.d("SpellListViewModel", "Fetching spells for userId=$userId")
             allSpells = firestoreManager.getSpells(userId)
-            Log.d("SpellListViewModel", "Fetched ${allSpells.size} spells")
+            Log.d("SpellListViewModel", "Fetched ${allSpells.size} spells: ${allSpells.map { it.name }}")
             filterSpells()
         } catch (e: Exception) {
             Log.e("SpellListViewModel", "Error fetching spells: ${e.message}", e)
@@ -73,6 +73,12 @@ class SpellListViewModel(
             it.name.contains(query, ignoreCase = true)
         }.sortedBy { it.name.lowercase() }
         Log.d("SpellListViewModel", "Filtered ${_spells.value.size} spells")
+    }
+
+    fun getSpellByName(name: String): Spell? {
+        val normalizedName = name.trim()
+        Log.d("SpellListViewModel", "Searching for spell: '$normalizedName' in allSpells: ${allSpells.map { it.name }}")
+        return allSpells.find { it.name.equals(normalizedName, ignoreCase = true) }
     }
 
     fun refreshSpellsPublic() {

@@ -1,10 +1,11 @@
 package com.javier.mappster.ui.screen.spells
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
@@ -16,15 +17,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.javier.mappster.model.*
 import com.javier.mappster.utils.conditionDescriptions
 import com.javier.mappster.utils.sourceMap
+import java.net.URLEncoder
 
 @Composable
 private fun SectionTitle(title: String, icon: ImageVector, tint: Color) {
@@ -121,7 +125,9 @@ fun buildDamageAnnotatedString(
                     }
                 }
                 match.value.startsWith("{@spell") -> {
-                    match.groupValues[10].trim() // Extract spell name (e.g., "magic missile")
+                    val spellName = match.groupValues[10].trim()
+                    Log.d("SpellDetailScreen", "Parsed spell: '$spellName' from ${match.value}")
+                    spellName
                 }
                 else -> ""
             }
@@ -215,8 +221,11 @@ fun buildDiceRollBreakdown(
 fun SpellDetailScreen(
     spell: Spell,
     isTwoPaneMode: Boolean = false,
+    navController: NavHostController,
+    viewModel: SpellListViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val schoolData = when (spell.school.uppercase()) {
         "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
         "C" -> SchoolData("Conjuración", Color(0xFF9C27B0), Icons.Default.CallMerge)
@@ -235,8 +244,6 @@ fun SpellDetailScreen(
     var currentDiceData by remember { mutableStateOf<DiceRollData?>(null) }
     var showConditionDialog by remember { mutableStateOf(false) }
     var currentCondition by remember { mutableStateOf("") }
-    var showSpellDialog by remember { mutableStateOf(false) }
-    var currentSpellName by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -256,6 +263,7 @@ fun SpellDetailScreen(
                 )
             }
         },
+        modifier = modifier
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -358,8 +366,21 @@ fun SpellDetailScreen(
                                             }
                                         annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
-                                                currentSpellName = annotation.item
-                                                showSpellDialog = true
+                                                val spellName = annotation.item.trim()
+                                                Log.d("SpellDetailScreen", "Clicked spell: '$spellName', searchQuery: '${viewModel.searchQuery.value}'")
+                                                val targetSpell = viewModel.getSpellByName(spellName)
+                                                Log.d("SpellDetailScreen", "Target spell: $targetSpell")
+                                                if (targetSpell != null) {
+                                                    val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                    Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                    navController.navigate("spell_detail/$encodedName")
+                                                } else {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Hechizo '$spellName' no encontrado. Verifica el nombre.",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
                                             }
                                     },
                                     style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
@@ -431,8 +452,21 @@ fun SpellDetailScreen(
                                                     }
                                                 annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
-                                                        currentSpellName = annotation.item
-                                                        showSpellDialog = true
+                                                        val spellName = annotation.item.trim()
+                                                        Log.d("SpellDetailScreen", "Clicked spell (higher level): '$spell', searchQuery: ${viewModel.searchQuery.value}")
+                                                        val targetSpell = viewModel.getSpellByName(spellName)
+                                                        Log.d("SpellDetailScreen", "Target spell (higher level): $targetSpell")
+                                                        if (targetSpell != null) {
+                                                            val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                            Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                            navController.navigate("spell_detail/$encodedName")
+                                                        } else {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Hechizo '$spellName' no encontrado. Verifica el nombre.",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
+                                                        }
                                                     }
                                             },
                                             style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
@@ -507,7 +541,7 @@ fun SpellDetailScreen(
                         Brush.verticalGradient(
                             colors = listOf(
                                 schoolData.color,
-                                MaterialTheme.colorScheme.surface
+                                MaterialTheme.colorScheme.background
                             )
                         ),
                         shape = RoundedCornerShape(20.dp)
@@ -524,7 +558,7 @@ fun SpellDetailScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.Book, contentDescription = null, tint = schoolData.color)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(currentCondition.replace("||", " or ").replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
+                        Text(currentCondition.replace("||", " o ").replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 text = {
@@ -557,59 +591,16 @@ fun SpellDetailScreen(
                     }
                 },
                 containerColor = Color.Transparent,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 schoolData.color,
-                                MaterialTheme.colorScheme.surface
+                                MaterialTheme.colorScheme.background
                             )
                         ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(16.dp)
-            )
-        }
-
-        // Diálogo placeholder para hechizos
-        if (showSpellDialog) {
-            AlertDialog(
-                onDismissRequest = { showSpellDialog = false },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = schoolData.color)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(currentSpellName.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
-                text = {
-                    Text(
-                        text = "Detalles para el hechizo '$currentSpellName' no disponibles en este diálogo. Implementar navegación en el futuro.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = { showSpellDialog = false },
-                        colors = ButtonDefaults.textButtonColors(contentColor = schoolData.color)
-                    ) {
-                        Text("Cerrar")
-                    }
-                },
-                containerColor = Color.Transparent,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                schoolData.color,
-                                MaterialTheme.colorScheme.surface
-                            )
-                        ),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
                     .padding(16.dp)
             )

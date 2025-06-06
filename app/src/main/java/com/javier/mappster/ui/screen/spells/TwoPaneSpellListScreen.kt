@@ -151,6 +151,8 @@ fun TwoPaneSpellListScreen(
                             SpellDetailScreen(
                                 spell = spell,
                                 isTwoPaneMode = true,
+                                navController = navController,
+                                viewModel = viewModel,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }

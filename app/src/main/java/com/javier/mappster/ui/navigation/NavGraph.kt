@@ -82,11 +82,16 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("spellName") { type = NavType.StringType })
         ) { backStackEntry ->
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
-                java.net.URLDecoder.decode(it, "UTF-8")
+                URLDecoder.decode(it, "UTF-8")
             }
             val spell = spellListViewModel.spells.value.find { it.name == spellName }
             spell?.let {
-                SpellDetailScreen(spell = it, isTwoPaneMode = false)
+                SpellDetailScreen(
+                    spell = it,
+                    isTwoPaneMode = false,
+                    navController = navController,
+                    viewModel = spellListViewModel
+                )
             } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
         }
         composable(Destinations.CREATE_SPELL) {
