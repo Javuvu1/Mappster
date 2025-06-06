@@ -276,8 +276,11 @@ fun InitiativeEntryItem(
                     ) {
                         Text("HP: ${entry.hp ?: "?"}", fontSize = 14.sp)
                         Text("AC: ${entry.ac ?: "?"}", fontSize = 14.sp)
+                        // In InitiativeEntryItem composable
                         Text(
-                            "Init: ${entry.baseInitiative?.let { if (it >= 0) "+$it" else "$it" } ?: "?"}",
+                            "Init: ${entry.baseInitiative?.let {
+                                if (it >= 0) "+$it" else "$it"
+                            } ?: "?"}",
                             fontSize = 14.sp
                         )
                     }

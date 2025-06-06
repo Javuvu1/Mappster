@@ -52,6 +52,7 @@ class MonsterListViewModel(
                 val localResult = dataManager.loadMonsters()
                 val localMonsters = localResult.getOrDefault(emptyList())
                 val unifiedLocalMonsters = localMonsters.mapIndexed { index, monster ->
+                    Log.d("MonsterList", "Converting local monster ${monster.name}, DEX: ${monster.dex}")
                     UnifiedMonster(
                         id = "local_$index",
                         name = monster.name ?: "Desconocido",
@@ -63,7 +64,8 @@ class MonsterListViewModel(
                         isCustom = false,
                         ac = monster.ac?.firstOrNull()?.ac?.toString(),
                         hp = monster.hp?.average,
-                        initiative = monster.initiative?.proficiency
+                        initiative = null, // Monstruos no personalizados no usan initiative
+                        dex = monster.dex // Pasamos DEX para calcular iniciativa
                     )
                 }
 
@@ -75,6 +77,7 @@ class MonsterListViewModel(
                     emptyList()
                 }
                 val unifiedCustomMonsters = customMonsters.map { customMonster ->
+                    Log.d("MonsterList", "Converting custom monster ${customMonster.name}, Initiative: ${customMonster.initiative}")
                     UnifiedMonster(
                         id = customMonster.id ?: "unknown_${customMonster.name}",
                         name = customMonster.name,
@@ -86,7 +89,8 @@ class MonsterListViewModel(
                         isCustom = true,
                         ac = customMonster.ac,
                         hp = customMonster.hp,
-                        initiative = customMonster.initiative
+                        initiative = customMonster.initiative,
+                        dex = null // CustomMonster no usa DEX
                     )
                 }
 

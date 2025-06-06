@@ -1,12 +1,12 @@
 package com.javier.mappster.ui.screen.initiativeTracker
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javier.mappster.model.InitiativeEntry
 import com.javier.mappster.model.InitiativeTrackerStore
 import com.javier.mappster.model.InitiativeTrackerUiState
-import com.javier.mappster.model.Monster
 import com.javier.mappster.model.UnifiedMonster
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,37 +30,33 @@ class InitiativeTrackerViewModel : ViewModel() {
 
     fun addMonster(monster: UnifiedMonster) {
         viewModelScope.launch {
-            val acInt = monster.ac?.let { acStr: String ->
-                acStr.split(" ")[0].toIntOrNull()
+            Log.d("AddMonsterDebug", """
+                Añadiendo monstruo: ${monster.name}
+                Es custom: ${monster.isCustom}
+                Iniciativa: ${monster.initiative}
+                DEX: ${monster.dex ?: "N/A"}
+            """.trimIndent())
+
+            val acInt = monster.ac?.let { acStr ->
+                acStr.split(" ").first().toIntOrNull()
             }
 
-            // Calculate initiative modifier
-            val baseInitiative = when {
-                monster.isCustom -> monster.initiative
-                else -> {
-                    // For non-custom Monster, prefer initiative.proficiency or calculate from DEX
-                    val nonCustomMonster = monster as? Monster
-                    nonCustomMonster?.initiative?.proficiency
-                        ?: nonCustomMonster?.dex?.let { dex ->
-                            floor((dex - 10) / 2.0).toInt()
-                        } ?: 0
-                }
-            }
-
-            val baseName = monster.name.trim()
-            val sameNameCount = _entries.value.count {
-                it.name.startsWith(baseName, ignoreCase = true) &&
-                        (it.name == baseName || it.name.matches(Regex("^${Regex.escape(baseName)} #\\d+$")))
-            }
-            val displayName = if (sameNameCount > 0) {
-                "$baseName #${sameNameCount + 1}"
+            // Calcular baseInitiative
+            val baseInitiative = if (monster.isCustom) {
+                monster.initiative ?: 0
             } else {
-                baseName
+                monster.dex?.let { dex ->
+                    val modifier = floor((dex - 10) / 2.0).toInt()
+                    Log.d("AddMonsterDebug", "Calculando iniciativa para ${monster.name}, DEX: $dex, Modifier: $modifier")
+                    modifier
+                } ?: 0.also {
+                    Log.w("AddMonsterDebug", "DEX es null para ${monster.name}, usando 0")
+                }
             }
 
             val newEntry = InitiativeEntry.MonsterEntry(
                 id = "monster_${monster.id}_${UUID.randomUUID()}",
-                name = displayName,
+                name = generateDisplayName(monster.name),
                 monster = monster,
                 count = 1,
                 hp = monster.hp,
@@ -68,10 +64,20 @@ class InitiativeTrackerViewModel : ViewModel() {
                 baseInitiative = baseInitiative,
                 initiative = null
             )
+
             _entries.value = _entries.value + newEntry
             InitiativeTrackerStore.setEntries(_entries.value)
             updateUiState()
         }
+    }
+
+    private fun generateDisplayName(baseName: String): String {
+        val trimmedName = baseName.trim()
+        val sameNameCount = _entries.value.count {
+            it.name.startsWith(trimmedName, ignoreCase = true) &&
+                    (it.name == trimmedName || it.name.matches(Regex("^${Regex.escape(trimmedName)} #\\d+$")))
+        }
+        return if (sameNameCount > 0) "$trimmedName #${sameNameCount + 1}" else trimmedName
     }
 
     fun addPlayer(name: String) {
