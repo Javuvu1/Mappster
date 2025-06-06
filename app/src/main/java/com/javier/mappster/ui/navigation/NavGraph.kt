@@ -33,6 +33,7 @@ import com.javier.mappster.ui.screen.initiativeTracker.TwoPaneInitiativeTrackerS
 import com.javier.mappster.ui.screen.monsters.TwoPaneMonsterListScreen
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
+import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
@@ -40,6 +41,8 @@ import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import java.net.URLDecoder
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -49,6 +52,10 @@ fun NavGraph(navController: NavHostController) {
     val spellListViewModel = provideSpellListViewModel(context)
     val dataManager = remember { LocalDataManager(context) }
     val authManager = remember { AuthManager.getInstance(context) }
+
+    LaunchedEffect(navController) {
+        Log.d("NavGraph", "Available routes: ${navController.graph.map { it.route ?: "null" }.joinToString(", ")}")
+    }
 
     NavHost(navController = navController, startDestination = Destinations.LOGIN) {
         composable(Destinations.LOGIN) {
@@ -125,6 +132,63 @@ fun NavGraph(navController: NavHostController) {
         composable(Destinations.CUSTOM_SPELL_LISTS) {
             Log.d("NavGraph", "Navigating to custom_spell_lists")
             CustomSpellListsScreen(navController = navController)
+        }
+        composable(
+            route = "${Destinations.SPELL_LIST_VIEW}/{listId}",
+            arguments = listOf(navArgument("listId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val listId = backStackEntry.arguments?.getString("listId")
+            Log.d("NavGraph", "Navigating to spell_list_view, listId: '$listId'")
+            if (listId != null) {
+                SpellListViewScreen(
+                    listId = listId,
+                    viewModel = spellListViewModel,
+                    navController = navController
+                )
+            } else {
+                Log.e("NavGraph", "Invalid spell_list_view arguments, popping back to CUSTOM_SPELL_LISTS")
+                navController.popBackStack(Destinations.CUSTOM_SPELL_LISTS, inclusive = false)
+            }
+        }
+        composable(Destinations.CREATE_SPELL_LIST) {
+            Log.d("NavGraph", "Navigating to create_spell_list")
+            CreateSpellListScreen(
+                navController = navController
+            )
+        }
+        composable(
+            route = "${Destinations.EDIT_SPELL_LIST}",
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("name") { type = NavType.StringType },
+                navArgument("spellIds") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")
+            val name = backStackEntry.arguments?.getString("name")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+            val spellIdsJson = backStackEntry.arguments?.getString("spellIds")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+            Log.d("NavGraph", "Navigating to edit_spell_list, id: '$id', name: '$name', spellIdsJson: '$spellIdsJson'")
+            if (id != null && name != null && spellIdsJson != null) {
+                val spellIds = try {
+                    Json.decodeFromString<List<String>>(spellIdsJson)
+                } catch (e: Exception) {
+                    Log.e("NavGraph", "Error decoding spellIds: ${e.message}")
+                    emptyList<String>()
+                }
+                CreateSpellListScreen(
+                    navController = navController,
+                    listId = id,
+                    listName = name,
+                    spellIds = spellIds
+                )
+            } else {
+                Log.e("NavGraph", "Invalid edit_spell_list arguments, popping back to CUSTOM_SPELL_LISTS")
+                navController.popBackStack(Destinations.CUSTOM_SPELL_LISTS, inclusive = false)
+            }
         }
         composable(Destinations.MONSTER_LIST) {
             val configuration = LocalConfiguration.current

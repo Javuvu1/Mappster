@@ -18,9 +18,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.SpellList
+import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.BottomNavigationBar
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.net.URLEncoder
 
 @Composable
 private fun EmptySpellListsMessage() {
@@ -90,7 +92,7 @@ fun CustomSpellListsScreen(
         bottomBar = { BottomNavigationBar(navController) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate("create_spell_list") },
+                onClick = { navController.navigate(Destinations.CREATE_SPELL_LIST) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -105,11 +107,13 @@ fun CustomSpellListsScreen(
             else -> SpellListsContent(
                 spellLists = spellLists,
                 paddingValues = paddingValues,
-                onListClick = { navController.navigate("spell_list_view/$it") },
+                onListClick = { navController.navigate("${Destinations.SPELL_LIST_VIEW}/$it") },
                 onDeleteClick = viewModel::deleteSpellList,
                 onEditClick = { spellList ->
                     val spellIdsJson = Json.encodeToString(spellList.spellIds)
-                    navController.navigate("create_spell_list/${spellList.id}/${spellList.name}/$spellIdsJson")
+                    val encodedName = URLEncoder.encode(spellList.name, "UTF-8")
+                    val encodedSpellIds = URLEncoder.encode(spellIdsJson, "UTF-8")
+                    navController.navigate("${Destinations.EDIT_SPELL_LIST.replace("{id}", spellList.id).replace("{name}", encodedName).replace("{spellIds}", encodedSpellIds)}")
                 }
             )
         }
