@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.CustomMonster
@@ -45,8 +46,11 @@ fun InitiativeTrackerScreen(
             TopAppBar(
                 title = { Text("Initiative Tracker") },
                 actions = {
-                    IconButton(onClick = { trackerViewModel.rollInitiatives() }) {
-                        Icon(Icons.Default.Casino, contentDescription = "Roll Initiatives")
+                    TextButton(onClick = { trackerViewModel.rollMonsterInitiatives() }) {
+                        Text("Roll Initiative")
+                    }
+                    TextButton(onClick = { trackerViewModel.sortEntries() }) {
+                        Text("Sort")
                     }
                 }
             )
@@ -89,6 +93,7 @@ fun InitiativeTrackerScreen(
                                 },
                                 onRemove = { trackerViewModel.removeEntry(entry.id) }
                             )
+                            Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
                         }
                     }
                 }
@@ -229,71 +234,93 @@ fun InitiativeEntryItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = entry.name,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onRemove) {
-                    Icon(Icons.Default.Delete, contentDescription = "Remove")
-                }
-            }
-
-            if (entry is InitiativeEntry.MonsterEntry) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("HP: ${entry.hp ?: "?"}")
-                    Text("AC: ${entry.ac ?: "?"}")
-                    Text("Init Mod: ${entry.baseInitiative?.let { if (it >= 0) "+$it" else "$it" } ?: "?"}")
+                    Text(
+                        text = entry.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = onRemove,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Remove",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
-                entry.monster.let { monster ->
-                    if (monster.isCustom) {
-                        (monster as? CustomMonster)?.saves?.let { saves ->
-                            val saveText = saves.entries
-                                .filter { it.value != null }
-                                .joinToString(", ") { "${it.key.uppercase()}: ${it.value}" }
-                            if (saveText.isNotEmpty()) {
-                                Text("Saves: $saveText", style = MaterialTheme.typography.bodySmall)
+                if (entry is InitiativeEntry.MonsterEntry) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("HP: ${entry.hp ?: "?"}", fontSize = 14.sp)
+                        Text("AC: ${entry.ac ?: "?"}", fontSize = 14.sp)
+                        Text(
+                            "Init: ${entry.baseInitiative?.let { if (it >= 0) "+$it" else "$it" } ?: "?"}",
+                            fontSize = 14.sp
+                        )
+                    }
+                    entry.monster.let { monster ->
+                        val saveText = if (monster.isCustom) {
+                            (monster as? CustomMonster)?.saves?.entries
+                                ?.filter { it.value != null }
+                                ?.joinToString(", ") { "${it.key.uppercase()}: ${it.value}" }
+                        } else {
+                            (monster as? Monster)?.save?.let { save ->
+                                listOfNotNull(
+                                    save.str?.let { "STR: $it" },
+                                    save.dex?.let { "DEX: $it" },
+                                    save.con?.let { "CON: $it" },
+                                    save.int?.let { "INT: $it" },
+                                    save.wis?.let { "WIS: $it" },
+                                    save.cha?.let { "CHA: $it" }
+                                ).joinToString(", ")
                             }
                         }
-                    } else {
-                        (monster as? Monster)?.save?.let { save ->
-                            val saveText = listOfNotNull(
-                                save.str?.let { "STR: $it" },
-                                save.dex?.let { "DEX: $it" },
-                                save.con?.let { "CON: $it" },
-                                save.int?.let { "INT: $it" },
-                                save.wis?.let { "WIS: $it" },
-                                save.cha?.let { "CHA: $it" }
-                            ).joinToString(", ")
-                            if (saveText.isNotEmpty()) {
-                                Text("Saves: $saveText", style = MaterialTheme.typography.bodySmall)
-                            }
+                        if (!saveText.isNullOrEmpty()) {
+                            Text(
+                                "Saves: $saveText",
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
             }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(start = 8.dp)
             ) {
-                Text("Initiative:", modifier = Modifier.padding(end = 8.dp))
                 TextField(
                     value = entry.initiative?.toString() ?: "",
                     onValueChange = { onInitiativeChange(it.toIntOrNull()) },
-                    modifier = Modifier.width(80.dp),
+                    modifier = Modifier.width(56.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    singleLine = true,
+                    label = { Text("Init", fontSize = 12.sp) }
                 )
             }
         }

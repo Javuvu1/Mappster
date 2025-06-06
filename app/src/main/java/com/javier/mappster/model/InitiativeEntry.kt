@@ -34,3 +34,17 @@ sealed class InitiativeTrackerUiState {
     data class Success(val entries: List<InitiativeEntry>) : InitiativeTrackerUiState()
     data class Error(val message: String) : InitiativeTrackerUiState()
 }
+
+object InitiativeTrackerStore {
+    private var entries: List<InitiativeEntry> = emptyList()
+
+    fun getEntries(): List<InitiativeEntry> = entries
+
+    fun setEntries(newEntries: List<InitiativeEntry>) {
+        entries = newEntries
+    }
+
+    fun clearEntries() {
+        entries = emptyList()
+    }
+}
