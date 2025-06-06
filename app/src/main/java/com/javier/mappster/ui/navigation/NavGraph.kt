@@ -3,6 +3,7 @@ package com.javier.mappster.navigation
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.util.Log
+import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -84,7 +85,9 @@ fun NavGraph(navController: NavHostController) {
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
                 URLDecoder.decode(it, "UTF-8")
             }
-            val spell = spellListViewModel.spells.value.find { it.name == spellName }
+            Log.d("NavGraph", "Navigating to spell_detail, spellName: '$spellName'")
+            val spell = spellName?.let { spellListViewModel.getSpellByName(it) }
+            Log.d("NavGraph", "Found spell: $spell")
             spell?.let {
                 SpellDetailScreen(
                     spell = it,
@@ -92,7 +95,10 @@ fun NavGraph(navController: NavHostController) {
                     navController = navController,
                     viewModel = spellListViewModel
                 )
-            } ?: navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+            } ?: run {
+                Log.d("NavGraph", "Spell '$spellName' not found, popping back to SPELL_LIST")
+                navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+            }
         }
         composable(Destinations.CREATE_SPELL) {
             CreateSpellScreen(navController = navController)
@@ -102,9 +108,9 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("spellName") { type = NavType.StringType })
         ) { backStackEntry ->
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
-                java.net.URLDecoder.decode(it, "UTF-8")
+                URLDecoder.decode(it, "UTF-8")
             }
-            val spell = spellListViewModel.spells.value.find { it.name == spellName }
+            val spell = spellName?.let { spellListViewModel.getSpellByName(it) }
             spell?.let {
                 EditSpellScreen(
                     spell = it,
@@ -131,145 +137,6 @@ fun NavGraph(navController: NavHostController) {
                 MonsterListScreen(
                     navController = navController,
                     viewModel = monsterViewModel
-                )
-            }
-        }
-        composable(Destinations.CUSTOM_MONSTER_LISTS) {
-            CustomMonsterListsScreen(navController = navController)
-        }
-        composable(Destinations.CREATE_MONSTER) {
-            CreateMonsterScreen(navController = navController)
-        }
-        composable("create_spell_list") {
-            CreateSpellListScreen(
-                viewModel = spellListViewModel,
-                navController = navController
-            )
-        }
-        composable(
-            route = "create_spell_list/{listId}/{listName}/{spellIds}",
-            arguments = listOf(
-                navArgument("listId") { type = NavType.StringType; nullable = true },
-                navArgument("listName") { type = NavType.StringType; nullable = true },
-                navArgument("spellIds") { type = NavType.StringType; nullable = true }
-            )
-        ) { backStackEntry ->
-            val listId = backStackEntry.arguments?.getString("listId")
-            val listName = backStackEntry.arguments?.getString("listName")
-            val spellIdsJson = backStackEntry.arguments?.getString("spellIds")
-            val spellIds = spellIdsJson?.let { Json.decodeFromString<List<String>>(it) }
-            CreateSpellListScreen(
-                viewModel = spellListViewModel,
-                navController = navController,
-                listId = listId,
-                listName = listName,
-                spellIds = spellIds
-            )
-        }
-        composable(
-            route = "spell_list_view/{listId}",
-            arguments = listOf(navArgument("listId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            SpellListViewScreen(
-                listId = backStackEntry.arguments?.getString("listId") ?: "",
-                viewModel = spellListViewModel,
-                navController = navController
-            )
-        }
-        composable(
-            route = "${Destinations.MONSTER_DETAIL}/{name}/{source}",
-            arguments = listOf(
-                navArgument("name") { type = NavType.StringType },
-                navArgument("source") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val name = backStackEntry.arguments?.getString("name")?.let {
-                java.net.URLDecoder.decode(it, "UTF-8")
-            } ?: ""
-            val source = backStackEntry.arguments?.getString("source")?.let {
-                java.net.URLDecoder.decode(it, "UTF-8")
-            } ?: ""
-            var monster by remember { mutableStateOf<Monster?>(null) }
-            var isLoading by remember { mutableStateOf(true) }
-            var error by remember { mutableStateOf<String?>(null) }
-
-            LaunchedEffect(name, source) {
-                try {
-                    val loadedMonster = dataManager.getMonsterByNameAndSource(name, source)
-                    if (loadedMonster != null) {
-                        monster = loadedMonster
-                    } else {
-                        error = "Monstruo no encontrado."
-                    }
-                } catch (e: Exception) {
-                    Log.e("NavGraph", "Error loading monster: ${e.message}", e)
-                    error = "Error al cargar el monstruo: ${e.message}"
-                } finally {
-                    isLoading = false
-                }
-            }
-
-            when {
-                isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
-                error != null -> {
-                    Text(
-                        text = error ?: "Error desconocido.",
-                        modifier = Modifier.fillMaxSize(),
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    LaunchedEffect(Unit) {
-                        delay(2000)
-                        navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
-                    }
-                }
-                monster != null -> {
-                    MonsterDetailScreen(monster = monster!!, isTwoPaneMode = false)
-                }
-                else -> {
-                    Text(
-                        text = "Monstruo no encontrado. Volviendo atrás...",
-                        modifier = Modifier.fillMaxSize(),
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    LaunchedEffect(Unit) {
-                        delay(2000)
-                        navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
-                    }
-                }
-            }
-        }
-        composable(
-            route = "${Destinations.CUSTOM_MONSTER_DETAIL}/{monsterId}",
-            arguments = listOf(navArgument("monsterId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val monsterId = backStackEntry.arguments?.getString("monsterId") ?: ""
-            CustomMonsterDetailScreen(
-                navController = navController,
-                monsterId = monsterId,
-                isTwoPaneMode = false
-            )
-        }
-        composable(Destinations.INITIATIVE_TRACKER) {
-            val configuration = LocalConfiguration.current
-            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-            val monsterViewModel: MonsterListViewModel = viewModel(
-                factory = MonsterListViewModelFactory(dataManager, authManager)
-            )
-            if (isLandscape) {
-                TwoPaneInitiativeTrackerScreen(
-                    navController = navController,
-                    monsterViewModel = monsterViewModel
-                )
-            } else {
-                InitiativeTrackerScreen(
-                    navController = navController,
-                    monsterViewModel = monsterViewModel
                 )
             }
         }
