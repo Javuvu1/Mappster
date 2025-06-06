@@ -31,6 +31,7 @@ import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterListScreen
 import com.javier.mappster.ui.screen.initiativeTracker.InitiativeTrackerScreen
+import com.javier.mappster.ui.screen.initiativeTracker.TwoPaneInitiativeTrackerScreen
 import com.javier.mappster.ui.screen.monsters.TwoPaneMonsterListScreen
 import com.javier.mappster.ui.screen.spellList.CreateSpellListScreen
 import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
@@ -38,7 +39,6 @@ import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.screen.spells.EditSpellScreen
 import com.javier.mappster.ui.screen.spells.SpellDetailScreen
 import com.javier.mappster.ui.screen.spells.SpellListScreen
-import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.viewmodel.MonsterListViewModel
@@ -251,13 +251,22 @@ fun NavGraph(navController: NavHostController) {
             )
         }
         composable(Destinations.INITIATIVE_TRACKER) {
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val monsterViewModel: MonsterListViewModel = viewModel(
                 factory = MonsterListViewModelFactory(dataManager, authManager)
             )
-            InitiativeTrackerScreen(
-                navController = navController,
-                monsterViewModel = monsterViewModel
-            )
+            if (isLandscape) {
+                TwoPaneInitiativeTrackerScreen(
+                    navController = navController,
+                    monsterViewModel = monsterViewModel
+                )
+            } else {
+                InitiativeTrackerScreen(
+                    navController = navController,
+                    monsterViewModel = monsterViewModel
+                )
+            }
         }
     }
 }

@@ -35,7 +35,9 @@ import com.javier.mappster.viewmodel.MonsterListViewModel
 fun InitiativeTrackerScreen(
     navController: NavHostController,
     monsterViewModel: MonsterListViewModel,
-    trackerViewModel: InitiativeTrackerViewModel = viewModel()
+    trackerViewModel: InitiativeTrackerViewModel = viewModel(),
+    isTwoPaneMode: Boolean = false,
+    onItemClick: (UnifiedMonster) -> Unit = {}
 ) {
     val searchQuery by trackerViewModel.searchQuery.collectAsState()
     val uiState by trackerViewModel.uiState.collectAsState()
@@ -57,7 +59,7 @@ fun InitiativeTrackerScreen(
                 }
             )
         },
-        bottomBar = { BottomNavigationBar(navController) }
+        bottomBar = { if (!isTwoPaneMode) BottomNavigationBar(navController) } // Conditional bottomBar
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -99,7 +101,9 @@ fun InitiativeTrackerScreen(
                                         trackerViewModel.showHpDialog(id, hp)
                                     }
                                 },
-                                navController = navController // Añadido para navegación
+                                navController = navController,
+                                isTwoPaneMode = isTwoPaneMode,
+                                onItemClick = onItemClick
                             )
                             Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
                         }
@@ -278,22 +282,30 @@ fun InitiativeEntryItem(
     onInitiativeChange: (Int?) -> Unit,
     onRemove: () -> Unit,
     onHpClick: (Int?, String) -> Unit,
-    navController: NavHostController // Añadido para navegación
+    navController: NavHostController,
+    isTwoPaneMode: Boolean = false,
+    onItemClick: (UnifiedMonster) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 2.dp)
-            .clickable {
-                // Navegación solo para monstruos
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
                 if (entry is InitiativeEntry.MonsterEntry) {
-                    val monster = entry.monster
-                    if (monster.isCustom) {
-                        navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                    if (isTwoPaneMode) {
+                        onItemClick(entry.monster)
                     } else {
-                        val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
-                        val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
-                        navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                        val monster = entry.monster
+                        if (monster.isCustom) {
+                            navController.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
+                        } else {
+                            val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
+                            val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
+                            navController.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
+                        }
                     }
                 }
             },
@@ -338,7 +350,6 @@ fun InitiativeEntryItem(
                     ) {
                         Row(
                             modifier = Modifier.clickable(
-                                // Priorizar el diálogo de HP sobre la navegación
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) { onHpClick(entry.hp, entry.id) },
