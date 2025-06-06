@@ -166,12 +166,17 @@ fun InitiativeTrackerScreen(
                 title = { Text("Modify HP") },
                 text = {
                     Column {
-                        Text("Current HP: ${dialogState.currentHp ?: "Unknown"}")
+                        Text("Current HP: ${dialogState.currentHp ?: "Unknown"} / ${dialogState.maxHp ?: "?"}")
                         Spacer(modifier = Modifier.height(8.dp))
                         TextField(
                             value = dialogState.hpChange,
-                            onValueChange = { trackerViewModel.updateHpChange(it) },
-                            label = { Text("Change HP (e.g., +10, -5)") },
+                            onValueChange = { newValue ->
+                                // Limitar a 4 caracteres y permitir solo números, + y -
+                                if (newValue.length <= 4 && newValue.matches(Regex("^[+-]?\\d*\$"))) {
+                                    trackerViewModel.updateHpChange(newValue)
+                                }
+                            },
+                            label = { Text("Change HP (e.g., +10 to add, 5 to subtract)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true
                         )
@@ -180,7 +185,7 @@ fun InitiativeTrackerScreen(
                 confirmButton = {
                     Button(
                         onClick = { trackerViewModel.confirmHpChange() },
-                        enabled = dialogState.hpChange.toIntOrNull() != null
+                        enabled = dialogState.hpChange.toIntOrNull() != null || dialogState.hpChange.matches(Regex("^[+-]\\d+\$"))
                     ) {
                         Text("Confirm")
                     }
@@ -269,7 +274,7 @@ fun InitiativeEntryItem(
     entry: InitiativeEntry,
     onInitiativeChange: (Int?) -> Unit,
     onRemove: () -> Unit,
-    onHpClick: (Int?, String) -> Unit // Nuevo callback para clic en HP
+    onHpClick: (Int?, String) -> Unit
 ) {
     Card(
         modifier = Modifier

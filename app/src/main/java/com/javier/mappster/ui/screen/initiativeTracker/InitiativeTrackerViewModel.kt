@@ -20,6 +20,7 @@ import kotlin.math.floor
 data class HpDialogState(
     val entryId: String,
     val currentHp: Int?,
+    val maxHp: Int?,
     val hpChange: String
 )
 
@@ -179,9 +180,11 @@ class InitiativeTrackerViewModel : ViewModel() {
 
     // Funciones para el diálogo de HP
     fun showHpDialog(entryId: String, currentHp: Int?) {
+        val entry = _entries.value.find { it.id == entryId } as? InitiativeEntry.MonsterEntry
         _hpDialogState.value = HpDialogState(
             entryId = entryId,
             currentHp = currentHp,
+            maxHp = entry?.monster?.hp,
             hpChange = ""
         )
     }
@@ -193,12 +196,19 @@ class InitiativeTrackerViewModel : ViewModel() {
     fun confirmHpChange() {
         _hpDialogState.value?.let { dialogState ->
             viewModelScope.launch {
-                val change = dialogState.hpChange.toIntOrNull() ?: 0
+                // Parsear hpChange: sin signo = negativo, + = positivo, - = negativo
+                val change = when {
+                    dialogState.hpChange.startsWith("+") -> dialogState.hpChange.removePrefix("+").toIntOrNull() ?: 0
+                    dialogState.hpChange.startsWith("-") -> dialogState.hpChange.toIntOrNull() ?: 0
+                    dialogState.hpChange.isNotBlank() -> -(dialogState.hpChange.toIntOrNull() ?: 0)
+                    else -> 0
+                }
                 _entries.value = _entries.value.map { entry ->
                     if (entry.id == dialogState.entryId && entry is InitiativeEntry.MonsterEntry) {
                         val currentHp = entry.hp ?: 0
-                        val newHp = (currentHp + change).coerceAtLeast(0) // No permitir HP negativo
-                        Log.d("HpDebug", "Updating HP for ${entry.name}: $currentHp + $change = $newHp")
+                        val maxHp = dialogState.maxHp ?: Int.MAX_VALUE
+                        val newHp = (currentHp + change).coerceIn(0, maxHp)
+                        Log.d("HpDebug", "Updating HP for ${entry.name}: $currentHp + $change = $newHp (max $maxHp)")
                         entry.copy(hp = newHp)
                     } else {
                         entry
