@@ -138,6 +138,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                     item {
                         MonsterResistancesImmunitiesSection(customMonster!!)
                     }
+                    item {
+                        MonsterTraitsSection(customMonster!!)
+                    }
                 }
             } else {
                 Text(
@@ -577,6 +580,52 @@ fun MonsterLanguagesSection(monster: CustomMonster) {
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterTraitsSection(monster: CustomMonster) {
+    val traits = monster.traits ?: emptyList()
+
+    if (traits.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Traits:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                traits.forEach { trait ->
+                    Text(
+                        text = trait.name,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    trait.entries.forEach { entry ->
+                        Text(
+                            text = entry,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }

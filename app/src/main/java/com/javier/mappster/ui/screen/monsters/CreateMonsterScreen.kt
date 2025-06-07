@@ -7,7 +7,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
@@ -32,6 +34,7 @@ import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.javier.mappster.model.TraitEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.floor
@@ -196,6 +199,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var customLanguage by remember { mutableStateOf("") }
     var customLanguageError by remember { mutableStateOf<String?>(null) }
 
+    val traits = remember { mutableStateListOf<Pair<String, String>>() }
+    val traitNameErrors = remember { mutableStateListOf<String?>() }
+    val traitEntryErrors = remember { mutableStateListOf<String?>() }
+
     fun calculateModifier(score: String, proficiencyBonus: Int): String? {
         return score.toIntOrNull()?.let {
             if (it in 1..30) {
@@ -324,13 +331,29 @@ fun CreateMonsterScreen(navController: NavHostController) {
             customLanguage.isNotBlank() && selectedLanguages.contains(customLanguage) -> "Idioma ya seleccionado"
             else -> null
         }
+
+        traitNameErrors.clear()
+        traitEntryErrors.clear()
+        traits.forEach { (name, entry) ->
+            traitNameErrors.add(when {
+                name.isBlank() -> "El nombre no puede estar vacío"
+                name.length > 50 -> "Máximo 50 caracteres"
+                else -> null
+            })
+            traitEntryErrors.add(when {
+                entry.isBlank() -> "La descripción no puede estar vacía"
+                entry.length > 500 -> "Máximo 500 caracteres"
+                else -> null
+            })
+        }
     }
 
     val isFormValid by remember(
         nameError, type2Error, hpError, acError, strError, dexError, conError, intError,
         wisError, chaError, proficiencyBonusError, sourceError, initiativeError,
         walkSpeedError, flySpeedError, swimSpeedError, climbSpeedError, burrowSpeedError,
-        customResistanceError, customImmunityError, customSenseError, customLanguageError // Añade este
+        customResistanceError, customImmunityError, customSenseError, customLanguageError,
+        traits, traitNameErrors, traitEntryErrors
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
@@ -340,7 +363,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     walkSpeedError == null && flySpeedError == null && swimSpeedError == null &&
                     climbSpeedError == null && burrowSpeedError == null &&
                     customResistanceError == null && customImmunityError == null &&
-                    customSenseError == null && customLanguageError == null
+                    customSenseError == null && customLanguageError == null &&
+                    traitNameErrors.all { it == null } && traitEntryErrors.all { it == null }
         }
     }
 
@@ -378,6 +402,14 @@ fun CreateMonsterScreen(navController: NavHostController) {
         val languages = selectedLanguages.toMutableList()
         customLanguage.takeIf { it.isNotBlank() && !selectedLanguages.contains(it) }?.let { languages.add(it) }
         return languages.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildTraitsList(): List<TraitEntry>? {
+        return traits.mapNotNull { (name, entry) ->
+            if (name.isNotBlank() && entry.isNotBlank()) {
+                TraitEntry(name = name, entries = listOf(entry))
+            } else null
+        }.takeIf { it.isNotEmpty() }
     }
 
     LaunchedEffect(
@@ -450,6 +482,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     if (skillPerformance) calculateModifier(cha, pb)?.let { skillsMap["performance"] = it }
                     if (skillPersuasion) calculateModifier(cha, pb)?.let { skillsMap["persuasion"] = it }
 
+                    val traitsList = buildTraitsList()
+
                     val customMonster = CustomMonster(
                         userId = userId,
                         name = name,
@@ -475,6 +509,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         initiative = initiative.toIntOrNull(),
                         senses = buildSensesList(),
                         languages = buildLanguagesList(),
+                        traits = traitsList,
                         public = false
                     )
 
@@ -1496,6 +1531,73 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         }
                         customLanguageError?.let {
                             Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Traits",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        traits.forEachIndexed { index, (name, entry) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    OutlinedTextField(
+                                        value = name,
+                                        onValueChange = { if (it.length <= 50) traits[index] = it to entry },
+                                        label = { Text("Trait Name") },
+                                        isError = traitNameErrors.getOrNull(index) != null,
+                                        supportingText = { traitNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${name.length}/50",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = entry,
+                                        onValueChange = { if (it.length <= 500) traits[index] = name to it },
+                                        label = { Text("Trait Description") },
+                                        isError = traitEntryErrors.getOrNull(index) != null,
+                                        supportingText = { traitEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = false,
+                                        maxLines = 5,
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${entry.length}/500",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                }
+                                IconButton(onClick = { traits.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar rasgo")
+                                }
+                            }
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        Button(
+                            onClick = { traits.add("" to ""); traitNameErrors.add(null); traitEntryErrors.add(null) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Trait")
                         }
                     }
                 }
