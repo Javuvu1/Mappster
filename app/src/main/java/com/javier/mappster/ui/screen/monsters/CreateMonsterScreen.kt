@@ -172,6 +172,19 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var customImmunity by remember { mutableStateOf("") }
     var customImmunityError by remember { mutableStateOf<String?>(null) }
 
+    val sensesTypes = listOf(
+        "blindsight 60 ft.",
+        "darkvision 60 ft.",
+        "darkvision 120 ft.",
+        "tremorsense 60 ft.",
+        "truesight 120 ft."
+    )
+
+    // Añade nuevos estados para sentidos
+    val selectedSenses = remember { mutableStateListOf<String>() }
+    var customSense by remember { mutableStateOf("") }
+    var customSenseError by remember { mutableStateOf<String?>(null) }
+
     fun calculateModifier(score: String, proficiencyBonus: Int): String? {
         return score.toIntOrNull()?.let {
             if (it in 1..30) {
@@ -288,13 +301,19 @@ fun CreateMonsterScreen(navController: NavHostController) {
             customImmunity.isNotBlank() && customImmunity.equals(customResistance, ignoreCase = true) -> "No puede ser inmune y resistente al mismo tipo"
             else -> null
         }
+
+        customSenseError = when {
+            customSense.isNotBlank() && customSense.length > 30 -> "Máximo 30 caracteres"
+            customSense.isNotBlank() && selectedSenses.contains(customSense) -> "Sentido ya seleccionado"
+            else -> null
+        }
     }
 
     val isFormValid by remember(
         nameError, type2Error, hpError, acError, strError, dexError, conError, intError,
         wisError, chaError, proficiencyBonusError, sourceError, initiativeError,
         walkSpeedError, flySpeedError, swimSpeedError, climbSpeedError, burrowSpeedError,
-        customResistanceError, customImmunityError // Añade estos
+        customResistanceError, customImmunityError, customSenseError // Añade este
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
@@ -303,7 +322,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     sourceError == null && initiativeError == null &&
                     walkSpeedError == null && flySpeedError == null && swimSpeedError == null &&
                     climbSpeedError == null && burrowSpeedError == null &&
-                    customResistanceError == null && customImmunityError == null
+                    customResistanceError == null && customImmunityError == null &&
+                    customSenseError == null
         }
     }
 
@@ -329,6 +349,12 @@ fun CreateMonsterScreen(navController: NavHostController) {
         val immunes = selectedImmunities.toMutableList()
         customImmunity.takeIf { it.isNotBlank() && !selectedResistances.contains(it) && it != customResistance }?.let { immunes.add(it) }
         return immunes.takeIf { it.isNotEmpty() }?.map { it.lowercase() }
+    }
+
+    fun buildSensesList(): List<String>? {
+        val senses = selectedSenses.toMutableList()
+        customSense.takeIf { it.isNotBlank() && !selectedSenses.contains(it) }?.let { senses.add(it) }
+        return senses.takeIf { it.isNotEmpty() }
     }
 
     LaunchedEffect(
@@ -424,8 +450,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         immune = buildImmuneList(),
                         source = source,
                         initiative = initiative.toIntOrNull(),
+                        senses = buildSensesList(),
                         public = false
                     )
+
                     isSaving = true
                     coroutineScope.launch {
                         try {
@@ -1328,6 +1356,63 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             )
                         }
                         customImmunityError?.let {
+                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Senses",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            sensesTypes.forEach { sense ->
+                                FilterChip(
+                                    selected = selectedSenses.contains(sense),
+                                    onClick = {
+                                        if (selectedSenses.contains(sense)) {
+                                            selectedSenses.remove(sense)
+                                        } else {
+                                            selectedSenses.add(sense)
+                                            if (customSense.equals(sense, ignoreCase = true)) {
+                                                customSense = ""
+                                            }
+                                        }
+                                    },
+                                    label = { Text(sense) },
+                                    modifier = Modifier.padding(2.dp)
+                                )
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = customSense,
+                                onValueChange = { if (it.length <= 30) customSense = it },
+                                label = { Text("Custom Sense") },
+                                modifier = Modifier.weight(1f),
+                                isError = customSenseError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = "${customSense.length}/30",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                        }
+                        customSenseError?.let {
                             Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
                         }
                     }

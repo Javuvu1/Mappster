@@ -28,6 +28,7 @@ data class CustomMonster(
     val passive: Int? = null, // Percepción pasiva
     val resist: List<String>? = null, // Resistencias (ej. ["Fire", "Cold"])
     val immune: List<String>? = null,
+    val senses: List<String>? = null,
     val idiomas: List<String>? = null, // Lenguajes (ej. ["Common", "Draconic"])
     val traits: List<TraitEntry>? = null, // Rasgos
     val actions: List<ActionEntry>? = null, // Acciones

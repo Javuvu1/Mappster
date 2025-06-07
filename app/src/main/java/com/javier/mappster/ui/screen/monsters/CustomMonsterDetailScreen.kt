@@ -130,6 +130,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                         MonsterSkillsSection(customMonster!!)
                     }
                     item {
+                        MonsterSensesSection(customMonster!!)
+                    }
+                    item {
                         MonsterResistancesImmunitiesSection(customMonster!!)
                     }
                 }
@@ -493,6 +496,51 @@ fun MonsterResistancesImmunitiesSection(monster: CustomMonster) {
                         modifier = Modifier.padding(vertical = 2.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterSensesSection(monster: CustomMonster) {
+    val senses = monster.senses ?: emptyList()
+    val wisdomScore = monster.wis ?: 10
+    val wisdomModifier = (wisdomScore - 10) / 2
+    val proficiencyBonus = monster.proficiencyBonus ?: 0
+    val perceptionSkill = monster.skills?.get("perception")
+    val perceptionBonus = perceptionSkill?.replace("[^0-9-]".toRegex(), "")?.toIntOrNull() ?: wisdomModifier
+    val passivePerception = 10 + wisdomModifier + if (perceptionBonus > wisdomModifier) proficiencyBonus else 0
+
+    if (senses.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Senses:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = senses.joinToString(", ") { it },
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+                Text(
+                    text = "Passive Perception: $passivePerception",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
             }
         }
     }
