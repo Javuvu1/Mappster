@@ -35,7 +35,7 @@ data class CustomMonster(
     val bonus: List<ActionEntry>? = null,
     val reactions: List<ActionEntry>? = null,
     val legendary: List<ActionEntry>? = null,
-    val spellcasting: List<SpellcastingEntry>? = null,
+    val spellcasting: List<SpellcastingEntry>? = null,  // Campo añadido para lanzamiento de hechizos
     val public: Boolean = false
 )
 

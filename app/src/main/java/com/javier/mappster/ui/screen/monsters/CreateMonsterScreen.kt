@@ -2,7 +2,10 @@ package com.javier.mappster.ui.screen
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -35,6 +39,9 @@ import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.javier.mappster.model.ActionEntry
+import com.javier.mappster.model.CustomSpellLevel
+import com.javier.mappster.model.Spell
+import com.javier.mappster.model.SpellcastingEntry
 import com.javier.mappster.model.TraitEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -220,6 +227,51 @@ fun CreateMonsterScreen(navController: NavHostController) {
     val legendaryActions = remember { mutableStateListOf<Pair<String, String>>() }
     val legendaryActionNameErrors = remember { mutableStateListOf<String?>() }
     val legendaryActionEntryErrors = remember { mutableStateListOf<String?>() }
+
+    var showSpellModal by remember { mutableStateOf(false) }
+    var spellSearchQuery by remember { mutableStateOf("") }
+    val selectedSpells = remember { mutableStateListOf<Spell>() }
+    val spellcastingEntries = remember { mutableStateListOf<SpellcastingEntry>() }
+
+    fun buildSpellcastingList(): List<SpellcastingEntry>? {
+        if (selectedSpells.isEmpty()) return null
+
+        // Agrupar hechizos por nivel
+        val spellsByLevel = selectedSpells.groupBy { it.level }
+
+        // Determinar la habilidad de lanzamiento basada en los stats más altos
+        val castingAbility = when {
+            cha >= wis && cha >= int -> "cha"
+            wis >= cha && wis >= int -> "wis"
+            else -> "int"
+        }
+
+        // Convertir el nivel de Int a String para el mapa
+        val spellsMap = spellsByLevel.mapKeys { (level, _) -> level.toString() }
+            .mapValues { (_, spells) ->
+                CustomSpellLevel(
+                    slots = when (spells.first().level) { // Usamos el nivel del primer hechizo del grupo
+                        1 -> 3 // Ejemplo: 3 slots de nivel 1
+                        2 -> 2 // Ejemplo: 2 slots de nivel 2
+                        else -> 1 // Ejemplo: 1 slot para otros niveles
+                    },
+                    spells = spells.map { it.name }
+                )
+            }
+
+        return listOf(SpellcastingEntry(
+            name = "Spellcasting",
+            spells = spellsMap,
+            ability = castingAbility,
+            headerEntries = listOf(
+                "The monster is a ${when (castingAbility) {
+                    "cha" -> "charisma"
+                    "wis" -> "wisdom"
+                    else -> "intelligence"
+                }}-based spellcaster. Its spellcasting ability is $castingAbility."
+            )
+        ))
+    }
 
     fun calculateModifier(score: String, proficiencyBonus: Int): String? {
         return score.toIntOrNull()?.let {
@@ -640,6 +692,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         bonus = bonusActionsList,
                         reactions = reactionsList,
                         legendary = legendaryActionsList,
+                        spellcasting = buildSpellcastingList(),  // Añadido aquí
                         public = false
                     )
 
@@ -1999,8 +2052,170 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         }
                     }
                 }
+
+                // Añade esta sección después de las otras secciones (Legendary Actions, etc.)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("Spellcasting", Icons.Default.Star)
+
+                        if (selectedSpells.isNotEmpty()) {
+                            Text("Selected Spells:", style = MaterialTheme.typography.bodyLarge)
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Mostrar hechizos agrupados por nivel
+                            selectedSpells.groupBy { it.level }.toSortedMap().forEach { (level, spells) ->
+                                Text(
+                                    "Level $level:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                spells.forEach { spell ->
+                                    Text(
+                                        "• ${spell.name} (${spell.school})",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(start = 16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
+                        Button(
+                            onClick = { showSpellModal = true },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Manage Spells")
+                        }
+                    }
+                }
+
+                // Modal de selección de hechizos
+                if (showSpellModal) {
+                    SpellSelectionModal(
+                        onDismiss = { showSpellModal = false },
+                        onConfirm = { spells ->
+                            selectedSpells.clear()
+                            selectedSpells.addAll(spells)
+                            showSpellModal = false
+                        },
+                        firestoreManager = firestoreManager,
+                        authManager = authManager
+                    )
+                }
+
             }
             }
         }
     }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SpellSelectionModal(
+    onDismiss: () -> Unit,
+    onConfirm: (List<Spell>) -> Unit,
+    firestoreManager: FirestoreManager,
+    authManager: AuthManager
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var spells by remember { mutableStateOf<List<Spell>>(emptyList()) }
+    val selectedSpells = remember { mutableStateListOf<Spell>() }
+    val coroutineScope = rememberCoroutineScope()
+    val userId = authManager.getCurrentUserId()
+
+    // Cargar hechizos al abrir el modal
+    LaunchedEffect(Unit) {
+        isLoading = true
+        coroutineScope.launch {
+            spells = firestoreManager.getSpells(userId ?: "")
+            isLoading = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Spells") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search spells") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else {
+                    val filteredSpells = spells.filter {
+                        it.name.contains(searchQuery, ignoreCase = true)
+                    }.sortedWith(
+                        compareBy<Spell> { it.level }.thenBy { it.name }
+                    )
+
+                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                        // Agrupar por nivel de hechizo
+                        filteredSpells.groupBy { it.level }.forEach { (level, spellsForLevel) ->
+                            item {
+                                Text(
+                                    "Level $level",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+
+                            items(spellsForLevel) { spell ->
+                                val isSelected = selectedSpells.any { it.name == spell.name }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            if (isSelected) {
+                                                selectedSpells.removeIf { it.name == spell.name }
+                                            } else {
+                                                selectedSpells.add(spell)
+                                            }
+                                        }
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = null
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(spell.name, style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                            "${spell.school} - ${spell.components.v?.let { "V" } ?: ""}${spell.components.s?.let { "S" } ?: ""}${spell.components.m?.let { "M" } ?: ""}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                                Divider()
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedSpells.toList()) }) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 
