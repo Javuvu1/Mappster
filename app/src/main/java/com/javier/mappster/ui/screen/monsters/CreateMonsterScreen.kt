@@ -2065,23 +2065,40 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             Text("Selected Spells:", style = MaterialTheme.typography.bodyLarge)
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Mostrar hechizos agrupados por nivel
+                            // Mostrar por nivel con mejor formato
                             selectedSpells.groupBy { it.level }.toSortedMap().forEach { (level, spells) ->
                                 Text(
                                     "Level $level:",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.padding(bottom = 4.dp)
                                 )
+
                                 spells.forEach { spell ->
-                                    Text(
-                                        "• ${spell.name} (${spell.school})",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(start = 16.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "• ${spell.name} (${spell.school})",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier
+                                                .padding(start = 16.dp)
+                                                .weight(1f)
+                                        )
+                                        IconButton(
+                                            onClick = { selectedSpells.remove(spell) },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Remove spell",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
 
                         Button(
@@ -2090,12 +2107,13 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Manage Spells")
+                            Text(if (selectedSpells.isEmpty()) "Add Spells" else "Manage Spells")
                         }
                     }
                 }
 
                 // Modal de selección de hechizos
+                // En CreateMonsterScreen, cambia esto:
                 if (showSpellModal) {
                     SpellSelectionModal(
                         onDismiss = { showSpellModal = false },
@@ -2105,7 +2123,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             showSpellModal = false
                         },
                         firestoreManager = firestoreManager,
-                        authManager = authManager
+                        authManager = authManager,
+                        selectedSpells = selectedSpells // Pasa los hechizos ya seleccionados
                     )
                 }
 
@@ -2120,16 +2139,16 @@ fun SpellSelectionModal(
     onDismiss: () -> Unit,
     onConfirm: (List<Spell>) -> Unit,
     firestoreManager: FirestoreManager,
-    authManager: AuthManager
+    authManager: AuthManager,
+    selectedSpells: List<Spell> // Añadimos los hechizos ya seleccionados
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var spells by remember { mutableStateOf<List<Spell>>(emptyList()) }
-    val selectedSpells = remember { mutableStateListOf<Spell>() }
+    val currentSelectedSpells = remember { selectedSpells.toMutableStateList() }
     val coroutineScope = rememberCoroutineScope()
     val userId = authManager.getCurrentUserId()
 
-    // Cargar hechizos al abrir el modal
     LaunchedEffect(Unit) {
         isLoading = true
         coroutineScope.launch {
@@ -2162,26 +2181,25 @@ fun SpellSelectionModal(
                     )
 
                     LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                        // Agrupar por nivel de hechizo
                         filteredSpells.groupBy { it.level }.forEach { (level, spellsForLevel) ->
                             item {
                                 Text(
-                                    "Level $level",
+                                    "Level $level Spells",
                                     style = MaterialTheme.typography.titleSmall,
                                     modifier = Modifier.padding(8.dp)
                                 )
                             }
 
                             items(spellsForLevel) { spell ->
-                                val isSelected = selectedSpells.any { it.name == spell.name }
+                                val isSelected = currentSelectedSpells.any { it.name == spell.name }
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
                                             if (isSelected) {
-                                                selectedSpells.removeIf { it.name == spell.name }
+                                                currentSelectedSpells.removeIf { it.name == spell.name }
                                             } else {
-                                                selectedSpells.add(spell)
+                                                currentSelectedSpells.add(spell)
                                             }
                                         }
                                         .padding(8.dp),
@@ -2192,9 +2210,14 @@ fun SpellSelectionModal(
                                         onCheckedChange = null
                                     )
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(spell.name, style = MaterialTheme.typography.bodyLarge)
+                                        // Mostramos primero nivel y escuela
                                         Text(
-                                            "${spell.school} - ${spell.components.v?.let { "V" } ?: ""}${spell.components.s?.let { "S" } ?: ""}${spell.components.m?.let { "M" } ?: ""}",
+                                            "Lv. $level ${spell.school} - ${spell.name}",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        // Mostramos componentes
+                                        Text(
+                                            "Components: ${spell.components.v?.let { "V" } ?: ""}${spell.components.s?.let { "S" } ?: ""}${spell.components.m?.let { " M(${it})" } ?: ""}",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }
@@ -2207,7 +2230,7 @@ fun SpellSelectionModal(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(selectedSpells.toList()) }) {
+            TextButton(onClick = { onConfirm(currentSelectedSpells.toList()) }) {
                 Text("Confirm")
             }
         },
@@ -2218,4 +2241,3 @@ fun SpellSelectionModal(
         }
     )
 }
-
