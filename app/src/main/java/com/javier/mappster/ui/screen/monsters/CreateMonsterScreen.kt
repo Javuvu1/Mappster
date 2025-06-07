@@ -185,6 +185,17 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var customSense by remember { mutableStateOf("") }
     var customSenseError by remember { mutableStateOf<String?>(null) }
 
+    val languageTypes = listOf(
+        "Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc",
+        "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal", "Primordial", "Sylvan", "Undercommon",
+        "Auran", "Aarakocra", "Ignan", "Terran", "Aquan"
+    )
+
+    // Estados para idiomas
+    val selectedLanguages = remember { mutableStateListOf<String>() }
+    var customLanguage by remember { mutableStateOf("") }
+    var customLanguageError by remember { mutableStateOf<String?>(null) }
+
     fun calculateModifier(score: String, proficiencyBonus: Int): String? {
         return score.toIntOrNull()?.let {
             if (it in 1..30) {
@@ -307,13 +318,19 @@ fun CreateMonsterScreen(navController: NavHostController) {
             customSense.isNotBlank() && selectedSenses.contains(customSense) -> "Sentido ya seleccionado"
             else -> null
         }
+
+        customLanguageError = when {
+            customLanguage.isNotBlank() && customLanguage.length > 30 -> "Máximo 30 caracteres"
+            customLanguage.isNotBlank() && selectedLanguages.contains(customLanguage) -> "Idioma ya seleccionado"
+            else -> null
+        }
     }
 
     val isFormValid by remember(
         nameError, type2Error, hpError, acError, strError, dexError, conError, intError,
         wisError, chaError, proficiencyBonusError, sourceError, initiativeError,
         walkSpeedError, flySpeedError, swimSpeedError, climbSpeedError, burrowSpeedError,
-        customResistanceError, customImmunityError, customSenseError // Añade este
+        customResistanceError, customImmunityError, customSenseError, customLanguageError // Añade este
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
@@ -323,7 +340,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     walkSpeedError == null && flySpeedError == null && swimSpeedError == null &&
                     climbSpeedError == null && burrowSpeedError == null &&
                     customResistanceError == null && customImmunityError == null &&
-                    customSenseError == null
+                    customSenseError == null && customLanguageError == null
         }
     }
 
@@ -355,6 +372,12 @@ fun CreateMonsterScreen(navController: NavHostController) {
         val senses = selectedSenses.toMutableList()
         customSense.takeIf { it.isNotBlank() && !selectedSenses.contains(it) }?.let { senses.add(it) }
         return senses.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildLanguagesList(): List<String>? {
+        val languages = selectedLanguages.toMutableList()
+        customLanguage.takeIf { it.isNotBlank() && !selectedLanguages.contains(it) }?.let { languages.add(it) }
+        return languages.takeIf { it.isNotEmpty() }
     }
 
     LaunchedEffect(
@@ -451,6 +474,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         source = source,
                         initiative = initiative.toIntOrNull(),
                         senses = buildSensesList(),
+                        languages = buildLanguagesList(),
                         public = false
                     )
 
@@ -1413,6 +1437,64 @@ fun CreateMonsterScreen(navController: NavHostController) {
                             )
                         }
                         customSenseError?.let {
+                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Languages",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            languageTypes.forEach { language ->
+                                FilterChip(
+                                    selected = selectedLanguages.contains(language),
+                                    onClick = {
+                                        if (selectedLanguages.contains(language)) {
+                                            selectedLanguages.remove(language)
+                                        } else {
+                                            selectedLanguages.add(language)
+                                            if (customLanguage.equals(language, ignoreCase = true)) {
+                                                customLanguage = ""
+                                            }
+                                        }
+                                    },
+                                    label = { Text(language) },
+                                    modifier = Modifier.padding(2.dp)
+                                )
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = customLanguage,
+                                onValueChange = { if (it.length <= 30) customLanguage = it },
+                                label = { Text("Custom Language") },
+                                modifier = Modifier.weight(1f),
+                                isError = customLanguageError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = "${customLanguage.length}/30",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                        }
+                        customLanguageError?.let {
                             Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
                         }
                     }

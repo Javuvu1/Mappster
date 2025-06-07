@@ -29,7 +29,7 @@ data class CustomMonster(
     val resist: List<String>? = null, // Resistencias (ej. ["Fire", "Cold"])
     val immune: List<String>? = null,
     val senses: List<String>? = null,
-    val idiomas: List<String>? = null, // Lenguajes (ej. ["Common", "Draconic"])
+    val languages: List<String>? = null, // Lenguajes (ej. ["Common", "Draconic"])
     val traits: List<TraitEntry>? = null, // Rasgos
     val actions: List<ActionEntry>? = null, // Acciones
     val bonus: List<ActionEntry>? = null, // Acciones bonus

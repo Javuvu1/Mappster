@@ -133,6 +133,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                         MonsterSensesSection(customMonster!!)
                     }
                     item {
+                        MonsterLanguagesSection(customMonster!!)
+                    }
+                    item {
                         MonsterResistancesImmunitiesSection(customMonster!!)
                     }
                 }
@@ -537,6 +540,39 @@ fun MonsterSensesSection(monster: CustomMonster) {
                 )
                 Text(
                     text = "Passive Perception: $passivePerception",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterLanguagesSection(monster: CustomMonster) {
+    val languages = monster.languages ?: emptyList()
+
+    if (languages.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Languages:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = languages.joinToString(", ") { it },
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
