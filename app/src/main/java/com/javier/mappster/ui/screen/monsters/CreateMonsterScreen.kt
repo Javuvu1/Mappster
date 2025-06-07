@@ -34,6 +34,7 @@ import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.javier.mappster.model.ActionEntry
 import com.javier.mappster.model.TraitEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -203,6 +204,23 @@ fun CreateMonsterScreen(navController: NavHostController) {
     val traitNameErrors = remember { mutableStateListOf<String?>() }
     val traitEntryErrors = remember { mutableStateListOf<String?>() }
 
+    //Acciones de varios tipos
+    val actions = remember { mutableStateListOf<Pair<String, String>>() }
+    val actionNameErrors = remember { mutableStateListOf<String?>() }
+    val actionEntryErrors = remember { mutableStateListOf<String?>() }
+
+    val bonusActions = remember { mutableStateListOf<Pair<String, String>>() }
+    val bonusActionNameErrors = remember { mutableStateListOf<String?>() }
+    val bonusActionEntryErrors = remember { mutableStateListOf<String?>() }
+
+    val reactions = remember { mutableStateListOf<Pair<String, String>>() }
+    val reactionNameErrors = remember { mutableStateListOf<String?>() }
+    val reactionEntryErrors = remember { mutableStateListOf<String?>() }
+
+    val legendaryActions = remember { mutableStateListOf<Pair<String, String>>() }
+    val legendaryActionNameErrors = remember { mutableStateListOf<String?>() }
+    val legendaryActionEntryErrors = remember { mutableStateListOf<String?>() }
+
     fun calculateModifier(score: String, proficiencyBonus: Int): String? {
         return score.toIntOrNull()?.let {
             if (it in 1..30) {
@@ -346,6 +364,70 @@ fun CreateMonsterScreen(navController: NavHostController) {
                 else -> null
             })
         }
+
+        // Validación de actions
+        actionNameErrors.clear()
+        actionEntryErrors.clear()
+        actions.forEach { (name, entry) ->
+            actionNameErrors.add(when {
+                name.isBlank() -> "El nombre no puede estar vacío"
+                name.length > 50 -> "Máximo 50 caracteres"
+                else -> null
+            })
+            actionEntryErrors.add(when {
+                entry.isBlank() -> "La descripción no puede estar vacía"
+                entry.length > 500 -> "Máximo 500 caracteres"
+                else -> null
+            })
+        }
+
+        // Validación de bonus actions
+        bonusActionNameErrors.clear()
+        bonusActionEntryErrors.clear()
+        bonusActions.forEach { (name, entry) ->
+            bonusActionNameErrors.add(when {
+                name.isBlank() -> "El nombre no puede estar vacío"
+                name.length > 50 -> "Máximo 50 caracteres"
+                else -> null
+            })
+            bonusActionEntryErrors.add(when {
+                entry.isBlank() -> "La descripción no puede estar vacía"
+                entry.length > 500 -> "Máximo 500 caracteres"
+                else -> null
+            })
+        }
+
+        // Validación de reactions
+        reactionNameErrors.clear()
+        reactionEntryErrors.clear()
+        reactions.forEach { (name, entry) ->
+            reactionNameErrors.add(when {
+                name.isBlank() -> "El nombre no puede estar vacío"
+                name.length > 50 -> "Máximo 50 caracteres"
+                else -> null
+            })
+            reactionEntryErrors.add(when {
+                entry.isBlank() -> "La descripción no puede estar vacía"
+                entry.length > 500 -> "Máximo 500 caracteres"
+                else -> null
+            })
+        }
+
+        // Validación de legendary actions
+        legendaryActionNameErrors.clear()
+        legendaryActionEntryErrors.clear()
+        legendaryActions.forEach { (name, entry) ->
+            legendaryActionNameErrors.add(when {
+                name.isBlank() -> "El nombre no puede estar vacío"
+                name.length > 50 -> "Máximo 50 caracteres"
+                else -> null
+            })
+            legendaryActionEntryErrors.add(when {
+                entry.isBlank() -> "La descripción no puede estar vacía"
+                entry.length > 500 -> "Máximo 500 caracteres"
+                else -> null
+            })
+        }
     }
 
     val isFormValid by remember(
@@ -353,7 +435,11 @@ fun CreateMonsterScreen(navController: NavHostController) {
         wisError, chaError, proficiencyBonusError, sourceError, initiativeError,
         walkSpeedError, flySpeedError, swimSpeedError, climbSpeedError, burrowSpeedError,
         customResistanceError, customImmunityError, customSenseError, customLanguageError,
-        traits, traitNameErrors, traitEntryErrors
+        traits, traitNameErrors, traitEntryErrors,
+        actions, actionNameErrors, actionEntryErrors,
+        bonusActions, bonusActionNameErrors, bonusActionEntryErrors,
+        reactions, reactionNameErrors, reactionEntryErrors,
+        legendaryActions, legendaryActionNameErrors, legendaryActionEntryErrors
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
@@ -364,7 +450,11 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     climbSpeedError == null && burrowSpeedError == null &&
                     customResistanceError == null && customImmunityError == null &&
                     customSenseError == null && customLanguageError == null &&
-                    traitNameErrors.all { it == null } && traitEntryErrors.all { it == null }
+                    traitNameErrors.all { it == null } && traitEntryErrors.all { it == null } &&
+                    actionNameErrors.all { it == null } && actionEntryErrors.all { it == null } &&
+                    bonusActionNameErrors.all { it == null } && bonusActionEntryErrors.all { it == null } &&
+                    reactionNameErrors.all { it == null } && reactionEntryErrors.all { it == null } &&
+                    legendaryActionNameErrors.all { it == null } && legendaryActionEntryErrors.all { it == null }
         }
     }
 
@@ -408,6 +498,38 @@ fun CreateMonsterScreen(navController: NavHostController) {
         return traits.mapNotNull { (name, entry) ->
             if (name.isNotBlank() && entry.isNotBlank()) {
                 TraitEntry(name = name, entries = listOf(entry))
+            } else null
+        }.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildActionsList(): List<ActionEntry>? {
+        return actions.mapNotNull { (name, entry) ->
+            if (name.isNotBlank() && entry.isNotBlank()) {
+                ActionEntry(name = name, entries = listOf(entry))
+            } else null
+        }.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildBonusActionsList(): List<ActionEntry>? {
+        return bonusActions.mapNotNull { (name, entry) ->
+            if (name.isNotBlank() && entry.isNotBlank()) {
+                ActionEntry(name = name, entries = listOf(entry))
+            } else null
+        }.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildReactionsList(): List<ActionEntry>? {
+        return reactions.mapNotNull { (name, entry) ->
+            if (name.isNotBlank() && entry.isNotBlank()) {
+                ActionEntry(name = name, entries = listOf(entry))
+            } else null
+        }.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildLegendaryActionsList(): List<ActionEntry>? {
+        return legendaryActions.mapNotNull { (name, entry) ->
+            if (name.isNotBlank() && entry.isNotBlank()) {
+                ActionEntry(name = name, entries = listOf(entry))
             } else null
         }.takeIf { it.isNotEmpty() }
     }
@@ -483,6 +605,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     if (skillPersuasion) calculateModifier(cha, pb)?.let { skillsMap["persuasion"] = it }
 
                     val traitsList = buildTraitsList()
+                    val actionsList = buildActionsList()
+                    val bonusActionsList = buildBonusActionsList()
+                    val reactionsList = buildReactionsList()
+                    val legendaryActionsList = buildLegendaryActionsList()
 
                     val customMonster = CustomMonster(
                         userId = userId,
@@ -510,6 +636,10 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         senses = buildSensesList(),
                         languages = buildLanguagesList(),
                         traits = traitsList,
+                        actions = actionsList,
+                        bonus = bonusActionsList,
+                        reactions = reactionsList,
+                        legendary = legendaryActionsList,
                         public = false
                     )
 
@@ -1601,7 +1731,276 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         }
                     }
                 }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Actions",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        actions.forEachIndexed { index, (name, entry) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    OutlinedTextField(
+                                        value = name,
+                                        onValueChange = { if (it.length <= 50) actions[index] = it to entry },
+                                        label = { Text("Action Name") },
+                                        isError = actionNameErrors.getOrNull(index) != null,
+                                        supportingText = { actionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${name.length}/50",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = entry,
+                                        onValueChange = { if (it.length <= 500) actions[index] = name to it },
+                                        label = { Text("Action Description") },
+                                        isError = actionEntryErrors.getOrNull(index) != null,
+                                        supportingText = { actionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = false,
+                                        maxLines = 5,
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${entry.length}/500",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                }
+                                IconButton(onClick = { actions.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar acción")
+                                }
+                            }
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        Button(
+                            onClick = { actions.add("" to ""); actionNameErrors.add(null); actionEntryErrors.add(null) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Action")
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Bonus Actions",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        bonusActions.forEachIndexed { index, (name, entry) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    OutlinedTextField(
+                                        value = name,
+                                        onValueChange = { if (it.length <= 50) bonusActions[index] = it to entry },
+                                        label = { Text("Bonus Action Name") },
+                                        isError = bonusActionNameErrors.getOrNull(index) != null,
+                                        supportingText = { bonusActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${name.length}/50",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = entry,
+                                        onValueChange = { if (it.length <= 500) bonusActions[index] = name to it },
+                                        label = { Text("Bonus Action Description") },
+                                        isError = bonusActionEntryErrors.getOrNull(index) != null,
+                                        supportingText = { bonusActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = false,
+                                        maxLines = 5,
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${entry.length}/500",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                }
+                                IconButton(onClick = { bonusActions.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar acción bonus")
+                                }
+                            }
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        Button(
+                            onClick = { bonusActions.add("" to ""); bonusActionNameErrors.add(null); bonusActionEntryErrors.add(null) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Bonus Action")
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Reactions",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        reactions.forEachIndexed { index, (name, entry) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    OutlinedTextField(
+                                        value = name,
+                                        onValueChange = { if (it.length <= 50) reactions[index] = it to entry },
+                                        label = { Text("Reaction Name") },
+                                        isError = reactionNameErrors.getOrNull(index) != null,
+                                        supportingText = { reactionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${name.length}/50",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = entry,
+                                        onValueChange = { if (it.length <= 500) reactions[index] = name to it },
+                                        label = { Text("Reaction Description") },
+                                        isError = reactionEntryErrors.getOrNull(index) != null,
+                                        supportingText = { reactionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = false,
+                                        maxLines = 5,
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${entry.length}/500",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                }
+                                IconButton(onClick = { reactions.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar reacción")
+                                }
+                            }
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        Button(
+                            onClick = { reactions.add("" to ""); reactionNameErrors.add(null); reactionEntryErrors.add(null) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Reaction")
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Legendary Actions",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        legendaryActions.forEachIndexed { index, (name, entry) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    OutlinedTextField(
+                                        value = name,
+                                        onValueChange = { if (it.length <= 50) legendaryActions[index] = it to entry },
+                                        label = { Text("Legendary Action Name") },
+                                        isError = legendaryActionNameErrors.getOrNull(index) != null,
+                                        supportingText = { legendaryActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${name.length}/50",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = entry,
+                                        onValueChange = { if (it.length <= 500) legendaryActions[index] = name to it },
+                                        label = { Text("Legendary Action Description") },
+                                        isError = legendaryActionEntryErrors.getOrNull(index) != null,
+                                        supportingText = { legendaryActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = false,
+                                        maxLines = 5,
+                                        trailingIcon = {
+                                            Text(
+                                                text = "${entry.length}/500",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    )
+                                }
+                                IconButton(onClick = { legendaryActions.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar acción legendaria")
+                                }
+                            }
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        Button(
+                            onClick = { legendaryActions.add("" to ""); legendaryActionNameErrors.add(null); legendaryActionEntryErrors.add(null) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Legendary Action")
+                        }
+                    }
+                }
+            }
             }
         }
     }
-}
+

@@ -17,7 +17,9 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.CustomMonster
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,6 +142,18 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                     }
                     item {
                         MonsterTraitsSection(customMonster!!)
+                    }
+                    item {
+                        MonsterActionsSection(customMonster!!)
+                    }
+                    item {
+                        MonsterBonusActionsSection(customMonster!!)
+                    }
+                    item {
+                        MonsterReactionsSection(customMonster!!)
+                    }
+                    item {
+                        MonsterLegendaryActionsSection(customMonster!!)
                     }
                 }
             } else {
@@ -618,6 +632,190 @@ fun MonsterTraitsSection(monster: CustomMonster) {
                         modifier = Modifier.padding(vertical = 2.dp)
                     )
                     trait.entries.forEach { entry ->
+                        Text(
+                            text = entry,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterActionsSection(monster: CustomMonster) {
+    val actions = monster.actions ?: emptyList()
+
+    if (actions.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Actions:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                actions.forEach { action ->
+                    Text(
+                        text = action.name,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    action.entries.forEach { entry ->
+                        Text(
+                            text = entry,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterBonusActionsSection(monster: CustomMonster) {
+    val bonusActions = monster.bonus ?: emptyList()
+
+    if (bonusActions.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Bonus Actions:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                bonusActions.forEach { bonusAction ->
+                    Text(
+                        text = bonusAction.name,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    bonusAction.entries.forEach { entry ->
+                        Text(
+                            text = entry,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterReactionsSection(monster: CustomMonster) {
+    val reactions = monster.reactions ?: emptyList()
+
+    if (reactions.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Reactions:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                reactions.forEach { reaction ->
+                    Text(
+                        text = reaction.name,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    reaction.entries.forEach { entry ->
+                        Text(
+                            text = entry,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterLegendaryActionsSection(monster: CustomMonster) {
+    val legendaryActions = monster.legendary ?: emptyList()
+
+    if (legendaryActions.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Legendary Actions:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                legendaryActions.forEach { legendaryAction ->
+                    Text(
+                        text = legendaryAction.name,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    legendaryAction.entries.forEach { entry ->
                         Text(
                             text = entry,
                             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
