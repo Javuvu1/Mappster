@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
@@ -136,6 +137,17 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var skillPerformance by remember { mutableStateOf(false) } // CHA
     var skillPersuasion by remember { mutableStateOf(false) } // CHA
 
+    var walkSpeed by remember { mutableStateOf("") }
+    var walkSpeedError by remember { mutableStateOf<String?>(null) }
+    var flySpeed by remember { mutableStateOf("") }
+    var flySpeedError by remember { mutableStateOf<String?>(null) }
+    var swimSpeed by remember { mutableStateOf("") }
+    var swimSpeedError by remember { mutableStateOf<String?>(null) }
+    var climbSpeed by remember { mutableStateOf("") }
+    var climbSpeedError by remember { mutableStateOf<String?>(null) }
+    var burrowSpeed by remember { mutableStateOf("") }
+    var burrowSpeedError by remember { mutableStateOf<String?>(null) }
+
     val sizeOptions = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan")
     val type1Options = listOf(
         "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental",
@@ -224,6 +236,32 @@ fun CreateMonsterScreen(navController: NavHostController) {
             initiative.isNotBlank() && !initiative.matches(Regex("-?\\d+")) -> "Integers only"
             else -> null
         }
+
+        walkSpeedError = when {
+            walkSpeed.isNotBlank() && !walkSpeed.matches(Regex("\\d+")) -> "Numbers only"
+            walkSpeed.isNotBlank() && walkSpeed.toInt() > 999 -> "Max 999"
+            else -> null
+        }
+        flySpeedError = when {
+            flySpeed.isNotBlank() && !flySpeed.matches(Regex("\\d+")) -> "Numbers only"
+            flySpeed.isNotBlank() && flySpeed.toInt() > 999 -> "Max 999"
+            else -> null
+        }
+        swimSpeedError = when {
+            swimSpeed.isNotBlank() && !swimSpeed.matches(Regex("\\d+")) -> "Numbers only"
+            swimSpeed.isNotBlank() && swimSpeed.toInt() > 999 -> "Max 999"
+            else -> null
+        }
+        climbSpeedError = when {
+            climbSpeed.isNotBlank() && !climbSpeed.matches(Regex("\\d+")) -> "Numbers only"
+            climbSpeed.isNotBlank() && climbSpeed.toInt() > 999 -> "Max 999"
+            else -> null
+        }
+        burrowSpeedError = when {
+            burrowSpeed.isNotBlank() && !burrowSpeed.matches(Regex("\\d+")) -> "Numbers only"
+            burrowSpeed.isNotBlank() && burrowSpeed.toInt() > 999 -> "Max 999"
+            else -> null
+        }
     }
 
     val isFormValid by remember(
@@ -232,10 +270,24 @@ fun CreateMonsterScreen(navController: NavHostController) {
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
-                    strError == null && dexError == null && conError == null && intError == null &&
-                    wisError == null && chaError == null && proficiencyBonusError == null &&
-                    sourceError == null && initiativeError == null
+            strError == null && dexError == null && conError == null && intError == null &&
+            wisError == null && chaError == null && proficiencyBonusError == null &&
+            sourceError == null && initiativeError == null
+            walkSpeedError == null && flySpeedError == null && swimSpeedError == null &&
+            climbSpeedError == null && burrowSpeedError == null
         }
+    }
+
+    fun buildSpeedMap(): Map<String, Int>? {
+        val speeds = mutableMapOf<String, Int>()
+
+        walkSpeed.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { speeds["walk"] = it }
+        flySpeed.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { speeds["fly"] = it }
+        swimSpeed.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { speeds["swim"] = it }
+        climbSpeed.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { speeds["climb"] = it }
+        burrowSpeed.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { speeds["burrow"] = it }
+
+        return speeds.takeIf { it.isNotEmpty() }
     }
 
     LaunchedEffect(
@@ -317,6 +369,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         cr = cr,
                         hp = hp.toIntOrNull(),
                         ac = ac.takeIf { it.isNotBlank() },
+                        speed = buildSpeedMap(),
                         str = str.toIntOrNull(),
                         dex = dex.toIntOrNull(),
                         con = con.toIntOrNull(),
@@ -712,6 +765,119 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         ) {
                             wisError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                             chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("Speed", Icons.Default.DirectionsWalk)
+
+                        Text(
+                            text = "Enter movement speeds in feet (leave blank if not applicable)",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = walkSpeed,
+                            onValueChange = { if (it.length <= 3) walkSpeed = it.filter { it.isDigit() } },
+                            label = { Text("Walk Speed") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = walkSpeedError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = if (walkSpeed.isNotBlank()) "ft" else "",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                        walkSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = flySpeed,
+                                onValueChange = { if (it.length <= 3) flySpeed = it.filter { it.isDigit() } },
+                                label = { Text("Fly Speed") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = flySpeedError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = if (flySpeed.isNotBlank()) "ft" else "",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                            OutlinedTextField(
+                                value = swimSpeed,
+                                onValueChange = { if (it.length <= 3) swimSpeed = it.filter { it.isDigit() } },
+                                label = { Text("Swim Speed") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = swimSpeedError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = if (swimSpeed.isNotBlank()) "ft" else "",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            flySpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                            swimSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = climbSpeed,
+                                onValueChange = { if (it.length <= 3) climbSpeed = it.filter { it.isDigit() } },
+                                label = { Text("Climb Speed") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = climbSpeedError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = if (climbSpeed.isNotBlank()) "ft" else "",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                            OutlinedTextField(
+                                value = burrowSpeed,
+                                onValueChange = { if (it.length <= 3) burrowSpeed = it.filter { it.isDigit() } },
+                                label = { Text("Burrow Speed") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                isError = burrowSpeedError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = if (burrowSpeed.isNotBlank()) "ft" else "",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            climbSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                            burrowSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }

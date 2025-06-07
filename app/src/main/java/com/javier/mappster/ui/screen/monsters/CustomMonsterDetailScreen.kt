@@ -121,6 +121,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                         MonsterCombatStats(customMonster!!)
                     }
                     item {
+                        MonsterSpeedSection(customMonster!!)
+                    }
+                    item {
                         MonsterStats(customMonster!!)
                     }
                     item {
@@ -219,6 +222,40 @@ fun MonsterCombatStats(monster: CustomMonster) {
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun MonsterSpeedSection(monster: CustomMonster) {
+    val speed = monster.speed ?: emptyMap()
+    if (speed.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Speed:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                speed.entries.sortedBy { it.key }.forEach { entry ->
+                    Text(
+                        text = "${entry.key.replaceFirstChar { it.uppercase() }}: ${entry.value} ft.",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
             }
         }
     }
