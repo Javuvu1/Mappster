@@ -24,6 +24,7 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.LocalDataManager
 import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.LoginScreen
+import com.javier.mappster.ui.SpellDetailScreen
 import com.javier.mappster.ui.screen.CreateMonsterScreen
 import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
@@ -36,7 +37,6 @@ import com.javier.mappster.ui.screen.spellList.CustomSpellListsScreen
 import com.javier.mappster.ui.screen.spellList.SpellListViewScreen
 import com.javier.mappster.ui.screen.spells.CreateSpellScreen
 import com.javier.mappster.ui.screen.spells.EditSpellScreen
-import com.javier.mappster.ui.screen.spells.SpellDetailScreen
 import com.javier.mappster.ui.screen.spells.SpellListScreen
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModel

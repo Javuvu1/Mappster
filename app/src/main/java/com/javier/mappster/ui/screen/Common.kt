@@ -67,7 +67,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Listas Hechizos") },
             label = {
                 Text(
-                    text = "Spell Ls.",
+                    text = "Spell Lists",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -143,7 +143,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar Sesión") },
+            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Log Out") },
             label = {
                 Text(
                     text = "C.Sesión",
@@ -165,7 +165,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             onDismissRequest = { showLogoutDialog = false },
             title = {
                 Text(
-                    text = "Confirmar",
+                    text = "Confirm",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )

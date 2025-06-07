@@ -1,4 +1,4 @@
-package com.javier.mappster.ui.screen.spells
+package com.javier.mappster.ui
 
 import android.util.Log
 import android.widget.Toast
@@ -26,18 +26,19 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.*
+import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.utils.conditionDescriptions
 import com.javier.mappster.utils.sourceMap
 import java.net.URLEncoder
 import kotlin.random.Random
 
 @Composable
-private fun SectionTitle(title: String, icon: ImageVector, tint: Color) {
+private fun SectionTitle(title: String, icon: ImageVector, color: Color) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(bottom = 8.dp)
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint)
+        Icon(imageVector = icon, contentDescription = null, tint = color)
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = title, style = MaterialTheme.typography.titleLarge)
     }
@@ -48,9 +49,9 @@ data class DiceRollData(
     val numDice: Int,
     val dieSides: Int,
     val bonus: Int? = null,
-    val type: String = "damage", // "damage", "dice", "scaledice", "scaledamage"
-    val scaledDie: String? = null, // Último valor de los dados escalados (ej. "1d6")
-    val levelRange: String? = null // Rango de niveles para escalar (ej. "3-9")
+    val type: String = "damage",
+    val scaledDie: String? = null,
+    val levelRange: String? = null
 )
 
 // Datos para {@chance}
@@ -60,35 +61,44 @@ data class ChanceData(
     val successMessage: String
 )
 
-// Construye un AnnotatedString con partes clicables para los daños, dados, condiciones, hechizos y chances
+// Mapa de descripciones para {@quickref} clicables
+val quickRefDescriptions = mapOf(
+    "half cover" to "A target with half cover has a +2 bonus to AC and Dexterity saving throws. A target has half cover if an obstacle blocks at least half of its body. The obstacle might be a low wall, a large piece of furniture, a narrow tree trunk, or a creature, whether that creature is an enemy or a friend.",
+    "three-quarters cover" to "A target with three-quarters cover has a +5 bonus to AC and Dexterity saving throws. A target has three-quarters cover if about three-quarters of it is covered by an obstacle. The obstacle might be a portcullis, an arrow slit, or a thick tree trunk.",
+    "difficult terrain" to "Every foot of movement in difficult terrain costs 1 extra foot. This rule is true even if multiple things in a space count as difficult terrain.",
+    "heavily obscured" to "You have the Blinded condition while trying to see something in a Heavily Obscured space.",
+    "total cover" to "A target with total cover can't be targeted directly by an attack or a spell, although some spells can reach such a target by including it in an area of effect. A target has total cover if it is completely concealed by an obstacle."
+)
+
+// Construye un AnnotatedString con partes clicables
 fun buildDamageAnnotatedString(
     text: String,
     diceDataList: MutableList<DiceRollData>,
     chanceDataList: MutableList<ChanceData>,
     schoolColor: Color
 ): AnnotatedString {
-    // Patrones para detectar {@damage}, {@dice}, {@scaledice}, {@scaledamage}, {@condition}, {@spell}, y {@chance}
+    Log.d("SpellDetailScreen", "Parsing text: '$text'")
     val pattern = Regex(
-        "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" + // Para {@damage 1d4+1} o {@damage 8d8}
-                "\\{@dice\\s*(\\d*d\\d+)\\}|" + // Para {@dice 2d6} o {@dice d20}
-                "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" + // Para {@scaledice 8d6|3-9|1d6}
-                "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" + // Para {@scaledamage 8d6|3-9|1d6}
-                "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" + // Para {@condition <estado>}
-                "\\{@spell\\s*([^\\}]+)\\}|" + // Para {@spell magic missile}
-                "\\{@chance\\s*(\\d+)\\s*\\|\\|\\|\\s*([^\\|]+)\\|([^\\}]+)\\}" // Para {@chance 5|||Message lost!|Message arrives}
+        "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" +
+                "\\{@dice\\s*(\\d*d\\d+)\\}|" +
+                "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
+                "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
+                "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" +
+                "\\{@spell\\s*([^\\}]+)\\}|" +
+                "\\{@chance\\s*(\\d+)\\s*\\|\\|\\|\\s*([^\\|]+)\\|([^\\}]+)\\}|" +
+                "\\{@quickref\\s*([^\\|]+)\\|\\|(\\d+)?\\s*\\|\\|([^\\s*\\}]+)\\s*\\}|" +
+                "\\{@quickref\\s*[^\\}]+\\|PHB\\|\\d+\\|\\d*\\|([^\\}]+)\\}"
     )
     val matches = pattern.findAll(text).toList()
     diceDataList.clear()
     chanceDataList.clear()
-
     return buildAnnotatedString {
         var lastIndex = 0
         matches.forEachIndexed { index, match ->
+            Log.d("SpellDetailScreen", "Match found: ${match.value}, groups: ${match.groupValues}")
             val start = match.range.first
             val end = match.range.last + 1
-
-            // Determinar el texto a mostrar
-            val displayText = when {
+            val (displayText, isClickable) = when {
                 match.value.startsWith("{@damage") -> {
                     val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
                     val parts = damage.split("+")
@@ -101,7 +111,7 @@ fun buildDamageAnnotatedString(
                         val bonus = bonusPart.toInt()
                         diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
                     }
-                    damage
+                    damage to true
                 }
                 match.value.startsWith("{@dice") -> {
                     val dice = match.groupValues[2].replace("\\s+".toRegex(), "")
@@ -109,7 +119,7 @@ fun buildDamageAnnotatedString(
                     val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt()
                     val dieSides = parts[1].toInt()
                     diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
-                    dice
+                    dice to true
                 }
                 match.value.startsWith("{@scaledice") -> {
                     val initialDice = match.groupValues[3].replace("\\s+".toRegex(), "")
@@ -117,7 +127,7 @@ fun buildDamageAnnotatedString(
                     val scaledDie = match.groupValues[5].replace("\\s+".toRegex(), "")
                     val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
                     diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledice", scaledDie = scaledDie, levelRange = levelRange))
-                    scaledDie
+                    scaledDie to true
                 }
                 match.value.startsWith("{@scaledamage") -> {
                     val initialDice = match.groupValues[6].replace("\\s+".toRegex(), "")
@@ -125,20 +135,20 @@ fun buildDamageAnnotatedString(
                     val scaledDie = match.groupValues[8].replace("\\s+".toRegex(), "")
                     val (numDice, dieSides) = scaledDie.split("d").map { it.toInt() }
                     diceDataList.add(DiceRollData(numDice, dieSides, type = "scaledamage", scaledDie = scaledDie, levelRange = levelRange))
-                    scaledDie
+                    scaledDie to true
                 }
                 match.value.startsWith("{@condition") -> {
                     val condition = match.groupValues[9]
-                    when (condition) {
-                        "deafened||deaf" -> "deafened"
-                        "blinded||blind" -> "blinded"
+                    when {
+                        condition == "deafened||deaf" -> "deafened"
+                        condition == "blinded||blind" -> "blinded"
                         else -> condition
-                    }
+                    } to true
                 }
                 match.value.startsWith("{@spell") -> {
                     val spellName = match.groupValues[10].trim()
                     Log.d("SpellDetailScreen", "Parsed spell: '$spellName' from ${match.value}")
-                    spellName
+                    spellName to true
                 }
                 match.value.startsWith("{@chance") -> {
                     val percentage = match.groupValues[11].toInt()
@@ -146,50 +156,84 @@ fun buildDamageAnnotatedString(
                     val successMessage = match.groupValues[13].trim()
                     chanceDataList.add(ChanceData(percentage, failMessage, successMessage))
                     Log.d("SpellDetailScreen", "Parsed chance: $percentage%, fail='$failMessage', success='$successMessage'")
-                    "$percentage%"
+                    "$percentage%" to true
                 }
-                else -> ""
+                match.value.startsWith("{@quickref") -> {
+                    if (match.groupValues.size > 13 && match.groupValues[14].isNotEmpty()) {
+                        val text = match.groupValues[14].trim()
+                        Log.d("SpellDetailScreen", "Quickref clickable: '$text'")
+                        text to true
+                    } else if (match.groupValues.size > 15 && match.groupValues[15].isNotEmpty()) {
+                        val text = match.groupValues[15].trim()
+                        Log.d("SpellDetailScreen", "Quickref non-clickable: '$text'")
+                        text to false
+                    } else {
+                        Log.d("SpellDetailScreen", "Invalid quickref format: ${match.value}")
+                        "" to false
+                    }
+                }
+                else -> {
+                    Log.d("SpellDetailScreen", "Unknown match: ${match.value}")
+                    "" to false
+                }
             }
-
+            Log.d("SpellDetailScreen", "Appending from $lastIndex to $start: '${text.substring(lastIndex, start)}'")
             append(text.substring(lastIndex, start))
             when {
-                match.value.startsWith("{@condition") -> {
+                match.value.startsWith("{@condition") && isClickable -> {
+                    Log.d("SpellDetailScreen", "Annotating condition: '$displayText'")
                     pushStringAnnotation(tag = "condition", annotation = match.groupValues[9])
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
                     }
                     pop()
                 }
-                match.value.startsWith("{@damage") || match.value.startsWith("{@dice") ||
-                        match.value.startsWith("{@scaledice") || match.value.startsWith("{@scaledamage") -> {
+                (match.value.startsWith("{@damage") || match.value.startsWith("{@dice") ||
+                        match.value.startsWith("{@scaledice") || match.value.startsWith("{@scaledamage")) && isClickable -> {
+                    Log.d("SpellDetailScreen", "Annotating damage: '$displayText'")
                     pushStringAnnotation(tag = "damage", annotation = index.toString())
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
                     }
                     pop()
                 }
-                match.value.startsWith("{@spell") -> {
+                match.value.startsWith("{@spell") && isClickable -> {
+                    Log.d("SpellDetailScreen", "Annotating spell: '$displayText'")
                     pushStringAnnotation(tag = "spell", annotation = displayText)
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
                     }
                     pop()
                 }
-                match.value.startsWith("{@chance") -> {
+                match.value.startsWith("{@chance") && isClickable -> {
+                    Log.d("SpellDetailScreen", "Annotating chance: '$displayText'")
                     pushStringAnnotation(tag = "chance", annotation = index.toString())
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
                     }
                     pop()
                 }
+                match.value.startsWith("{@quickref") && isClickable -> {
+                    Log.d("SpellDetailScreen", "Annotating quickref: '$displayText' as clickable")
+                    pushStringAnnotation(tag = "quickref", annotation = displayText)
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
+                        append(displayText)
+                    }
+                    pop()
+                }
+                else -> {
+                    Log.d("SpellDetailScreen", "Appending plain text: '$displayText'")
+                    append(displayText)
+                }
             }
             lastIndex = end
         }
+        Log.d("SpellDetailScreen", "Appending remaining text: '${text.substring(lastIndex)}'")
         append(text.substring(lastIndex))
     }
 }
 
-// Función para realizar la tirada de dados y devolver un desglose
+// Restaurar tirada de dados
 fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
     val baseNumDice = dice.numDice
     val scaledNumDice = if (dice.type == "scaledice" || dice.type == "scaledamage") {
@@ -211,15 +255,15 @@ fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
     return rolls to total
 }
 
-// Función para realizar una tirada d100 para {@chance}
+// Tirada d100 para {@chance}
 fun rollChance(percentage: Int): Pair<Int, Boolean> {
-    val roll = Random.nextInt(1, 101) // Tirada de 1 a 100
+    val roll = Random.nextInt(1, 101)
     val isSuccess = roll <= percentage
     Log.d("SpellDetailScreen", "Chance roll: $roll, percentage: $percentage, success: $isSuccess")
     return roll to isSuccess
 }
 
-// Construye el texto del desglose con colores para máximo y mínimo
+// Construir texto de desglose de tirada
 fun buildDiceRollBreakdown(
     rolls: List<Int>,
     dieSides: Int,
@@ -229,9 +273,9 @@ fun buildDiceRollBreakdown(
     return buildAnnotatedString {
         rolls.forEachIndexed { index, roll ->
             val color = when {
-                roll == dieSides -> Color.Green // Máximo
-                roll == 1 -> Color.Red // Mínimo
-                else -> defaultColor // Normal
+                roll == dieSides -> Color.Green
+                roll == 1 -> Color.Red
+                else -> defaultColor
             }
             withStyle(style = SpanStyle(color = color)) {
                 append(roll.toString())
@@ -281,6 +325,8 @@ fun SpellDetailScreen(
     var currentChanceData by remember { mutableStateOf<ChanceData?>(null) }
     var chanceRollResult by remember { mutableStateOf<Int?>(null) }
     var chanceIsSuccess by remember { mutableStateOf<Boolean?>(null) }
+    var showQuickRefDialog by remember { mutableStateOf(false) }
+    var currentQuickRef by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -315,7 +361,7 @@ fun SpellDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Detalles", Icons.Default.Info, schoolData.color)
@@ -342,7 +388,7 @@ fun SpellDetailScreen(
                         val componentsList = buildList {
                             if (spell.components.v == true) add("V")
                             if (spell.components.s == true) add("S")
-                            if (spell.components.m != null) add("M (un componente de material)")
+                            if (spell.components.m != null) add("M (${spell.components.m})")
                             if (spell.components.r == true) add("R")
                         }
                         Text(
@@ -368,7 +414,7 @@ fun SpellDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Descripción", Icons.Default.Description, schoolData.color)
@@ -378,7 +424,6 @@ fun SpellDetailScreen(
                             val annotatedText = remember(entry) {
                                 buildDamageAnnotatedString(entry, diceDataList, chanceDataList, schoolData.color)
                             }
-
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(vertical = 2.dp)
@@ -435,6 +480,12 @@ fun SpellDetailScreen(
                                                 chanceIsSuccess = isSuccess
                                                 showChanceDialog = true
                                             }
+                                        annotatedText.getStringAnnotations(tag = "quickref", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                Log.d("SpellDetailScreen", "Quickref clicked: '${annotation.item}'")
+                                                currentQuickRef = annotation.item
+                                                showQuickRefDialog = true
+                                            }
                                     },
                                     style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                 )
@@ -449,7 +500,7 @@ fun SpellDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Acceso", Icons.Default.Group, schoolData.color)
@@ -469,7 +520,7 @@ fun SpellDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             SectionTitle("A nivel superior", Icons.Default.Upgrade, schoolData.color)
@@ -480,7 +531,6 @@ fun SpellDetailScreen(
                                     val annotatedText = remember(entry) {
                                         buildDamageAnnotatedString(entry, diceDataList, chanceDataList, schoolData.color)
                                     }
-
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.padding(vertical = 2.dp)
@@ -537,6 +587,12 @@ fun SpellDetailScreen(
                                                         chanceIsSuccess = isSuccess
                                                         showChanceDialog = true
                                                     }
+                                                annotatedText.getStringAnnotations(tag = "quickref", start = offset, end = offset)
+                                                    .firstOrNull()?.let { annotation ->
+                                                        Log.d("SpellDetailScreen", "Quickref clicked: '${annotation.item}'")
+                                                        currentQuickRef = annotation.item
+                                                        showQuickRefDialog = true
+                                                    }
                                             },
                                             style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                         )
@@ -550,7 +606,7 @@ fun SpellDetailScreen(
             }
         }
 
-        // Diálogo para mostrar el resultado de la tirada de dados
+        // Diálogo para tirada de dados
         if (showDiceRollDialog && currentDiceData != null) {
             AlertDialog(
                 onDismissRequest = { showDiceRollDialog = false },
@@ -620,7 +676,7 @@ fun SpellDetailScreen(
             )
         }
 
-        // Diálogo para mostrar la descripción de la condición
+        // Diálogo para condición
         if (showConditionDialog) {
             AlertDialog(
                 onDismissRequest = { showConditionDialog = false },
@@ -672,18 +728,77 @@ fun SpellDetailScreen(
                                 schoolData.color,
                                 MaterialTheme.colorScheme.background
                             )
-                        )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     )
                     .padding(10.dp)
             )
         }
 
-        // Diálogo para mostrar el resultado de la tirada de {@chance}
-        if (showChanceDialog && currentChanceData != null && chanceRollResult != null && chanceIsSuccess != null) {
-            val chanceData = currentChanceData!!
-            val isSuccess = chanceIsSuccess!!
-            val rollResult = chanceIsSuccess!!
+        // Diálogo para quickref
+        if (showQuickRefDialog) {
+            Log.d("SpellDetailScreen", "Showing quickref dialog for: '$currentQuickRef'")
+            AlertDialog(
+                onDismissRequest = { showQuickRefDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.Book, contentDescription = null, tint = schoolData.color)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = currentQuickRef.replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = schoolData.color
+                        )
+                    }
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 300.dp)
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    ) {
+                        val descriptionText = quickRefDescriptions[currentQuickRef] ?: "No description available."
+                        Log.d("SpellDetailScreen", "Quickref description: '$descriptionText'")
+                        val description = buildDamageAnnotatedString(
+                            descriptionText,
+                            mutableListOf(),
+                            mutableListOf(),
+                            schoolData.color
+                        )
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showQuickRefDialog = false },
+                        colors = ButtonDefaults.textButtonColors(contentColor = schoolData.color)
+                    ) {
+                        Text("Cerrar")
+                    }
+                },
+                containerColor = Color.Transparent,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                schoolData.color,
+                                MaterialTheme.colorScheme.background
+                            )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(10.dp)
+            )
+        }
 
+        // Diálogo para chance
+        if (showChanceDialog && currentChanceData != null && chanceRollResult != null && chanceIsSuccess != null) {
             AlertDialog(
                 onDismissRequest = { showChanceDialog = false },
                 title = {
@@ -693,26 +808,26 @@ fun SpellDetailScreen(
                         Text(
                             text = "Resultado de probabilidad",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = schoolData.color
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 text = {
                     Column(modifier = Modifier.padding(10.dp)) {
                         Text(
-                            text = "Probabilidad: ${chanceData.percentage}%",
+                            text = "Probabilidad: ${currentChanceData!!.percentage}%",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Roll (d100): $rollResult",
+                            text = "Roll (d100): $chanceRollResult",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = if (isSuccess) Color.Green else Color.Red
+                            color = if (chanceIsSuccess!!) Color.Green else Color.Red
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Resultado: ${if (isSuccess) chanceData.successMessage else chanceData.failMessage}",
+                            text = "Resultado: ${if (chanceIsSuccess!!) currentChanceData!!.successMessage else currentChanceData!!.failMessage}",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -736,7 +851,8 @@ fun SpellDetailScreen(
                                 schoolData.color,
                                 MaterialTheme.colorScheme.background
                             )
-                        )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     )
                     .padding(10.dp)
             )

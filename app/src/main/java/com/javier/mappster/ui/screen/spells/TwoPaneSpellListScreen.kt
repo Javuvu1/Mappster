@@ -1,6 +1,5 @@
 package com.javier.mappster.ui.screen.spells
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.Spell
 import com.javier.mappster.navigation.Destinations
+import com.javier.mappster.ui.SpellDetailScreen
 import com.javier.mappster.ui.screen.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,7 +38,7 @@ fun TwoPaneSpellListScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(paddingValues) // Usar paddingValues aquí
+                    .padding(paddingValues)
             ) {
                 // Panel izquierdo (lista)
                 Surface(
@@ -110,10 +110,7 @@ fun TwoPaneSpellListScreen(
                                         SpellListItem(
                                             spell = spell,
                                             isSelected = selectedSpell?.name == spell.name,
-                                            onClick = {
-                                                Log.d("TwoPaneSpellListScreen", "Spell clicked in list: ${spell.name}")
-                                                selectedSpell = spell
-                                            },
+                                            onClick = { selectedSpell = spell },
                                             onDeleteClick = { viewModel.deleteSpell(it) },
                                             onToggleVisibilityClick = { isPublic ->
                                                 viewModel.updateSpellVisibility(spell, isPublic)
@@ -157,11 +154,7 @@ fun TwoPaneSpellListScreen(
                                 isTwoPaneMode = true,
                                 navController = navController,
                                 viewModel = viewModel,
-                                modifier = Modifier.padding(8.dp),
-                                onSpellSelected = { newSpell ->
-                                    Log.d("TwoPaneSpellListScreen", "Spell selected via callback: ${newSpell.name}")
-                                    selectedSpell = newSpell
-                                }
+                                modifier = Modifier.padding(start = 8.dp)
                             )
                         }
                     } ?: Box(
