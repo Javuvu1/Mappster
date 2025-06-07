@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,6 +76,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Estados generales
     var name by remember { mutableStateOf("") }
     var nameError by remember { mutableStateOf<String?>(null) }
     var size by remember { mutableStateOf("Medium") }
@@ -105,12 +107,34 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var sourceError by remember { mutableStateOf<String?>(null) }
     var initiative by remember { mutableStateOf("") }
     var initiativeError by remember { mutableStateOf<String?>(null) }
+
+    // Estados para saving throws
     var saveStr by remember { mutableStateOf(false) }
     var saveDex by remember { mutableStateOf(false) }
     var saveCon by remember { mutableStateOf(false) }
     var saveInt by remember { mutableStateOf(false) }
     var saveWis by remember { mutableStateOf(false) }
     var saveCha by remember { mutableStateOf(false) }
+
+    // Estados para habilidades
+    var skillAthletics by remember { mutableStateOf(false) } // STR
+    var skillAcrobatics by remember { mutableStateOf(false) } // DEX
+    var skillSleightOfHand by remember { mutableStateOf(false) } // DEX
+    var skillStealth by remember { mutableStateOf(false) } // DEX
+    var skillArcana by remember { mutableStateOf(false) } // INT
+    var skillHistory by remember { mutableStateOf(false) } // INT
+    var skillInvestigation by remember { mutableStateOf(false) } // INT
+    var skillNature by remember { mutableStateOf(false) } // INT
+    var skillReligion by remember { mutableStateOf(false) } // INT
+    var skillAnimalHandling by remember { mutableStateOf(false) } // WIS
+    var skillInsight by remember { mutableStateOf(false) } // WIS
+    var skillMedicine by remember { mutableStateOf(false) } // WIS
+    var skillPerception by remember { mutableStateOf(false) } // WIS
+    var skillSurvival by remember { mutableStateOf(false) } // WIS
+    var skillDeception by remember { mutableStateOf(false) } // CHA
+    var skillIntimidation by remember { mutableStateOf(false) } // CHA
+    var skillPerformance by remember { mutableStateOf(false) } // CHA
+    var skillPersuasion by remember { mutableStateOf(false) } // CHA
 
     val sizeOptions = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan")
     val type1Options = listOf(
@@ -263,6 +287,27 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     if (saveWis) savesMap["wis"] = calculateModifier(wis, pb)
                     if (saveCha) savesMap["cha"] = calculateModifier(cha, pb)
 
+                    // Mapa de habilidades
+                    val skillsMap = mutableMapOf<String, String>()
+                    if (skillAthletics) calculateModifier(str, pb)?.let { skillsMap["athletics"] = it }
+                    if (skillAcrobatics) calculateModifier(dex, pb)?.let { skillsMap["acrobatics"] = it }
+                    if (skillSleightOfHand) calculateModifier(dex, pb)?.let { skillsMap["sleight_of_hand"] = it }
+                    if (skillStealth) calculateModifier(dex, pb)?.let { skillsMap["stealth"] = it }
+                    if (skillArcana) calculateModifier(int, pb)?.let { skillsMap["arcana"] = it }
+                    if (skillHistory) calculateModifier(int, pb)?.let { skillsMap["history"] = it }
+                    if (skillInvestigation) calculateModifier(int, pb)?.let { skillsMap["investigation"] = it }
+                    if (skillNature) calculateModifier(int, pb)?.let { skillsMap["nature"] = it }
+                    if (skillReligion) calculateModifier(int, pb)?.let { skillsMap["religion"] = it }
+                    if (skillAnimalHandling) calculateModifier(wis, pb)?.let { skillsMap["animal_handling"] = it }
+                    if (skillInsight) calculateModifier(wis, pb)?.let { skillsMap["insight"] = it }
+                    if (skillMedicine) calculateModifier(wis, pb)?.let { skillsMap["medicine"] = it }
+                    if (skillPerception) calculateModifier(wis, pb)?.let { skillsMap["perception"] = it }
+                    if (skillSurvival) calculateModifier(wis, pb)?.let { skillsMap["survival"] = it }
+                    if (skillDeception) calculateModifier(cha, pb)?.let { skillsMap["deception"] = it }
+                    if (skillIntimidation) calculateModifier(cha, pb)?.let { skillsMap["intimidation"] = it }
+                    if (skillPerformance) calculateModifier(cha, pb)?.let { skillsMap["performance"] = it }
+                    if (skillPersuasion) calculateModifier(cha, pb)?.let { skillsMap["persuasion"] = it }
+
                     val customMonster = CustomMonster(
                         userId = userId,
                         name = name,
@@ -280,6 +325,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         cha = cha.toIntOrNull(),
                         proficiencyBonus = pb,
                         saves = savesMap.takeIf { it.isNotEmpty() },
+                        skills = skillsMap.takeIf { it.isNotEmpty() },
                         source = source,
                         initiative = initiative.toIntOrNull(),
                         public = false
@@ -733,6 +779,225 @@ fun CreateMonsterScreen(navController: NavHostController) {
                                     onCheckedChange = { saveCha = it }
                                 )
                                 Text("Charisma ${if (saveCha) calculateModifier(cha, pb) ?: "" else ""}")
+                            }
+                        }
+                    }
+                }
+
+                // Skills Section
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("Skills", Icons.Default.Star)
+                        val pb = proficiencyBonus.toIntOrNull() ?: 2
+
+                        // Fuerza
+                        Text(
+                            text = "Strength Skills",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = skillAthletics,
+                                onCheckedChange = { skillAthletics = it }
+                            )
+                            Text("Athletics ${if (skillAthletics) calculateModifier(str, pb) ?: "" else ""}")
+                        }
+
+                        // Destreza
+                        Text(
+                            text = "Dexterity Skills",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillAcrobatics,
+                                    onCheckedChange = { skillAcrobatics = it }
+                                )
+                                Text("Acrobatics ${if (skillAcrobatics) calculateModifier(dex, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillSleightOfHand,
+                                    onCheckedChange = { skillSleightOfHand = it }
+                                )
+                                Text("Sleight of Hand ${if (skillSleightOfHand) calculateModifier(dex, pb) ?: "" else ""}")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = skillStealth,
+                                onCheckedChange = { skillStealth = it }
+                            )
+                            Text("Stealth ${if (skillStealth) calculateModifier(dex, pb) ?: "" else ""}")
+                        }
+
+                        // Inteligencia
+                        Text(
+                            text = "Intelligence Skills",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillArcana,
+                                    onCheckedChange = { skillArcana = it }
+                                )
+                                Text("Arcana ${if (skillArcana) calculateModifier(int, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillHistory,
+                                    onCheckedChange = { skillHistory = it }
+                                )
+                                Text("History ${if (skillHistory) calculateModifier(int, pb) ?: "" else ""}")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillInvestigation,
+                                    onCheckedChange = { skillInvestigation = it }
+                                )
+                                Text("Investigation ${if (skillInvestigation) calculateModifier(int, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillNature,
+                                    onCheckedChange = { skillNature = it }
+                                )
+                                Text("Nature ${if (skillNature) calculateModifier(int, pb) ?: "" else ""}")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = skillReligion,
+                                onCheckedChange = { skillReligion = it }
+                            )
+                            Text("Religion ${if (skillReligion) calculateModifier(int, pb) ?: "" else ""}")
+                        }
+
+                        // Sabiduría
+                        Text(
+                            text = "Wisdom Skills",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillAnimalHandling,
+                                    onCheckedChange = { skillAnimalHandling = it }
+                                )
+                                Text("Animal Handling ${if (skillAnimalHandling) calculateModifier(wis, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillInsight,
+                                    onCheckedChange = { skillInsight = it }
+                                )
+                                Text("Insight ${if (skillInsight) calculateModifier(wis, pb) ?: "" else ""}")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillMedicine,
+                                    onCheckedChange = { skillMedicine = it }
+                                )
+                                Text("Medicine ${if (skillMedicine) calculateModifier(wis, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillPerception,
+                                    onCheckedChange = { skillPerception = it }
+                                )
+                                Text("Perception ${if (skillPerception) calculateModifier(wis, pb) ?: "" else ""}")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = skillSurvival,
+                                onCheckedChange = { skillSurvival = it }
+                            )
+                            Text("Survival ${if (skillSurvival) calculateModifier(wis, pb) ?: "" else ""}")
+                        }
+
+                        // Carisma
+                        Text(
+                            text = "Charisma Skills",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillDeception,
+                                    onCheckedChange = { skillDeception = it }
+                                )
+                                Text("Deception ${if (skillDeception) calculateModifier(cha, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillIntimidation,
+                                    onCheckedChange = { skillIntimidation = it }
+                                )
+                                Text("Intimidation ${if (skillIntimidation) calculateModifier(cha, pb) ?: "" else ""}")
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillPerformance,
+                                    onCheckedChange = { skillPerformance = it }
+                                )
+                                Text("Performance ${if (skillPerformance) calculateModifier(cha, pb) ?: "" else ""}")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = skillPersuasion,
+                                    onCheckedChange = { skillPersuasion = it }
+                                )
+                                Text("Persuasion ${if (skillPersuasion) calculateModifier(cha, pb) ?: "" else ""}")
                             }
                         }
                     }

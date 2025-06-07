@@ -1,15 +1,15 @@
 package com.javier.mappster.ui.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -17,8 +17,8 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.CustomMonster
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,9 +79,11 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (errorMessage != null) {
@@ -104,7 +106,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                         customMonster?.source?.let { source ->
                             Text(
                                 text = "Source: $source",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                ),
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -118,6 +122,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                     }
                     item {
                         MonsterStats(customMonster!!)
+                    }
+                    item {
+                        MonsterSkillsSection(customMonster!!)
                     }
                 }
             } else {
@@ -135,7 +142,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
 fun MonsterInfoSection(monster: CustomMonster) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -149,7 +158,8 @@ fun MonsterInfoSection(monster: CustomMonster) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val sizeText = monster.size ?: "Medium"
-                val typeText = monster.type?.joinToString(", ")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+                val typeText = monster.type?.joinToString(", ")?.replaceFirstChar { it.uppercase() }
+                    ?: "Unknown"
                 val alignmentText = monster.alignment?.let { ", $it" } ?: ""
 
                 Text(
@@ -177,7 +187,9 @@ fun MonsterInfoSection(monster: CustomMonster) {
 fun MonsterCombatStats(monster: CustomMonster) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -214,14 +226,15 @@ fun MonsterCombatStats(monster: CustomMonster) {
 
 @Composable
 fun MonsterStats(monster: CustomMonster) {
-    // Función para calcular el modificador
     fun calculateModifier(score: Int?): Int {
         return score?.let { (it - 10) / 2 } ?: 0
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
@@ -240,23 +253,18 @@ fun MonsterStats(monster: CustomMonster) {
                     .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // STR
                 StatColumn(
                     label = "STR",
                     abilityValue = monster.str,
                     saveValue = monster.saves?.get("str"),
                     modifier = calculateModifier(monster.str)
                 )
-
-                // DEX
                 StatColumn(
                     label = "DEX",
                     abilityValue = monster.dex,
                     saveValue = monster.saves?.get("dex"),
                     modifier = calculateModifier(monster.dex)
                 )
-
-                // CON
                 StatColumn(
                     label = "CON",
                     abilityValue = monster.con,
@@ -271,23 +279,18 @@ fun MonsterStats(monster: CustomMonster) {
                     .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // INT
                 StatColumn(
                     label = "INT",
                     abilityValue = monster.int,
                     saveValue = monster.saves?.get("int"),
                     modifier = calculateModifier(monster.int)
                 )
-
-                // WIS
                 StatColumn(
                     label = "WIS",
                     abilityValue = monster.wis,
                     saveValue = monster.saves?.get("wis"),
                     modifier = calculateModifier(monster.wis)
                 )
-
-                // CHA
                 StatColumn(
                     label = "CHA",
                     abilityValue = monster.cha,
@@ -310,7 +313,6 @@ fun StatColumn(
     val modifierTextSize = 22.sp
     val fontWeight = FontWeight.SemiBold
 
-    // Mostrar el saveValue si existe, de lo contrario mostrar el modificador
     val saveDisplayText = saveValue ?: if (modifier >= 0) "+$modifier" else "$modifier"
     val modifierText = if (modifier >= 0) "+$modifier" else "$modifier"
 
@@ -318,7 +320,6 @@ fun StatColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
     ) {
-        // Puntuación de habilidad
         Text(
             text = "$label: ${abilityValue?.toString() ?: "–"}",
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -327,8 +328,6 @@ fun StatColumn(
             ),
             color = MaterialTheme.colorScheme.onSurface
         )
-
-        // Tirada de salvación (usa el valor guardado o el modificador)
         Text(
             text = "Save: $saveDisplayText",
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -337,8 +336,6 @@ fun StatColumn(
                 color = MaterialTheme.colorScheme.primary
             )
         )
-
-        // Modificador (siempre mostrado)
         Text(
             text = "Mod: $modifierText",
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -346,6 +343,73 @@ fun StatColumn(
                 fontSize = modifierTextSize,
                 color = MaterialTheme.colorScheme.primary
             )
+        )
+    }
+}
+
+@Composable
+fun MonsterSkillsSection(monster: CustomMonster) {
+    val skills = monster.skills ?: emptyMap()
+    var showRollDialog by remember { mutableStateOf(false) }
+    var rollResult by remember { mutableStateOf<Pair<String, Int>?>(null) }
+
+    if (skills.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Skills:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                skills.entries.sortedBy { it.key }.forEach { skill ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val bonus = skill.value.replace("[^0-9-]".toRegex(), "").toIntOrNull() ?: 0
+                                val roll = Random.nextInt(1, 21)
+                                val total = roll + bonus
+                                rollResult = Pair(skill.key.replace("_", " ").replaceFirstChar { it.uppercase() }, total)
+                                showRollDialog = true
+                            }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "${skill.key.replace("_", " ").replaceFirstChar { it.uppercase() }}: ",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = skill.value,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showRollDialog && rollResult != null) {
+        AlertDialog(
+            onDismissRequest = { showRollDialog = false },
+            title = { Text("Skill Check: ${rollResult!!.first}") },
+            text = { Text("Result: ${rollResult!!.second}") },
+            confirmButton = {
+                TextButton(onClick = { showRollDialog = false }) {
+                    Text("OK")
+                }
+            }
         )
     }
 }
