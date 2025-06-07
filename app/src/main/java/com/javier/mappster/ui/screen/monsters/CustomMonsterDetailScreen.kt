@@ -129,6 +129,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                     item {
                         MonsterSkillsSection(customMonster!!)
                     }
+                    item {
+                        MonsterResistancesImmunitiesSection(customMonster!!)
+                    }
                 }
             } else {
                 Text(
@@ -448,5 +451,49 @@ fun MonsterSkillsSection(monster: CustomMonster) {
                 }
             }
         )
+    }
+}
+
+@Composable
+fun MonsterResistancesImmunitiesSection(monster: CustomMonster) {
+    val resistances = monster.resist ?: emptyList()
+    val immunities = monster.immune ?: emptyList()
+
+    if (resistances.isNotEmpty() || immunities.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Resistances & Immunities:",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                if (resistances.isNotEmpty()) {
+                    Text(
+                        text = "Resistances: ${resistances.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
+                if (immunities.isNotEmpty()) {
+                    Text(
+                        text = "Immunities: ${immunities.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
+            }
+        }
     }
 }

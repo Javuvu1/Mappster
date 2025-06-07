@@ -159,6 +159,19 @@ fun CreateMonsterScreen(navController: NavHostController) {
     )
     val crOptions = listOf("0", "1/8", "1/4", "1/2", "1") + (2..30).map { it.toString() }
 
+    // Resistances and Immunities
+    val damageTypes = listOf(
+        "Acid", "Bludgeoning", "Cold", "Fire", "Force", "Lightning",
+        "Necrotic", "Piercing", "Poison", "Psychic", "Radiant",
+        "Slashing", "Thunder"
+    )
+    var selectedResistances by remember { mutableStateOf(emptySet<String>()) }
+    var customResistance by remember { mutableStateOf("") }
+    var customResistanceError by remember { mutableStateOf<String?>(null) }
+    var selectedImmunities by remember { mutableStateOf(emptySet<String>()) }
+    var customImmunity by remember { mutableStateOf("") }
+    var customImmunityError by remember { mutableStateOf<String?>(null) }
+
     fun calculateModifier(score: String, proficiencyBonus: Int): String? {
         return score.toIntOrNull()?.let {
             if (it in 1..30) {
@@ -262,19 +275,35 @@ fun CreateMonsterScreen(navController: NavHostController) {
             burrowSpeed.isNotBlank() && burrowSpeed.toInt() > 999 -> "Max 999"
             else -> null
         }
+
+        customResistanceError = when {
+            customResistance.isNotBlank() && customResistance.length > 50 -> "Máximo 50 caracteres"
+            customResistance.isNotBlank() && selectedImmunities.contains(customResistance) -> "No puede ser inmune y resistente al mismo tipo"
+            customResistance.isNotBlank() && customResistance.equals(customImmunity, ignoreCase = true) -> "No puede ser inmune y resistente al mismo tipo"
+            else -> null
+        }
+        customImmunityError = when {
+            customImmunity.isNotBlank() && customImmunity.length > 50 -> "Máximo 50 caracteres"
+            customImmunity.isNotBlank() && selectedResistances.contains(customImmunity) -> "No puede ser inmune y resistente al mismo tipo"
+            customImmunity.isNotBlank() && customImmunity.equals(customResistance, ignoreCase = true) -> "No puede ser inmune y resistente al mismo tipo"
+            else -> null
+        }
     }
 
     val isFormValid by remember(
         nameError, type2Error, hpError, acError, strError, dexError, conError, intError,
-        wisError, chaError, proficiencyBonusError, sourceError, initiativeError
+        wisError, chaError, proficiencyBonusError, sourceError, initiativeError,
+        walkSpeedError, flySpeedError, swimSpeedError, climbSpeedError, burrowSpeedError,
+        customResistanceError, customImmunityError // Añade estos
     ) {
         derivedStateOf {
             nameError == null && type2Error == null && hpError == null && acError == null &&
-            strError == null && dexError == null && conError == null && intError == null &&
-            wisError == null && chaError == null && proficiencyBonusError == null &&
-            sourceError == null && initiativeError == null
-            walkSpeedError == null && flySpeedError == null && swimSpeedError == null &&
-            climbSpeedError == null && burrowSpeedError == null
+                    strError == null && dexError == null && conError == null && intError == null &&
+                    wisError == null && chaError == null && proficiencyBonusError == null &&
+                    sourceError == null && initiativeError == null &&
+                    walkSpeedError == null && flySpeedError == null && swimSpeedError == null &&
+                    climbSpeedError == null && burrowSpeedError == null &&
+                    customResistanceError == null && customImmunityError == null
         }
     }
 
@@ -288,6 +317,18 @@ fun CreateMonsterScreen(navController: NavHostController) {
         burrowSpeed.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { speeds["burrow"] = it }
 
         return speeds.takeIf { it.isNotEmpty() }
+    }
+
+    fun buildResistList(): List<String>? {
+        val resists = selectedResistances.toMutableList()
+        customResistance.takeIf { it.isNotBlank() && !selectedImmunities.contains(it) && it != customImmunity }?.let { resists.add(it) }
+        return resists.takeIf { it.isNotEmpty() }?.map { it.lowercase() }
+    }
+
+    fun buildImmuneList(): List<String>? {
+        val immunes = selectedImmunities.toMutableList()
+        customImmunity.takeIf { it.isNotBlank() && !selectedResistances.contains(it) && it != customResistance }?.let { immunes.add(it) }
+        return immunes.takeIf { it.isNotEmpty() }?.map { it.lowercase() }
     }
 
     LaunchedEffect(
@@ -379,6 +420,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         proficiencyBonus = pb,
                         saves = savesMap.takeIf { it.isNotEmpty() },
                         skills = skillsMap.takeIf { it.isNotEmpty() },
+                        resist = buildResistList(),
+                        immune = buildImmuneList(),
                         source = source,
                         initiative = initiative.toIntOrNull(),
                         public = false
@@ -1165,6 +1208,127 @@ fun CreateMonsterScreen(navController: NavHostController) {
                                 )
                                 Text("Persuasion ${if (skillPersuasion) calculateModifier(cha, pb) ?: "" else ""}")
                             }
+                        }
+                    }
+                }
+                // Resistances and Immunities Section
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("Resistances & Immunities", Icons.Default.Security)
+
+                        // Resistances
+                        Text(
+                            text = "Damage Resistances",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            damageTypes.forEach { type ->
+                                FilterChip(
+                                    selected = selectedResistances.contains(type),
+                                    onClick = {
+                                        if (selectedResistances.contains(type)) {
+                                            selectedResistances -= type
+                                        } else {
+                                            selectedResistances += type
+                                            selectedImmunities -= type // Elimina de inmunidades si está seleccionado
+                                            if (customImmunity.equals(type, ignoreCase = true)) {
+                                                customImmunity = "" // Limpia customImmunity si coincide
+                                            }
+                                        }
+                                    },
+                                    label = { Text(type) },
+                                    modifier = Modifier.padding(2.dp)
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = customResistance,
+                                onValueChange = { if (it.length <= 20) customResistance = it },
+                                label = { Text("Custom Resistance") },
+                                modifier = Modifier.weight(1f),
+                                isError = customResistanceError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = "${customResistance.length}/20",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                        }
+                        customResistanceError?.let {
+                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Immunities
+                        Text(
+                            text = "Damage Immunities",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            damageTypes.forEach { type ->
+                                FilterChip(
+                                    selected = selectedImmunities.contains(type),
+                                    onClick = {
+                                        if (selectedImmunities.contains(type)) {
+                                            selectedImmunities -= type
+                                        } else {
+                                            selectedImmunities += type
+                                            selectedResistances -= type // Elimina de resistencias si está seleccionado
+                                            if (customResistance.equals(type, ignoreCase = true)) {
+                                                customResistance = "" // Limpia customResistance si coincide
+                                            }
+                                        }
+                                    },
+                                    label = { Text(type) },
+                                    modifier = Modifier.padding(2.dp)
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = customImmunity,
+                                onValueChange = { if (it.length <= 20) customImmunity = it },
+                                label = { Text("Custom Immunity") },
+                                modifier = Modifier.weight(1f),
+                                isError = customImmunityError != null,
+                                trailingIcon = {
+                                    Text(
+                                        text = "${customImmunity.length}/20",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            )
+                        }
+                        customImmunityError?.let {
+                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
