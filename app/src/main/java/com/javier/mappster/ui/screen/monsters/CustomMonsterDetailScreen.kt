@@ -146,6 +146,9 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                         MonsterTraitsSection(customMonster!!)
                     }
                     item {
+                        SpellcastingDetailSection(customMonster!!)
+                    }
+                    item {
                         MonsterActionsSection(customMonster!!)
                     }
                     item {
@@ -157,10 +160,6 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                     item {
                         MonsterLegendaryActionsSection(customMonster!!)
                     }
-                    item {
-                        SpellcastingDetailSection(customMonster!!)
-                    }
-
                 }
             } else {
                 Text(
@@ -859,61 +858,66 @@ fun SpellcastingDetailSection(monster: CustomMonster) {
         else -> ""
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Spellcasting",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF3469FA)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Descripción de spellcasting
-        Text(
-            text = "Its spellcasting ability is $abilityName (spell save DC $spellSaveDC, +$spellAttackBonus to hit with spell attacks). ${monster.name} has the following spells:",
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Slots por nivel
-        spellcasting.spells.entries.sortedBy { it.key.toIntOrNull() ?: 0 }.forEach { (level, spellLevel) ->
-            val slotText = when (level.toIntOrNull() ?: 0) {
-                0 -> "Cantrips (at will)"
-                1 -> "1st level (${spellLevel.slots} slots)"
-                2 -> "2nd level (${spellLevel.slots} slots)"
-                3 -> "3rd level (${spellLevel.slots} slots)"
-                4 -> "4th level (${spellLevel.slots} slots)"
-                5 -> "5th level (${spellLevel.slots} slots)"
-                6 -> "6th level (${spellLevel.slots} slots)"
-                7 -> "7th level (${spellLevel.slots} slots)"
-                8 -> "8th level (${spellLevel.slots} slots)"
-                9 -> "9th level (${spellLevel.slots} slots)"
-                else -> "$level level (${spellLevel.slots} slots)"
-            }
-
-            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Spellcasting:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = "Its spellcasting ability is $abilityName (spell save DC $spellSaveDC, +$spellAttackBonus to hit with spell attacks). ${monster.name} has the following spells:",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            spellcasting.spells.entries.sortedBy { it.key.toIntOrNull() ?: 0 }.forEach { (level, spellLevel) ->
+                val slotText = when (level.toIntOrNull() ?: 0) {
+                    0 -> "Cantrips (at will)"
+                    1 -> "1st level (${spellLevel.slots} slots)"
+                    2 -> "2nd level (${spellLevel.slots} slots)"
+                    3 -> "3rd level (${spellLevel.slots} slots)"
+                    4 -> "4th level (${spellLevel.slots} slots)"
+                    5 -> "5th level (${spellLevel.slots} slots)"
+                    6 -> "6th level (${spellLevel.slots} slots)"
+                    7 -> "7th level (${spellLevel.slots} slots)"
+                    8 -> "8th level (${spellLevel.slots} slots)"
+                    9 -> "9th level (${spellLevel.slots} slots)"
+                    else -> "$level level (${spellLevel.slots} slots)"
+                }
                 Text(
                     text = slotText,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-
-                // Lista de hechizos ordenados alfabéticamente
                 val sortedSpells = spellLevel.spells.sorted()
                 if (sortedSpells.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(start = 16.dp)) {
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
                         sortedSpells.forEach { spellName ->
                             Text(
                                 text = "• $spellName",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(vertical = 2.dp)
                             )
                         }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
