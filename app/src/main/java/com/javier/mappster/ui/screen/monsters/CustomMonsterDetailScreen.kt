@@ -1,14 +1,20 @@
 package com.javier.mappster.ui.screen
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,9 +24,7 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.CustomMonster
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import kotlin.math.floor
 import kotlin.random.Random
 
@@ -118,48 +122,22 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                             )
                         }
                     }
-                    item {
-                        MonsterInfoSection(customMonster!!)
+                    item { MonsterInfoSection(customMonster!!) }
+                    item { MonsterCombatStats(customMonster!!) }
+                    item { MonsterSpeedSection(customMonster!!) }
+                    item { MonsterStats(customMonster!!) }
+                    item { MonsterSkillsSection(customMonster!!) }
+                    item { MonsterSensesSection(customMonster!!) }
+                    item { MonsterLanguagesSection(customMonster!!) }
+                    item { MonsterResistancesImmunitiesSection(customMonster!!) }
+                    item { MonsterTraitsSection(customMonster!!) }
+                    if (customMonster?.spellcasting?.firstOrNull() != null) {
+                        item { SpellcastingDetailSection(customMonster!!) }
                     }
-                    item {
-                        MonsterCombatStats(customMonster!!)
-                    }
-                    item {
-                        MonsterSpeedSection(customMonster!!)
-                    }
-                    item {
-                        MonsterStats(customMonster!!)
-                    }
-                    item {
-                        MonsterSkillsSection(customMonster!!)
-                    }
-                    item {
-                        MonsterSensesSection(customMonster!!)
-                    }
-                    item {
-                        MonsterLanguagesSection(customMonster!!)
-                    }
-                    item {
-                        MonsterResistancesImmunitiesSection(customMonster!!)
-                    }
-                    item {
-                        MonsterTraitsSection(customMonster!!)
-                    }
-                    item {
-                        SpellcastingDetailSection(customMonster!!)
-                    }
-                    item {
-                        MonsterActionsSection(customMonster!!)
-                    }
-                    item {
-                        MonsterBonusActionsSection(customMonster!!)
-                    }
-                    item {
-                        MonsterReactionsSection(customMonster!!)
-                    }
-                    item {
-                        MonsterLegendaryActionsSection(customMonster!!)
-                    }
+                    item { MonsterActionsSection(customMonster!!) }
+                    item { MonsterBonusActionsSection(customMonster!!) }
+                    item { MonsterReactionsSection(customMonster!!) }
+                    item { MonsterLegendaryActionsSection(customMonster!!) }
                 }
             } else {
                 Text(
@@ -173,18 +151,48 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
 }
 
 @Composable
-fun MonsterInfoSection(monster: CustomMonster) {
+fun MonsterCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = Color.Transparent
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        )
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                content = content
+            )
+        }
+    }
+}
+
+@Composable
+fun MonsterInfoSection(monster: CustomMonster) {
+    MonsterCard {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -192,8 +200,7 @@ fun MonsterInfoSection(monster: CustomMonster) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val sizeText = monster.size ?: "Medium"
-                val typeText = monster.type?.joinToString(", ")?.replaceFirstChar { it.uppercase() }
-                    ?: "Unknown"
+                val typeText = monster.type?.joinToString(", ")?.replaceFirstChar { it.uppercase() } ?: "Unknown"
                 val alignmentText = monster.alignment?.let { ", $it" } ?: ""
 
                 Text(
@@ -219,41 +226,31 @@ fun MonsterInfoSection(monster: CustomMonster) {
 
 @Composable
 fun MonsterCombatStats(monster: CustomMonster) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            monster.hp?.let { hp ->
-                Text(
-                    text = "Hit Points: $hp",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-            monster.initiative?.let { init ->
-                val initMod = if (init >= 0) "+$init" else "$init"
-                Text(
-                    text = "Initiative: $initMod",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            monster.ac?.let { ac ->
-                Text(
-                    text = "Armor Class: $ac",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+    MonsterCard {
+        monster.hp?.let { hp ->
+            Text(
+                text = "Hit Points: $hp",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        monster.initiative?.let { init ->
+            val initMod = if (init >= 0) "+$init" else "$init"
+            Text(
+                text = "Initiative: $initMod",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+        monster.ac?.let { ac ->
+            Text(
+                text = "Armor Class: $ac",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -262,31 +259,23 @@ fun MonsterCombatStats(monster: CustomMonster) {
 fun MonsterSpeedSection(monster: CustomMonster) {
     val speed = monster.speed ?: emptyMap()
     if (speed.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Speed:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            speed.entries.sortedBy { it.key }.forEach { entry ->
                 Text(
-                    text = "Speed:",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    ),
+                    text = "${entry.key.replaceFirstChar { it.uppercase() }}: ${entry.value} ft.",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                speed.entries.sortedBy { it.key }.forEach { entry ->
-                    Text(
-                        text = "${entry.key.replaceFirstChar { it.uppercase() }}: ${entry.value} ft.",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
-                }
             }
         }
     }
@@ -298,74 +287,64 @@ fun MonsterStats(monster: CustomMonster) {
         return score?.let { (it - 10) / 2 } ?: 0
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                text = "Ability Scores & Saves:",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+    MonsterCard {
+        Text(
+            text = "Ability Scores & Saves:",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatColumn(
+                label = "STR",
+                abilityValue = monster.str,
+                saveValue = monster.saves?.get("str"),
+                modifier = calculateModifier(monster.str)
             )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatColumn(
-                    label = "STR",
-                    abilityValue = monster.str,
-                    saveValue = monster.saves?.get("str"),
-                    modifier = calculateModifier(monster.str)
-                )
-                StatColumn(
-                    label = "DEX",
-                    abilityValue = monster.dex,
-                    saveValue = monster.saves?.get("dex"),
-                    modifier = calculateModifier(monster.dex)
-                )
-                StatColumn(
-                    label = "CON",
-                    abilityValue = monster.con,
-                    saveValue = monster.saves?.get("con"),
-                    modifier = calculateModifier(monster.con)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatColumn(
-                    label = "INT",
-                    abilityValue = monster.int,
-                    saveValue = monster.saves?.get("int"),
-                    modifier = calculateModifier(monster.int)
-                )
-                StatColumn(
-                    label = "WIS",
-                    abilityValue = monster.wis,
-                    saveValue = monster.saves?.get("wis"),
-                    modifier = calculateModifier(monster.wis)
-                )
-                StatColumn(
-                    label = "CHA",
-                    abilityValue = monster.cha,
-                    saveValue = monster.saves?.get("cha"),
-                    modifier = calculateModifier(monster.cha)
-                )
-            }
+            StatColumn(
+                label = "DEX",
+                abilityValue = monster.dex,
+                saveValue = monster.saves?.get("dex"),
+                modifier = calculateModifier(monster.dex)
+            )
+            StatColumn(
+                label = "CON",
+                abilityValue = monster.con,
+                saveValue = monster.saves?.get("con"),
+                modifier = calculateModifier(monster.con)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatColumn(
+                label = "INT",
+                abilityValue = monster.int,
+                saveValue = monster.saves?.get("int"),
+                modifier = calculateModifier(monster.int)
+            )
+            StatColumn(
+                label = "WIS",
+                abilityValue = monster.wis,
+                saveValue = monster.saves?.get("wis"),
+                modifier = calculateModifier(monster.wis)
+            )
+            StatColumn(
+                label = "CHA",
+                abilityValue = monster.cha,
+                saveValue = monster.saves?.get("cha"),
+                modifier = calculateModifier(monster.cha)
+            )
         }
     }
 }
@@ -422,47 +401,39 @@ fun MonsterSkillsSection(monster: CustomMonster) {
     var rollResult by remember { mutableStateOf<Pair<String, Int>?>(null) }
 
     if (skills.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = "Skills:",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                skills.entries.sortedBy { it.key }.forEach { skill ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val bonus = skill.value.replace("[^0-9-]".toRegex(), "").toIntOrNull() ?: 0
-                                val roll = Random.nextInt(1, 21)
-                                val total = roll + bonus
-                                rollResult = Pair(skill.key.replace("_", " ").replaceFirstChar { it.uppercase() }, total)
-                                showRollDialog = true
-                            }
-                            .padding(vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "${skill.key.replace("_", " ").replaceFirstChar { it.uppercase() }}: ",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = skill.value,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+        MonsterCard {
+            Text(
+                text = "Skills:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            skills.entries.sortedBy { it.key }.forEach { skill ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val bonus = skill.value.replace("[^0-9-]".toRegex(), "").toIntOrNull() ?: 0
+                            val roll = Random.nextInt(1, 21)
+                            val total = roll + bonus
+                            rollResult = Pair(skill.key.replace("_", " ").replaceFirstChar { it.uppercase() }, total)
+                            showRollDialog = true
+                        }
+                        .padding(vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "${skill.key.replace("_", " ").replaceFirstChar { it.uppercase() }}: ",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = skill.value,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -488,39 +459,31 @@ fun MonsterResistancesImmunitiesSection(monster: CustomMonster) {
     val immunities = monster.immune ?: emptyList()
 
     if (resistances.isNotEmpty() || immunities.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Resistances & Immunities:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            if (resistances.isNotEmpty()) {
                 Text(
-                    text = "Resistances & Immunities:",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    ),
+                    text = "Resistances: ${resistances.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                if (resistances.isNotEmpty()) {
-                    Text(
-                        text = "Resistances: ${resistances.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
-                }
-                if (immunities.isNotEmpty()) {
-                    Text(
-                        text = "Immunities: ${immunities.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
-                }
+            }
+            if (immunities.isNotEmpty()) {
+                Text(
+                    text = "Immunities: ${immunities.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
             }
         }
     }
@@ -537,36 +500,28 @@ fun MonsterSensesSection(monster: CustomMonster) {
     val passivePerception = 10 + wisdomModifier + if (perceptionBonus > wisdomModifier) proficiencyBonus else 0
 
     if (senses.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = "Senses:",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = senses.joinToString(", ") { it },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-                Text(
-                    text = "Passive Perception: $passivePerception",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-            }
+        MonsterCard {
+            Text(
+                text = "Senses:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = senses.joinToString(", ") { it },
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+            Text(
+                text = "Passive Perception: $passivePerception",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
         }
     }
 }
@@ -576,30 +531,22 @@ fun MonsterLanguagesSection(monster: CustomMonster) {
     val languages = monster.languages ?: emptyList()
 
     if (languages.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = "Languages:",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = languages.joinToString(", ") { it },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-            }
+        MonsterCard {
+            Text(
+                text = "Languages:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = languages.joinToString(", ") { it },
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
         }
     }
 }
@@ -609,41 +556,33 @@ fun MonsterTraitsSection(monster: CustomMonster) {
     val traits = monster.traits ?: emptyList()
 
     if (traits.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Traits:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            traits.forEach { trait ->
                 Text(
-                    text = "Traits:",
+                    text = trait.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                traits.forEach { trait ->
+                trait.entries.forEach { entry ->
                     Text(
-                        text = trait.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
+                        text = entry,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
-                    trait.entries.forEach { entry ->
-                        Text(
-                            text = entry,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                        )
-                    }
                 }
             }
         }
@@ -655,41 +594,33 @@ fun MonsterActionsSection(monster: CustomMonster) {
     val actions = monster.actions ?: emptyList()
 
     if (actions.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Actions:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface, // Correct: Uses Color
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            actions.forEach { action ->
                 Text(
-                    text = "Actions:",
+                    text = action.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                actions.forEach { action ->
+                action.entries.forEach { entry ->
                     Text(
-                        text = action.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
+                        text = entry,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
-                    action.entries.forEach { entry ->
-                        Text(
-                            text = entry,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                        )
-                    }
                 }
             }
         }
@@ -701,41 +632,33 @@ fun MonsterBonusActionsSection(monster: CustomMonster) {
     val bonusActions = monster.bonus ?: emptyList()
 
     if (bonusActions.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Bonus Actions:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            bonusActions.forEach { bonusAction ->
                 Text(
-                    text = "Bonus Actions:",
+                    text = bonusAction.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                bonusActions.forEach { bonusAction ->
+                bonusAction.entries.forEach { entry ->
                     Text(
-                        text = bonusAction.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
+                        text = entry,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
-                    bonusAction.entries.forEach { entry ->
-                        Text(
-                            text = entry,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                        )
-                    }
                 }
             }
         }
@@ -747,41 +670,33 @@ fun MonsterReactionsSection(monster: CustomMonster) {
     val reactions = monster.reactions ?: emptyList()
 
     if (reactions.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Reactions:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            reactions.forEach { reaction ->
                 Text(
-                    text = "Reactions:",
+                    text = reaction.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                reactions.forEach { reaction ->
+                reaction.entries.forEach { entry ->
                     Text(
-                        text = reaction.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
+                        text = entry,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
-                    reaction.entries.forEach { entry ->
-                        Text(
-                            text = entry,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                        )
-                    }
                 }
             }
         }
@@ -793,41 +708,33 @@ fun MonsterLegendaryActionsSection(monster: CustomMonster) {
     val legendaryActions = monster.legendary ?: emptyList()
 
     if (legendaryActions.isNotEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        MonsterCard {
+            Text(
+                text = "Legendary Actions:",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            legendaryActions.forEach { legendaryAction ->
                 Text(
-                    text = "Legendary Actions:",
+                    text = legendaryAction.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 2.dp)
                 )
-                legendaryActions.forEach { legendaryAction ->
+                legendaryAction.entries.forEach { entry ->
                     Text(
-                        text = legendaryAction.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
+                        text = entry,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
-                    legendaryAction.entries.forEach { entry ->
-                        Text(
-                            text = entry,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                        )
-                    }
                 }
             }
         }
@@ -858,63 +765,55 @@ fun SpellcastingDetailSection(monster: CustomMonster) {
         else -> ""
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+    MonsterCard {
+        Text(
+            text = "Spellcasting:",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = "Its spellcasting ability is $abilityName (spell save DC $spellSaveDC, +$spellAttackBonus to hit with spell attacks). ${monster.name} has the following spells:",
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        spellcasting.spells.entries.sortedBy { it.key.toIntOrNull() ?: 0 }.forEach { (level, spellLevel) ->
+            val slotText = when (level.toIntOrNull() ?: 0) {
+                0 -> "Cantrips (at will)"
+                1 -> "1st level (${spellLevel.slots} slots)"
+                2 -> "2nd level (${spellLevel.slots} slots)"
+                3 -> "3rd level (${spellLevel.slots} slots)"
+                4 -> "4th level (${spellLevel.slots} slots)"
+                5 -> "5th level (${spellLevel.slots} slots)"
+                6 -> "6th level (${spellLevel.slots} slots)"
+                7 -> "7th level (${spellLevel.slots} slots)"
+                8 -> "8th level (${spellLevel.slots} slots)"
+                9 -> "9th level (${spellLevel.slots} slots)"
+                else -> "$level level (${spellLevel.slots} slots)"
+            }
             Text(
-                text = "Spellcasting:",
+                text = slotText,
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(vertical = 2.dp)
             )
-            Text(
-                text = "Its spellcasting ability is $abilityName (spell save DC $spellSaveDC, +$spellAttackBonus to hit with spell attacks). ${monster.name} has the following spells:",
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            spellcasting.spells.entries.sortedBy { it.key.toIntOrNull() ?: 0 }.forEach { (level, spellLevel) ->
-                val slotText = when (level.toIntOrNull() ?: 0) {
-                    0 -> "Cantrips (at will)"
-                    1 -> "1st level (${spellLevel.slots} slots)"
-                    2 -> "2nd level (${spellLevel.slots} slots)"
-                    3 -> "3rd level (${spellLevel.slots} slots)"
-                    4 -> "4th level (${spellLevel.slots} slots)"
-                    5 -> "5th level (${spellLevel.slots} slots)"
-                    6 -> "6th level (${spellLevel.slots} slots)"
-                    7 -> "7th level (${spellLevel.slots} slots)"
-                    8 -> "8th level (${spellLevel.slots} slots)"
-                    9 -> "9th level (${spellLevel.slots} slots)"
-                    else -> "$level level (${spellLevel.slots} slots)"
-                }
-                Text(
-                    text = slotText,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-                val sortedSpells = spellLevel.spells.sorted()
-                if (sortedSpells.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(start = 8.dp)) {
-                        sortedSpells.forEach { spellName ->
-                            Text(
-                                text = "• $spellName",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            )
-                        }
+            val sortedSpells = spellLevel.spells.sorted()
+            if (sortedSpells.isNotEmpty()) {
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    sortedSpells.forEach { spellName ->
+                        Text(
+                            text = "• $spellName",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
                     }
                 }
             }

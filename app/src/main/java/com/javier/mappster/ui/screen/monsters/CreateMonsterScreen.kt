@@ -63,6 +63,32 @@ private fun LoadingIndicator() {
 }
 
 @Composable
+fun CreateMonsterCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    icon: ImageVector? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            if (icon != null) {
+                SectionTitle(title, icon)
+            } else {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            content()
+        }
+    }
+}
+
+@Composable
 private fun SectionTitle(title: String, icon: ImageVector) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
