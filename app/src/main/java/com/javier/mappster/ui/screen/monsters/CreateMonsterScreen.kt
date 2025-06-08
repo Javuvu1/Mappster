@@ -765,1414 +765,1356 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // General Information
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("General Information", Icons.Default.Info)
-
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { if (it.length <= 35) name = it },
-                            label = { Text("Name") },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = nameError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${name.length}/35",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        nameError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-
-                        var sizeExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = sizeExpanded,
-                            onExpandedChange = { sizeExpanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = size,
-                                onValueChange = {},
-                                label = { Text("Size") },
-                                readOnly = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sizeExpanded) }
-                            )
-                            ExposedDropdownMenu(
-                                expanded = sizeExpanded,
-                                onDismissRequest = { sizeExpanded = false }
-                            ) {
-                                sizeOptions.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option) },
-                                        onClick = {
-                                            size = option
-                                            sizeExpanded = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        var type1Expanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = type1Expanded,
-                            onExpandedChange = { type1Expanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = type1,
-                                onValueChange = {},
-                                label = { Text("Primary Type") },
-                                readOnly = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = type1Expanded) }
-                            )
-                            ExposedDropdownMenu(
-                                expanded = type1Expanded,
-                                onDismissRequest = { type1Expanded = false }
-                            ) {
-                                type1Options.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option) },
-                                        onClick = {
-                                            type1 = option
-                                            type1Expanded = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = type2,
-                            onValueChange = { if (it.length <= 20) type2 = it },
-                            label = { Text("Subtype (optional)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = type2Error != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${type2.length}/20",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        type2Error?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-
-                        var alignmentExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = alignmentExpanded,
-                            onExpandedChange = { alignmentExpanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = alignment,
-                                onValueChange = {},
-                                label = { Text("Alignment") },
-                                readOnly = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alignmentExpanded) }
-                            )
-                            ExposedDropdownMenu(
-                                expanded = alignmentExpanded,
-                                onDismissRequest = { alignmentExpanded = false }
-                            ) {
-                                alignmentOptions.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option) },
-                                        onClick = {
-                                            alignment = option
-                                            alignmentExpanded = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        var crExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = crExpanded,
-                            onExpandedChange = { crExpanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = cr,
-                                onValueChange = {},
-                                label = { Text("CR") },
-                                readOnly = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = crExpanded) }
-                            )
-                            ExposedDropdownMenu(
-                                expanded = crExpanded,
-                                onDismissRequest = { crExpanded = false }
-                            ) {
-                                crOptions.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option) },
-                                        onClick = {
-                                            cr = option
-                                            crExpanded = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = source,
-                            onValueChange = { if (it.length <= 30) source = it },
-                            label = { Text("Source") },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = sourceError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${source.length}/30",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        sourceError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-
-                        OutlinedTextField(
-                            value = initiative,
-                            onValueChange = {
-                                if (it.isEmpty() || it.matches(Regex("-?\\d*"))) {
-                                    initiative = it
-                                }
-                            },
-                            label = { Text("Initiative") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = initiativeError != null
-                        )
-                        initiativeError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                    }
-                }
-
                 // Statistics
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                // General Information
+                CreateMonsterCard(
+                    title = "General Information",
+                    icon = Icons.Default.Info
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Statistics", Icons.Default.Settings)
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { if (it.length <= 35) name = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = nameError != null,
+                        trailingIcon = {
+                            Text(
+                                text = "${name.length}/35",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                    nameError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
 
+                    var sizeExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = sizeExpanded,
+                        onExpandedChange = { sizeExpanded = it }
+                    ) {
                         OutlinedTextField(
-                            value = proficiencyBonus,
-                            onValueChange = { if (it.length <= 1) proficiencyBonus = it.filter { it.isDigit() } },
-                            label = { Text("Proficiency Bonus") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = proficiencyBonusError != null
+                            value = size,
+                            onValueChange = {},
+                            label = { Text("Size") },
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sizeExpanded) }
                         )
-                        proficiencyBonusError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-
-                        OutlinedTextField(
-                            value = hp,
-                            onValueChange = { if (it.length <= 5) hp = it.filter { it.isDigit() } },
-                            label = { Text("HP") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = hpError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${hp.length}/5",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ExposedDropdownMenu(
+                            expanded = sizeExpanded,
+                            onDismissRequest = { sizeExpanded = false }
+                        ) {
+                            sizeOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        size = option
+                                        sizeExpanded = false
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-                        )
-                        hpError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
 
+                    var type1Expanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = type1Expanded,
+                        onExpandedChange = { type1Expanded = it }
+                    ) {
                         OutlinedTextField(
-                            value = ac,
-                            onValueChange = { if (it.length <= 25) ac = it },
-                            label = { Text("AC") },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = acError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${ac.length}/25",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            value = type1,
+                            onValueChange = {},
+                            label = { Text("Primary Type") },
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = type1Expanded) }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = type1Expanded,
+                            onDismissRequest = { type1Expanded = false }
+                        ) {
+                            type1Options.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        type1 = option
+                                        type1Expanded = false
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-                        )
-                        acError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = str,
-                                onValueChange = { if (it.length <= 2) str = it.filter { it.isDigit() } },
-                                label = { Text("Strength") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = strError != null
-                            )
-                            OutlinedTextField(
-                                value = dex,
-                                onValueChange = { if (it.length <= 2) dex = it.filter { it.isDigit() } },
-                                label = { Text("Dexterity") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = dexError != null
+                    OutlinedTextField(
+                        value = type2,
+                        onValueChange = { if (it.length <= 20) type2 = it },
+                        label = { Text("Subtype (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = type2Error != null,
+                        trailingIcon = {
+                            Text(
+                                text = "${type2.length}/20",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    )
+                    type2Error?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                    var alignmentExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = alignmentExpanded,
+                        onExpandedChange = { alignmentExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = alignment,
+                            onValueChange = {},
+                            label = { Text("Alignment") },
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alignmentExpanded) }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = alignmentExpanded,
+                            onDismissRequest = { alignmentExpanded = false }
                         ) {
-                            strError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                            dexError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                            alignmentOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        alignment = option
+                                        alignmentExpanded = false
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    }
+
+                    var crExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = crExpanded,
+                        onExpandedChange = { crExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = cr,
+                            onValueChange = {},
+                            label = { Text("CR") },
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = crExpanded) }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = crExpanded,
+                            onDismissRequest = { crExpanded = false }
                         ) {
-                            OutlinedTextField(
-                                value = con,
-                                onValueChange = { if (it.length <= 2) con = it.filter { it.isDigit() } },
-                                label = { Text("Constitution") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = conError != null
+                            crOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        cr = option
+                                        crExpanded = false
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = source,
+                        onValueChange = { if (it.length <= 30) source = it },
+                        label = { Text("Source") },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = sourceError != null,
+                        trailingIcon = {
+                            Text(
+                                text = "${source.length}/30",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            OutlinedTextField(
-                                value = int,
-                                onValueChange = { if (it.length <= 2) int = it.filter { it.isDigit() } },
-                                label = { Text("Intelligence") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = intError != null
+                        }
+                    )
+                    sourceError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                    OutlinedTextField(
+                        value = initiative,
+                        onValueChange = {
+                            if (it.isEmpty() || it.matches(Regex("-?\\d*"))) {
+                                initiative = it
+                            }
+                        },
+                        label = { Text("Initiative") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = initiativeError != null
+                    )
+                    initiativeError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                }
+
+// Statistics
+                CreateMonsterCard(
+                    title = "Statistics",
+                    icon = Icons.Default.Settings
+                ) {
+                    OutlinedTextField(
+                        value = proficiencyBonus,
+                        onValueChange = { if (it.length <= 1) proficiencyBonus = it.filter { it.isDigit() } },
+                        label = { Text("Proficiency Bonus") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = proficiencyBonusError != null
+                    )
+                    proficiencyBonusError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                    OutlinedTextField(
+                        value = hp,
+                        onValueChange = { if (it.length <= 5) hp = it.filter { it.isDigit() } },
+                        label = { Text("HP") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = hpError != null,
+                        trailingIcon = {
+                            Text(
+                                text = "${hp.length}/5",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            conError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                            intError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = wis,
-                                onValueChange = { if (it.length <= 2) wis = it.filter { it.isDigit() } },
-                                label = { Text("Wisdom") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = wisError != null
-                            )
-                            OutlinedTextField(
-                                value = cha,
-                                onValueChange = { if (it.length <= 2) cha = it.filter { it.isDigit() } },
-                                label = { Text("Charisma") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = chaError != null
+                    )
+                    hpError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                    OutlinedTextField(
+                        value = ac,
+                        onValueChange = { if (it.length <= 25) ac = it },
+                        label = { Text("AC") },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = acError != null,
+                        trailingIcon = {
+                            Text(
+                                text = "${ac.length}/25",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            wisError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                            chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                        }
+                    )
+                    acError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = str,
+                            onValueChange = { if (it.length <= 2) str = it.filter { it.isDigit() } },
+                            label = { Text("Strength") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = strError != null
+                        )
+                        OutlinedTextField(
+                            value = dex,
+                            onValueChange = { if (it.length <= 2) dex = it.filter { it.isDigit() } },
+                            label = { Text("Dexterity") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = dexError != null
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        strError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        dexError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = con,
+                            onValueChange = { if (it.length <= 2) con = it.filter { it.isDigit() } },
+                            label = { Text("Constitution") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = conError != null
+                        )
+                        OutlinedTextField(
+                            value = int,
+                            onValueChange = { if (it.length <= 2) int = it.filter { it.isDigit() } },
+                            label = { Text("Intelligence") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = intError != null
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        conError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        intError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = wis,
+                            onValueChange = { if (it.length <= 2) wis = it.filter { it.isDigit() } },
+                            label = { Text("Wisdom") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = wisError != null
+                        )
+                        OutlinedTextField(
+                            value = cha,
+                            onValueChange = { if (it.length <= 2) cha = it.filter { it.isDigit() } },
+                            label = { Text("Charisma") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = chaError != null
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        wisError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        chaError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                     }
                 }
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                CreateMonsterCard(
+                    title = "Speed",
+                    icon = Icons.Default.DirectionsWalk
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Speed", Icons.Default.DirectionsWalk)
+                    Text(
+                        text = "Enter movement speeds in feet (leave blank if not applicable)",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
 
-                        Text(
-                            text = "Enter movement speeds in feet (leave blank if not applicable)",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                    OutlinedTextField(
+                        value = walkSpeed,
+                        onValueChange = { if (it.length <= 3) walkSpeed = it.filter { it.isDigit() } },
+                        label = { Text("Walk Speed") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = walkSpeedError != null,
+                        trailingIcon = {
+                            Text(
+                                text = if (walkSpeed.isNotBlank()) "ft" else "",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    )
+                    walkSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         OutlinedTextField(
-                            value = walkSpeed,
-                            onValueChange = { if (it.length <= 3) walkSpeed = it.filter { it.isDigit() } },
-                            label = { Text("Walk Speed") },
-                            modifier = Modifier.fillMaxWidth(),
+                            value = flySpeed,
+                            onValueChange = { if (it.length <= 3) flySpeed = it.filter { it.isDigit() } },
+                            label = { Text("Fly Speed") },
+                            modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = walkSpeedError != null,
+                            isError = flySpeedError != null,
                             trailingIcon = {
                                 Text(
-                                    text = if (walkSpeed.isNotBlank()) "ft" else "",
+                                    text = if (flySpeed.isNotBlank()) "ft" else "",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
                         )
-                        walkSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = flySpeed,
-                                onValueChange = { if (it.length <= 3) flySpeed = it.filter { it.isDigit() } },
-                                label = { Text("Fly Speed") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = flySpeedError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = if (flySpeed.isNotBlank()) "ft" else "",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                            OutlinedTextField(
-                                value = swimSpeed,
-                                onValueChange = { if (it.length <= 3) swimSpeed = it.filter { it.isDigit() } },
-                                label = { Text("Swim Speed") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = swimSpeedError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = if (swimSpeed.isNotBlank()) "ft" else "",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            flySpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                            swimSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = climbSpeed,
-                                onValueChange = { if (it.length <= 3) climbSpeed = it.filter { it.isDigit() } },
-                                label = { Text("Climb Speed") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = climbSpeedError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = if (climbSpeed.isNotBlank()) "ft" else "",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                            OutlinedTextField(
-                                value = burrowSpeed,
-                                onValueChange = { if (it.length <= 3) burrowSpeed = it.filter { it.isDigit() } },
-                                label = { Text("Burrow Speed") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                isError = burrowSpeedError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = if (burrowSpeed.isNotBlank()) "ft" else "",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            climbSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                            burrowSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
-                        }
-                    }
-                }
-
-                // Saving Throws
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Saving Throws", Icons.Default.Security)
-                        val pb = proficiencyBonus.toIntOrNull() ?: 2
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = saveStr,
-                                    onCheckedChange = { saveStr = it }
-                                )
-                                Text("Strength ${if (saveStr) calculateModifier(str, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = saveDex,
-                                    onCheckedChange = { saveDex = it }
-                                )
-                                Text("Dexterity ${if (saveDex) calculateModifier(dex, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = saveCon,
-                                    onCheckedChange = { saveCon = it }
-                                )
-                                Text("Constitution ${if (saveCon) calculateModifier(con, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = saveInt,
-                                    onCheckedChange = { saveInt = it }
-                                )
-                                Text("Intelligence ${if (saveInt) calculateModifier(int, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = saveWis,
-                                    onCheckedChange = { saveWis = it }
-                                )
-                                Text("Wisdom ${if (saveWis) calculateModifier(wis, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = saveCha,
-                                    onCheckedChange = { saveCha = it }
-                                )
-                                Text("Charisma ${if (saveCha) calculateModifier(cha, pb) ?: "" else ""}")
-                            }
-                        }
-                    }
-                }
-
-                // Skills Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Skills", Icons.Default.Star)
-                        val pb = proficiencyBonus.toIntOrNull() ?: 2
-
-                        // Fuerza
-                        Text(
-                            text = "Strength Skills",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = skillAthletics,
-                                onCheckedChange = { skillAthletics = it }
-                            )
-                            Text("Athletics ${if (skillAthletics) calculateModifier(str, pb) ?: "" else ""}")
-                        }
-
-                        // Destreza
-                        Text(
-                            text = "Dexterity Skills",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillAcrobatics,
-                                    onCheckedChange = { skillAcrobatics = it }
-                                )
-                                Text("Acrobatics ${if (skillAcrobatics) calculateModifier(dex, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillSleightOfHand,
-                                    onCheckedChange = { skillSleightOfHand = it }
-                                )
-                                Text("Sleight of Hand ${if (skillSleightOfHand) calculateModifier(dex, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = skillStealth,
-                                onCheckedChange = { skillStealth = it }
-                            )
-                            Text("Stealth ${if (skillStealth) calculateModifier(dex, pb) ?: "" else ""}")
-                        }
-
-                        // Inteligencia
-                        Text(
-                            text = "Intelligence Skills",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillArcana,
-                                    onCheckedChange = { skillArcana = it }
-                                )
-                                Text("Arcana ${if (skillArcana) calculateModifier(int, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillHistory,
-                                    onCheckedChange = { skillHistory = it }
-                                )
-                                Text("History ${if (skillHistory) calculateModifier(int, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillInvestigation,
-                                    onCheckedChange = { skillInvestigation = it }
-                                )
-                                Text("Investigation ${if (skillInvestigation) calculateModifier(int, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillNature,
-                                    onCheckedChange = { skillNature = it }
-                                )
-                                Text("Nature ${if (skillNature) calculateModifier(int, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = skillReligion,
-                                onCheckedChange = { skillReligion = it }
-                            )
-                            Text("Religion ${if (skillReligion) calculateModifier(int, pb) ?: "" else ""}")
-                        }
-
-                        // Sabiduría
-                        Text(
-                            text = "Wisdom Skills",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillAnimalHandling,
-                                    onCheckedChange = { skillAnimalHandling = it }
-                                )
-                                Text("Animal Handling ${if (skillAnimalHandling) calculateModifier(wis, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillInsight,
-                                    onCheckedChange = { skillInsight = it }
-                                )
-                                Text("Insight ${if (skillInsight) calculateModifier(wis, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillMedicine,
-                                    onCheckedChange = { skillMedicine = it }
-                                )
-                                Text("Medicine ${if (skillMedicine) calculateModifier(wis, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillPerception,
-                                    onCheckedChange = { skillPerception = it }
-                                )
-                                Text("Perception ${if (skillPerception) calculateModifier(wis, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = skillSurvival,
-                                onCheckedChange = { skillSurvival = it }
-                            )
-                            Text("Survival ${if (skillSurvival) calculateModifier(wis, pb) ?: "" else ""}")
-                        }
-
-                        // Carisma
-                        Text(
-                            text = "Charisma Skills",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillDeception,
-                                    onCheckedChange = { skillDeception = it }
-                                )
-                                Text("Deception ${if (skillDeception) calculateModifier(cha, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillIntimidation,
-                                    onCheckedChange = { skillIntimidation = it }
-                                )
-                                Text("Intimidation ${if (skillIntimidation) calculateModifier(cha, pb) ?: "" else ""}")
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillPerformance,
-                                    onCheckedChange = { skillPerformance = it }
-                                )
-                                Text("Performance ${if (skillPerformance) calculateModifier(cha, pb) ?: "" else ""}")
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = skillPersuasion,
-                                    onCheckedChange = { skillPersuasion = it }
-                                )
-                                Text("Persuasion ${if (skillPersuasion) calculateModifier(cha, pb) ?: "" else ""}")
-                            }
-                        }
-                    }
-                }
-                // Resistances and Immunities Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Resistances & Immunities", Icons.Default.Security)
-
-                        // Resistances
-                        Text(
-                            text = "Damage Resistances",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            damageTypes.forEach { type ->
-                                FilterChip(
-                                    selected = selectedResistances.contains(type),
-                                    onClick = {
-                                        if (selectedResistances.contains(type)) {
-                                            selectedResistances -= type
-                                        } else {
-                                            selectedResistances += type
-                                            selectedImmunities -= type // Elimina de inmunidades si está seleccionado
-                                            if (customImmunity.equals(type, ignoreCase = true)) {
-                                                customImmunity = "" // Limpia customImmunity si coincide
-                                            }
-                                        }
-                                    },
-                                    label = { Text(type) },
-                                    modifier = Modifier.padding(2.dp)
-                                )
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = customResistance,
-                                onValueChange = { if (it.length <= 20) customResistance = it },
-                                label = { Text("Custom Resistance") },
-                                modifier = Modifier.weight(1f),
-                                isError = customResistanceError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = "${customResistance.length}/20",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                        }
-                        customResistanceError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Immunities
-                        Text(
-                            text = "Damage Immunities",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            damageTypes.forEach { type ->
-                                FilterChip(
-                                    selected = selectedImmunities.contains(type),
-                                    onClick = {
-                                        if (selectedImmunities.contains(type)) {
-                                            selectedImmunities -= type
-                                        } else {
-                                            selectedImmunities += type
-                                            selectedResistances -= type // Elimina de resistencias si está seleccionado
-                                            if (customResistance.equals(type, ignoreCase = true)) {
-                                                customResistance = "" // Limpia customResistance si coincide
-                                            }
-                                        }
-                                    },
-                                    label = { Text(type) },
-                                    modifier = Modifier.padding(2.dp)
-                                )
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = customImmunity,
-                                onValueChange = { if (it.length <= 20) customImmunity = it },
-                                label = { Text("Custom Immunity") },
-                                modifier = Modifier.weight(1f),
-                                isError = customImmunityError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = "${customImmunity.length}/20",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                        }
-                        customImmunityError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Senses",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            sensesTypes.forEach { sense ->
-                                FilterChip(
-                                    selected = selectedSenses.contains(sense),
-                                    onClick = {
-                                        if (selectedSenses.contains(sense)) {
-                                            selectedSenses.remove(sense)
-                                        } else {
-                                            selectedSenses.add(sense)
-                                            if (customSense.equals(sense, ignoreCase = true)) {
-                                                customSense = ""
-                                            }
-                                        }
-                                    },
-                                    label = { Text(sense) },
-                                    modifier = Modifier.padding(2.dp)
-                                )
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = customSense,
-                                onValueChange = { if (it.length <= 30) customSense = it },
-                                label = { Text("Custom Sense") },
-                                modifier = Modifier.weight(1f),
-                                isError = customSenseError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = "${customSense.length}/30",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                        }
-                        customSenseError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Languages",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            languageTypes.forEach { language ->
-                                FilterChip(
-                                    selected = selectedLanguages.contains(language),
-                                    onClick = {
-                                        if (selectedLanguages.contains(language)) {
-                                            selectedLanguages.remove(language)
-                                        } else {
-                                            selectedLanguages.add(language)
-                                            if (customLanguage.equals(language, ignoreCase = true)) {
-                                                customLanguage = ""
-                                            }
-                                        }
-                                    },
-                                    label = { Text(language) },
-                                    modifier = Modifier.padding(2.dp)
-                                )
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = customLanguage,
-                                onValueChange = { if (it.length <= 30) customLanguage = it },
-                                label = { Text("Custom Language") },
-                                modifier = Modifier.weight(1f),
-                                isError = customLanguageError != null,
-                                trailingIcon = {
-                                    Text(
-                                        text = "${customLanguage.length}/30",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            )
-                        }
-                        customLanguageError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Traits",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        traits.forEachIndexed { index, (name, entry) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    OutlinedTextField(
-                                        value = name,
-                                        onValueChange = { if (it.length <= 50) traits[index] = it to entry },
-                                        label = { Text("Trait Name") },
-                                        isError = traitNameErrors.getOrNull(index) != null,
-                                        supportingText = { traitNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${name.length}/50",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = entry,
-                                        onValueChange = { if (it.length <= 500) traits[index] = name to it },
-                                        label = { Text("Trait Description") },
-                                        isError = traitEntryErrors.getOrNull(index) != null,
-                                        supportingText = { traitEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = false,
-                                        maxLines = 5,
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${entry.length}/500",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                }
-                                IconButton(onClick = { traits.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar rasgo")
-                                }
-                            }
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        Button(
-                            onClick = { traits.add("" to ""); traitNameErrors.add(null); traitEntryErrors.add(null) },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Trait")
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Actions",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        actions.forEachIndexed { index, (name, entry) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    OutlinedTextField(
-                                        value = name,
-                                        onValueChange = { if (it.length <= 50) actions[index] = it to entry },
-                                        label = { Text("Action Name") },
-                                        isError = actionNameErrors.getOrNull(index) != null,
-                                        supportingText = { actionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${name.length}/50",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = entry,
-                                        onValueChange = { if (it.length <= 500) actions[index] = name to it },
-                                        label = { Text("Action Description") },
-                                        isError = actionEntryErrors.getOrNull(index) != null,
-                                        supportingText = { actionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = false,
-                                        maxLines = 5,
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${entry.length}/500",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                }
-                                IconButton(onClick = { actions.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar acción")
-                                }
-                            }
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        Button(
-                            onClick = { actions.add("" to ""); actionNameErrors.add(null); actionEntryErrors.add(null) },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Action")
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Bonus Actions",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        bonusActions.forEachIndexed { index, (name, entry) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    OutlinedTextField(
-                                        value = name,
-                                        onValueChange = { if (it.length <= 50) bonusActions[index] = it to entry },
-                                        label = { Text("Bonus Action Name") },
-                                        isError = bonusActionNameErrors.getOrNull(index) != null,
-                                        supportingText = { bonusActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${name.length}/50",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = entry,
-                                        onValueChange = { if (it.length <= 500) bonusActions[index] = name to it },
-                                        label = { Text("Bonus Action Description") },
-                                        isError = bonusActionEntryErrors.getOrNull(index) != null,
-                                        supportingText = { bonusActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = false,
-                                        maxLines = 5,
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${entry.length}/500",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                }
-                                IconButton(onClick = { bonusActions.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar acción bonus")
-                                }
-                            }
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        Button(
-                            onClick = { bonusActions.add("" to ""); bonusActionNameErrors.add(null); bonusActionEntryErrors.add(null) },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Bonus Action")
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Reactions",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        reactions.forEachIndexed { index, (name, entry) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    OutlinedTextField(
-                                        value = name,
-                                        onValueChange = { if (it.length <= 50) reactions[index] = it to entry },
-                                        label = { Text("Reaction Name") },
-                                        isError = reactionNameErrors.getOrNull(index) != null,
-                                        supportingText = { reactionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${name.length}/50",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = entry,
-                                        onValueChange = { if (it.length <= 500) reactions[index] = name to it },
-                                        label = { Text("Reaction Description") },
-                                        isError = reactionEntryErrors.getOrNull(index) != null,
-                                        supportingText = { reactionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = false,
-                                        maxLines = 5,
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${entry.length}/500",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                }
-                                IconButton(onClick = { reactions.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar reacción")
-                                }
-                            }
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        Button(
-                            onClick = { reactions.add("" to ""); reactionNameErrors.add(null); reactionEntryErrors.add(null) },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Reaction")
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Legendary Actions",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        legendaryActions.forEachIndexed { index, (name, entry) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    OutlinedTextField(
-                                        value = name,
-                                        onValueChange = { if (it.length <= 50) legendaryActions[index] = it to entry },
-                                        label = { Text("Legendary Action Name") },
-                                        isError = legendaryActionNameErrors.getOrNull(index) != null,
-                                        supportingText = { legendaryActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${name.length}/50",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = entry,
-                                        onValueChange = { if (it.length <= 500) legendaryActions[index] = name to it },
-                                        label = { Text("Legendary Action Description") },
-                                        isError = legendaryActionEntryErrors.getOrNull(index) != null,
-                                        supportingText = { legendaryActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = false,
-                                        maxLines = 5,
-                                        trailingIcon = {
-                                            Text(
-                                                text = "${entry.length}/500",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    )
-                                }
-                                IconButton(onClick = { legendaryActions.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar acción legendaria")
-                                }
-                            }
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        Button(
-                            onClick = { legendaryActions.add("" to ""); legendaryActionNameErrors.add(null); legendaryActionEntryErrors.add(null) },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Legendary Action")
-                        }
-                    }
-                }
-
-                // Añade esta sección después de las otras secciones (Legendary Actions, etc.)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        SectionTitle("Spellcasting", Icons.Default.Star)
-
-                        // Selector de característica de lanzamiento
-                        var expanded by remember { mutableStateOf(false) }
-                        val abilities = listOf("Charisma (CHA)", "Wisdom (WIS)", "Intelligence (INT)")
-                        val abilityMap = mapOf(
-                            "Charisma (CHA)" to "cha",
-                            "Wisdom (WIS)" to "wis",
-                            "Intelligence (INT)" to "int"
-                        )
-
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = abilities.firstOrNull {
-                                    abilityMap[it] == spellcastingAbility
-                                } ?: "Select Ability",
-                                onValueChange = {},
-                                label = { Text("Spellcasting Ability") },
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor()
-                            )
-
-                            ExposedDropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                abilities.forEach { ability ->
-                                    DropdownMenuItem(
-                                        text = { Text(ability) },
-                                        onClick = {
-                                            spellcastingAbility = abilityMap[ability] ?: "cha"
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (selectedSpells.isNotEmpty()) {
-                            Text("Selected Spells:", style = MaterialTheme.typography.bodyLarge)
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            selectedSpells.groupBy { it.level }.toSortedMap().forEach { (level, spells) ->
+                        OutlinedTextField(
+                            value = swimSpeed,
+                            onValueChange = { if (it.length <= 3) swimSpeed = it.filter { it.isDigit() } },
+                            label = { Text("Swim Speed") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = swimSpeedError != null,
+                            trailingIcon = {
                                 Text(
-                                    "Level $level:",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    modifier = Modifier.padding(bottom = 4.dp)
+                                    text = if (swimSpeed.isNotBlank()) "ft" else "",
+                                    style = MaterialTheme.typography.bodySmall
                                 )
+                            }
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        flySpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        swimSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                    }
 
-                                spells.forEach { spell ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            "• ${spell.name} (${spell.school})",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier
-                                                .padding(start = 16.dp)
-                                                .weight(1f)
-                                        )
-                                        IconButton(
-                                            onClick = { selectedSpells.remove(spell) },
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Delete,
-                                                contentDescription = "Remove spell",
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = climbSpeed,
+                            onValueChange = { if (it.length <= 3) climbSpeed = it.filter { it.isDigit() } },
+                            label = { Text("Climb Speed") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = climbSpeedError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = if (climbSpeed.isNotBlank()) "ft" else "",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                        OutlinedTextField(
+                            value = burrowSpeed,
+                            onValueChange = { if (it.length <= 3) burrowSpeed = it.filter { it.isDigit() } },
+                            label = { Text("Burrow Speed") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = burrowSpeedError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = if (burrowSpeed.isNotBlank()) "ft" else "",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        climbSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                        burrowSpeedError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
+                    }
+                }
+
+// Saving Throws
+                CreateMonsterCard(
+                    title = "Saving Throws",
+                    icon = Icons.Default.Security
+                ) {
+                    val pb = proficiencyBonus.toIntOrNull() ?: 2
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = saveStr,
+                                onCheckedChange = { saveStr = it }
+                            )
+                            Text("Strength ${if (saveStr) calculateModifier(str, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = saveDex,
+                                onCheckedChange = { saveDex = it }
+                            )
+                            Text("Dexterity ${if (saveDex) calculateModifier(dex, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = saveCon,
+                                onCheckedChange = { saveCon = it }
+                            )
+                            Text("Constitution ${if (saveCon) calculateModifier(con, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = saveInt,
+                                onCheckedChange = { saveInt = it }
+                            )
+                            Text("Intelligence ${if (saveInt) calculateModifier(int, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = saveWis,
+                                onCheckedChange = { saveWis = it }
+                            )
+                            Text("Wisdom ${if (saveWis) calculateModifier(wis, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = saveCha,
+                                onCheckedChange = { saveCha = it }
+                            )
+                            Text("Charisma ${if (saveCha) calculateModifier(cha, pb) ?: "" else ""}")
+                        }
+                    }
+                }
+
+// Skills Section
+                CreateMonsterCard(
+                    title = "Skills",
+                    icon = Icons.Default.Star
+                ) {
+                    val pb = proficiencyBonus.toIntOrNull() ?: 2
+
+                    // Fuerza
+                    Text(
+                        text = "Strength Skills",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = skillAthletics,
+                            onCheckedChange = { skillAthletics = it }
+                        )
+                        Text("Athletics ${if (skillAthletics) calculateModifier(str, pb) ?: "" else ""}")
+                    }
+
+                    // Destreza
+                    Text(
+                        text = "Dexterity Skills",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillAcrobatics,
+                                onCheckedChange = { skillAcrobatics = it }
+                            )
+                            Text("Acrobatics ${if (skillAcrobatics) calculateModifier(dex, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillSleightOfHand,
+                                onCheckedChange = { skillSleightOfHand = it }
+                            )
+                            Text("Sleight of Hand ${if (skillSleightOfHand) calculateModifier(dex, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = skillStealth,
+                            onCheckedChange = { skillStealth = it }
+                        )
+                        Text("Stealth ${if (skillStealth) calculateModifier(dex, pb) ?: "" else ""}")
+                    }
+
+                    // Inteligencia
+                    Text(
+                        text = "Intelligence Skills",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillArcana,
+                                onCheckedChange = { skillArcana = it }
+                            )
+                            Text("Arcana ${if (skillArcana) calculateModifier(int, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillHistory,
+                                onCheckedChange = { skillHistory = it }
+                            )
+                            Text("History ${if (skillHistory) calculateModifier(int, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillInvestigation,
+                                onCheckedChange = { skillInvestigation = it }
+                            )
+                            Text("Investigation ${if (skillInvestigation) calculateModifier(int, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillNature,
+                                onCheckedChange = { skillNature = it }
+                            )
+                            Text("Nature ${if (skillNature) calculateModifier(int, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = skillReligion,
+                            onCheckedChange = { skillReligion = it }
+                        )
+                        Text("Religion ${if (skillReligion) calculateModifier(int, pb) ?: "" else ""}")
+                    }
+
+                    // Sabiduría
+                    Text(
+                        text = "Wisdom Skills",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillAnimalHandling,
+                                onCheckedChange = { skillAnimalHandling = it }
+                            )
+                            Text("Animal Handling ${if (skillAnimalHandling) calculateModifier(wis, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillInsight,
+                                onCheckedChange = { skillInsight = it }
+                            )
+                            Text("Insight ${if (skillInsight) calculateModifier(wis, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillMedicine,
+                                onCheckedChange = { skillMedicine = it }
+                            )
+                            Text("Medicine ${if (skillMedicine) calculateModifier(wis, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillPerception,
+                                onCheckedChange = { skillPerception = it }
+                            )
+                            Text("Perception ${if (skillPerception) calculateModifier(wis, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = skillSurvival,
+                            onCheckedChange = { skillSurvival = it }
+                        )
+                        Text("Survival ${if (skillSurvival) calculateModifier(wis, pb) ?: "" else ""}")
+                    }
+
+                    // Carisma
+                    Text(
+                        text = "Charisma Skills",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillDeception,
+                                onCheckedChange = { skillDeception = it }
+                            )
+                            Text("Deception ${if (skillDeception) calculateModifier(cha, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillIntimidation,
+                                onCheckedChange = { skillIntimidation = it }
+                            )
+                            Text("Intimidation ${if (skillIntimidation) calculateModifier(cha, pb) ?: "" else ""}")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillPerformance,
+                                onCheckedChange = { skillPerformance = it }
+                            )
+                            Text("Performance ${if (skillPerformance) calculateModifier(cha, pb) ?: "" else ""}")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = skillPersuasion,
+                                onCheckedChange = { skillPersuasion = it }
+                            )
+                            Text("Persuasion ${if (skillPersuasion) calculateModifier(cha, pb) ?: "" else ""}")
+                        }
+                    }
+                }
+
+// Resistances and Immunities Section
+                CreateMonsterCard(
+                    title = "Resistances & Immunities",
+                    icon = Icons.Default.Security
+                ) {
+                    // Resistances
+                    Text(
+                        text = "Damage Resistances",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        damageTypes.forEach { type ->
+                            FilterChip(
+                                selected = selectedResistances.contains(type),
+                                onClick = {
+                                    if (selectedResistances.contains(type)) {
+                                        selectedResistances -= type
+                                    } else {
+                                        selectedResistances += type
+                                        selectedImmunities -= type // Elimina de inmunidades si está seleccionado
+                                        if (customImmunity.equals(type, ignoreCase = true)) {
+                                            customImmunity = "" // Limpia customImmunity si coincide
                                         }
                                     }
-                                }
+                                },
+                                label = { Text(type) },
+                                modifier = Modifier.padding(2.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customResistance,
+                            onValueChange = { if (it.length <= 20) customResistance = it },
+                            label = { Text("Custom Resistance") },
+                            modifier = Modifier.weight(1f),
+                            isError = customResistanceError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = "${customResistance.length}/20",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                    customResistanceError?.let {
+                        Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Immunities
+                    Text(
+                        text = "Damage Immunities",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        damageTypes.forEach { type ->
+                            FilterChip(
+                                selected = selectedImmunities.contains(type),
+                                onClick = {
+                                    if (selectedImmunities.contains(type)) {
+                                        selectedImmunities -= type
+                                    } else {
+                                        selectedImmunities += type
+                                        selectedResistances -= type // Elimina de resistencias si está seleccionado
+                                        if (customResistance.equals(type, ignoreCase = true)) {
+                                            customResistance = "" // Limpia customResistance si coincide
+                                        }
+                                    }
+                                },
+                                label = { Text(type) },
+                                modifier = Modifier.padding(2.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customImmunity,
+                            onValueChange = { if (it.length <= 20) customImmunity = it },
+                            label = { Text("Custom Immunity") },
+                            modifier = Modifier.weight(1f),
+                            isError = customImmunityError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = "${customImmunity.length}/20",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                    customImmunityError?.let {
+                        Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                CreateMonsterCard(title = "Senses") {
+                    Text(
+                        text = "Senses",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        sensesTypes.forEach { sense ->
+                            FilterChip(
+                                selected = selectedSenses.contains(sense),
+                                onClick = {
+                                    if (selectedSenses.contains(sense)) {
+                                        selectedSenses.remove(sense)
+                                    } else {
+                                        selectedSenses.add(sense)
+                                        if (customSense.equals(sense, ignoreCase = true)) {
+                                            customSense = ""
+                                        }
+                                    }
+                                },
+                                label = { Text(sense) },
+                                modifier = Modifier.padding(2.dp)
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customSense,
+                            onValueChange = { if (it.length <= 30) customSense = it },
+                            label = { Text("Custom Sense") },
+                            modifier = Modifier.weight(1f),
+                            isError = customSenseError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = "${customSense.length}/30",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                    customSenseError?.let {
+                        Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                CreateMonsterCard(title = "Languages") {
+                    Text(
+                        text = "Languages",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        languageTypes.forEach { language ->
+                            FilterChip(
+                                selected = selectedLanguages.contains(language),
+                                onClick = {
+                                    if (selectedLanguages.contains(language)) {
+                                        selectedLanguages.remove(language)
+                                    } else {
+                                        selectedLanguages.add(language)
+                                        if (customLanguage.equals(language, ignoreCase = true)) {
+                                            customLanguage = ""
+                                        }
+                                    }
+                                },
+                                label = { Text(language) },
+                                modifier = Modifier.padding(2.dp)
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customLanguage,
+                            onValueChange = { if (it.length <= 30) customLanguage = it },
+                            label = { Text("Custom Language") },
+                            modifier = Modifier.weight(1f),
+                            isError = customLanguageError != null,
+                            trailingIcon = {
+                                Text(
+                                    text = "${customLanguage.length}/30",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                    customLanguageError?.let {
+                        Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                CreateMonsterCard(title = "Traits") {
+                    Text(
+                        text = "Traits",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    traits.forEachIndexed { index, (name, entry) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { if (it.length <= 50) traits[index] = it to entry },
+                                    label = { Text("Trait Name") },
+                                    isError = traitNameErrors.getOrNull(index) != null,
+                                    supportingText = { traitNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${name.length}/50",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = entry,
+                                    onValueChange = { if (it.length <= 500) traits[index] = name to it },
+                                    label = { Text("Trait Description") },
+                                    isError = traitEntryErrors.getOrNull(index) != null,
+                                    supportingText = { traitEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = false,
+                                    maxLines = 5,
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${entry.length}/500",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                            }
+                            IconButton(onClick = { traits.removeAt(index) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar rasgo")
                             }
                         }
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    Button(
+                        onClick = { traits.add("" to ""); traitNameErrors.add(null); traitEntryErrors.add(null) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Trait")
+                    }
+                }
 
-                        Button(
-                            onClick = { showSpellModal = true },
-                            modifier = Modifier.align(Alignment.End)
+                CreateMonsterCard(title = "Actions") {
+                    Text(
+                        text = "Actions",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    actions.forEachIndexed { index, (name, entry) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (selectedSpells.isEmpty()) "Add Spells" else "Manage Spells")
+                            Column(modifier = Modifier.weight(1f)) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { if (it.length <= 50) actions[index] = it to entry },
+                                    label = { Text("Action Name") },
+                                    isError = actionNameErrors.getOrNull(index) != null,
+                                    supportingText = { actionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${name.length}/50",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = entry,
+                                    onValueChange = { if (it.length <= 500) actions[index] = name to it },
+                                    label = { Text("Action Description") },
+                                    isError = actionEntryErrors.getOrNull(index) != null,
+                                    supportingText = { actionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = false,
+                                    maxLines = 5,
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${entry.length}/500",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                            }
+                            IconButton(onClick = { actions.removeAt(index) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar acción")
+                            }
                         }
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    Button(
+                        onClick = { actions.add("" to ""); actionNameErrors.add(null); actionEntryErrors.add(null) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Action")
+                    }
+                }
+
+                CreateMonsterCard(title = "Bonus Actions") {
+                    Text(
+                        text = "Bonus Actions",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    bonusActions.forEachIndexed { index, (name, entry) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { if (it.length <= 50) bonusActions[index] = it to entry },
+                                    label = { Text("Bonus Action Name") },
+                                    isError = bonusActionNameErrors.getOrNull(index) != null,
+                                    supportingText = { bonusActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${name.length}/50",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = entry,
+                                    onValueChange = { if (it.length <= 500) bonusActions[index] = name to it },
+                                    label = { Text("Bonus Action Description") },
+                                    isError = bonusActionEntryErrors.getOrNull(index) != null,
+                                    supportingText = { bonusActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = false,
+                                    maxLines = 5,
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${entry.length}/500",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                            }
+                            IconButton(onClick = { bonusActions.removeAt(index) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar acción bonus")
+                            }
+                        }
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    Button(
+                        onClick = { bonusActions.add("" to ""); bonusActionNameErrors.add(null); bonusActionEntryErrors.add(null) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Bonus Action")
+                    }
+                }
+
+                CreateMonsterCard(title = "Reactions") {
+                    Text(
+                        text = "Reactions",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    reactions.forEachIndexed { index, (name, entry) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { if (it.length <= 50) reactions[index] = it to entry },
+                                    label = { Text("Reaction Name") },
+                                    isError = reactionNameErrors.getOrNull(index) != null,
+                                    supportingText = { reactionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${name.length}/50",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = entry,
+                                    onValueChange = { if (it.length <= 500) reactions[index] = name to it },
+                                    label = { Text("Reaction Description") },
+                                    isError = reactionEntryErrors.getOrNull(index) != null,
+                                    supportingText = { reactionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = false,
+                                    maxLines = 5,
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${entry.length}/500",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                            }
+                            IconButton(onClick = { reactions.removeAt(index) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar reacción")
+                            }
+                        }
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    Button(
+                        onClick = { reactions.add("" to ""); reactionNameErrors.add(null); reactionEntryErrors.add(null) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Reaction")
+                    }
+                }
+
+                CreateMonsterCard(title = "Legendary Actions") {
+                    Text(
+                        text = "Legendary Actions",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    legendaryActions.forEachIndexed { index, (name, entry) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { if (it.length <= 50) legendaryActions[index] = it to entry },
+                                    label = { Text("Legendary Action Name") },
+                                    isError = legendaryActionNameErrors.getOrNull(index) != null,
+                                    supportingText = { legendaryActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${name.length}/50",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = entry,
+                                    onValueChange = { if (it.length <= 500) legendaryActions[index] = name to it },
+                                    label = { Text("Legendary Action Description") },
+                                    isError = legendaryActionEntryErrors.getOrNull(index) != null,
+                                    supportingText = { legendaryActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = false,
+                                    maxLines = 5,
+                                    trailingIcon = {
+                                        Text(
+                                            text = "${entry.length}/500",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                )
+                            }
+                            IconButton(onClick = { legendaryActions.removeAt(index) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar acción legendaria")
+                            }
+                        }
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    Button(
+                        onClick = { legendaryActions.add("" to ""); legendaryActionNameErrors.add(null); legendaryActionEntryErrors.add(null) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Legendary Action")
+                    }
+                }
+
+// Spellcasting
+                CreateMonsterCard(
+                    title = "Spellcasting",
+                    icon = Icons.Default.Star
+                ) {
+                    // Selector de característica de lanzamiento
+                    var expanded by remember { mutableStateOf(false) }
+                    val abilities = listOf("Charisma (CHA)", "Wisdom (WIS)", "Intelligence (INT)")
+                    val abilityMap = mapOf(
+                        "Charisma (CHA)" to "cha",
+                        "Wisdom (WIS)" to "wis",
+                        "Intelligence (INT)" to "int"
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = abilities.firstOrNull {
+                                abilityMap[it] == spellcastingAbility
+                            } ?: "Select Ability",
+                            onValueChange = {},
+                            label = { Text("Spellcasting Ability") },
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            abilities.forEach { ability ->
+                                DropdownMenuItem(
+                                    text = { Text(ability) },
+                                    onClick = {
+                                        spellcastingAbility = abilityMap[ability] ?: "cha"
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (selectedSpells.isNotEmpty()) {
+                        Text("Selected Spells:", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        selectedSpells.groupBy { it.level }.toSortedMap().forEach { (level, spells) ->
+                            Text(
+                                "Level $level:",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+
+                            spells.forEach { spell ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "• ${spell.name} (${spell.school})",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                            .weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { selectedSpells.remove(spell) },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Remove spell",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
+                    Button(
+                        onClick = { showSpellModal = true },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (selectedSpells.isEmpty()) "Add Spells" else "Manage Spells")
                     }
                 }
 
