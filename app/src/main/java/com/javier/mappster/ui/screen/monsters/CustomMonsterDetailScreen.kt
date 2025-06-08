@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlin.math.floor
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,6 +157,10 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
                     item {
                         MonsterLegendaryActionsSection(customMonster!!)
                     }
+                    item {
+                        SpellcastingDetailSection(customMonster!!)
+                    }
+
                 }
             } else {
                 Text(
@@ -825,6 +831,89 @@ fun MonsterLegendaryActionsSection(monster: CustomMonster) {
                     }
                 }
             }
+        }
+    }
+}
+
+fun calculateSpellStats(monster: CustomMonster): Pair<Int, Int> {
+    val abilityModifier = when (monster.spellcasting?.firstOrNull()?.ability) {
+        "cha" -> floor((monster.cha?.minus(10) ?: 0) / 2.0).toInt()
+        "wis" -> floor((monster.wis?.minus(10) ?: 0) / 2.0).toInt()
+        "int" -> floor((monster.int?.minus(10) ?: 0) / 2.0).toInt()
+        else -> 0
+    }
+    val pb = monster.proficiencyBonus
+    val spellSaveDC = 8 + pb + abilityModifier
+    val spellAttackBonus = pb + abilityModifier
+    return Pair(spellSaveDC, spellAttackBonus)
+}
+
+@Composable
+fun SpellcastingDetailSection(monster: CustomMonster) {
+    val spellcasting = monster.spellcasting?.firstOrNull() ?: return
+    val (spellSaveDC, spellAttackBonus) = calculateSpellStats(monster)
+    val abilityName = when (spellcasting.ability) {
+        "cha" -> "Charisma"
+        "wis" -> "Wisdom"
+        "int" -> "Intelligence"
+        else -> ""
+    }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Spellcasting",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF3469FA)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Descripción de spellcasting
+        Text(
+            text = "Its spellcasting ability is $abilityName (spell save DC $spellSaveDC, +$spellAttackBonus to hit with spell attacks). ${monster.name} has the following spells:",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Slots por nivel
+        spellcasting.spells.entries.sortedBy { it.key.toIntOrNull() ?: 0 }.forEach { (level, spellLevel) ->
+            val slotText = when (level.toIntOrNull() ?: 0) {
+                0 -> "Cantrips (at will)"
+                1 -> "1st level (${spellLevel.slots} slots)"
+                2 -> "2nd level (${spellLevel.slots} slots)"
+                3 -> "3rd level (${spellLevel.slots} slots)"
+                4 -> "4th level (${spellLevel.slots} slots)"
+                5 -> "5th level (${spellLevel.slots} slots)"
+                6 -> "6th level (${spellLevel.slots} slots)"
+                7 -> "7th level (${spellLevel.slots} slots)"
+                8 -> "8th level (${spellLevel.slots} slots)"
+                9 -> "9th level (${spellLevel.slots} slots)"
+                else -> "$level level (${spellLevel.slots} slots)"
+            }
+
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                Text(
+                    text = slotText,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                )
+
+                // Lista de hechizos ordenados alfabéticamente
+                val sortedSpells = spellLevel.spells.sorted()
+                if (sortedSpells.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(start = 16.dp)) {
+                        sortedSpells.forEach { spellName ->
+                            Text(
+                                text = "• $spellName",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

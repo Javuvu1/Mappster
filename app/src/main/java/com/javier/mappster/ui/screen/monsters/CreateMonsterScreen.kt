@@ -232,6 +232,8 @@ fun CreateMonsterScreen(navController: NavHostController) {
     var spellSearchQuery by remember { mutableStateOf("") }
     val selectedSpells = remember { mutableStateListOf<Spell>() }
     val spellcastingEntries = remember { mutableStateListOf<SpellcastingEntry>() }
+    // En los estados de CreateMonsterScreen, añade:
+    var spellcastingAbility by remember { mutableStateOf("cha") }
 
     fun buildSpellcastingList(): List<SpellcastingEntry>? {
         if (selectedSpells.isEmpty()) return null
@@ -239,18 +241,11 @@ fun CreateMonsterScreen(navController: NavHostController) {
         // Agrupar hechizos por nivel
         val spellsByLevel = selectedSpells.groupBy { it.level }
 
-        // Determinar la habilidad de lanzamiento basada en los stats más altos
-        val castingAbility = when {
-            cha >= wis && cha >= int -> "cha"
-            wis >= cha && wis >= int -> "wis"
-            else -> "int"
-        }
-
         // Convertir el nivel de Int a String para el mapa
         val spellsMap = spellsByLevel.mapKeys { (level, _) -> level.toString() }
             .mapValues { (_, spells) ->
                 CustomSpellLevel(
-                    slots = when (spells.first().level) { // Usamos el nivel del primer hechizo del grupo
+                    slots = when (spells.first().level) {
                         1 -> 3 // Ejemplo: 3 slots de nivel 1
                         2 -> 2 // Ejemplo: 2 slots de nivel 2
                         else -> 1 // Ejemplo: 1 slot para otros niveles
@@ -262,13 +257,13 @@ fun CreateMonsterScreen(navController: NavHostController) {
         return listOf(SpellcastingEntry(
             name = "Spellcasting",
             spells = spellsMap,
-            ability = castingAbility,
+            ability = spellcastingAbility, // Usamos la característica seleccionada
             headerEntries = listOf(
-                "The monster is a ${when (castingAbility) {
+                "The monster is a ${when (spellcastingAbility) {
                     "cha" -> "charisma"
                     "wis" -> "wisdom"
                     else -> "intelligence"
-                }}-based spellcaster. Its spellcasting ability is $castingAbility."
+                }}-based spellcaster. Its spellcasting ability is $spellcastingAbility."
             )
         ))
     }
@@ -2061,11 +2056,54 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SectionTitle("Spellcasting", Icons.Default.Star)
 
+                        // Selector de característica de lanzamiento
+                        var expanded by remember { mutableStateOf(false) }
+                        val abilities = listOf("Charisma (CHA)", "Wisdom (WIS)", "Intelligence (INT)")
+                        val abilityMap = mapOf(
+                            "Charisma (CHA)" to "cha",
+                            "Wisdom (WIS)" to "wis",
+                            "Intelligence (INT)" to "int"
+                        )
+
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = abilities.firstOrNull {
+                                    abilityMap[it] == spellcastingAbility
+                                } ?: "Select Ability",
+                                onValueChange = {},
+                                label = { Text("Spellcasting Ability") },
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor()
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                abilities.forEach { ability ->
+                                    DropdownMenuItem(
+                                        text = { Text(ability) },
+                                        onClick = {
+                                            spellcastingAbility = abilityMap[ability] ?: "cha"
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         if (selectedSpells.isNotEmpty()) {
                             Text("Selected Spells:", style = MaterialTheme.typography.bodyLarge)
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Mostrar por nivel con mejor formato
                             selectedSpells.groupBy { it.level }.toSortedMap().forEach { (level, spells) ->
                                 Text(
                                     "Level $level:",
