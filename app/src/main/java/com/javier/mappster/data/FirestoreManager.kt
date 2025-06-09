@@ -284,4 +284,30 @@ class FirestoreManager {
         monstersCollection.document(monsterId).delete().await()
         Log.d("FirestoreManager", "CustomMonster deleted successfully: id=$monsterId")
     }
+
+    suspend fun getCustomMonsterById(userId: String, monsterId: String): CustomMonster? {
+        return try {
+            db.collection("users").document(userId)
+                .collection("custom_monsters")
+                .document(monsterId)
+                .get()
+                .await()
+                .toObject(CustomMonster::class.java)
+        } catch (e: Exception) {
+            throw Exception("Error getting monster: ${e.message}")
+        }
+    }
+
+    suspend fun updateCustomMonster(monster: CustomMonster) {
+        try {
+            if (monster.id == null) throw Exception("Monster ID is null")
+            db.collection("users").document(monster.userId)
+                .collection("custom_monsters")
+                .document(monster.id)
+                .set(monster)
+                .await()
+        } catch (e: Exception) {
+            throw Exception("Error updating monster: ${e.message}")
+        }
+    }
 }
