@@ -294,13 +294,15 @@ fun CreateMonsterScreen(navController: NavHostController,
     var spellcastingAbility by remember { mutableStateOf("cha") }
 
     // Cargar datos del monstruo si monsterId no es nulo
-    // Cargar datos del monstruo si monsterId no es nulo
     LaunchedEffect(monsterId) {
         if (monsterId != null) {
             try {
                 val userId = authManager.getCurrentUserId() ?: throw Exception("Usuario no autenticado")
+                Log.d("CreateMonsterScreen", "Loading monster with id=$monsterId for user=$userId")
                 val monster = firestoreManager.getCustomMonsterById(userId, monsterId)
+                Log.d("CreateMonsterScreen", "Monster fetched: $monster")
                 monster?.let {
+                    Log.d("CreateMonsterScreen", "Monster loaded: ${monster.name}, id=${monster.id}")
                     name = it.name
                     size = it.size ?: "Medium"
                     type1 = it.type?.getOrNull(0) ?: "Humanoid"
@@ -363,14 +365,14 @@ fun CreateMonsterScreen(navController: NavHostController,
                     // Resistencias e inmunidades
                     it.resist?.forEach { resist ->
                         if (damageTypes.contains(resist.capitalize())) {
-                            selectedResistances += resist.capitalize()
+                            selectedResistances = selectedResistances + resist.capitalize()
                         } else {
                             customResistance = resist
                         }
                     }
                     it.immune?.forEach { immune ->
                         if (damageTypes.contains(immune.capitalize())) {
-                            selectedImmunities += immune.capitalize()
+                            selectedImmunities = selectedImmunities + immune.capitalize()
                         } else {
                             customImmunity = immune
                         }
@@ -442,19 +444,15 @@ fun CreateMonsterScreen(navController: NavHostController,
                     // Hechizos
                     it.spellcasting?.firstOrNull()?.let { spellcasting ->
                         spellcastingAbility = spellcasting.ability ?: "cha"
-                        spellcasting.spells?.forEach { (level, spellLevel) ->
-                            spellLevel.spells?.forEach { spellName ->
-                                val spell = firestoreManager.getSpellById(normalizeSpellName(spellName))
-                                spell?.let { selectedSpells.add(it) }
-                            }
+                        selectedSpells.clear()
+                        spellcasting.spells.forEach { (level, spellLevel) ->
+                            selectedSpells.addAll(spellLevel.spells.map { Spell(name = it, level = level.toIntOrNull() ?: 0) })
                         }
                     }
-                } ?: run {
-                    errorMessage = "Monstruo no encontrado"
                 }
             } catch (e: Exception) {
-                errorMessage = "Error al cargar el monstruo: ${e.message}"
                 Log.e("CreateMonsterScreen", "Error loading monster: ${e.message}", e)
+                errorMessage = "Error al cargar el monstruo: ${e.message}"
             } finally {
                 isLoading = false
             }

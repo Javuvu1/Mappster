@@ -287,27 +287,41 @@ class FirestoreManager {
 
     suspend fun getCustomMonsterById(userId: String, monsterId: String): CustomMonster? {
         return try {
-            db.collection("users").document(userId)
-                .collection("custom_monsters")
-                .document(monsterId)
-                .get()
-                .await()
-                .toObject(CustomMonster::class.java)
+            Log.d("FirestoreManager", "Attempting to fetch monster with id=$monsterId from custom_monsters")
+            val docRef = db.collection("custom_monsters").document(monsterId)
+            val snapshot = docRef.get().await()
+            if (snapshot.exists()) {
+                val monster = snapshot.toObject(CustomMonster::class.java)?.copy(id = snapshot.id)
+                Log.d("FirestoreManager", "Fetched monster: $monster")
+                // Verificar si el usuario tiene acceso
+                if (monster?.userId == userId || monster?.public == true) {
+                    monster
+                } else {
+                    Log.w("FirestoreManager", "User $userId does not have access to monster $monsterId")
+                    null
+                }
+            } else {
+                Log.w("FirestoreManager", "Monster with id=$monsterId not found in custom_monsters")
+                null
+            }
         } catch (e: Exception) {
-            throw Exception("Error getting monster: ${e.message}")
+            Log.e("FirestoreManager", "Error getting monster: ${e.message}", e)
+            null
         }
     }
 
     suspend fun updateCustomMonster(monster: CustomMonster) {
         try {
             if (monster.id == null) throw Exception("Monster ID is null")
-            db.collection("users").document(monster.userId)
-                .collection("custom_monsters")
+            Log.d("FirestoreManager", "Updating monster with id=${monster.id} in custom_monsters")
+            db.collection("custom_monsters")
                 .document(monster.id)
                 .set(monster)
                 .await()
+            Log.d("FirestoreManager", "Monster updated successfully: ${monster.name}, id=${monster.id}")
         } catch (e: Exception) {
-            throw Exception("Error updating monster: ${e.message}")
+            Log.e("FirestoreManager", "Error updating monster: ${e.message}", e)
+            throw Exception("Error updating monster: ${e.message}", e)
         }
     }
 

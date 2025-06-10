@@ -79,7 +79,7 @@ fun MonsterListScreen(
                         IconButton(
                             onClick = {
                                 Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                                navController.navigate(Destinations.CREATE_MONSTER)
+                                navController.navigate("${Destinations.CREATE_MONSTER}?monsterId=null")
                             },
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -192,6 +192,7 @@ fun MonsterItem(
     authManager: AuthManager, // Añadir este parámetro
     modifier: Modifier = Modifier
 ) {
+    Log.d("MonsterItem", "Rendering monster: ${monster.name}, id=${monster.id}, isCustom=${monster.isCustom}")
     val defaultColor = MaterialTheme.colorScheme.primary
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -339,17 +340,14 @@ fun MonsterItem(
                                     }
                                 } else if (!isTwoPaneMode) {
                                     val encodedMonsterId = java.net.URLEncoder.encode(monster.id, "UTF-8")
-                                    val route = "create_monster/$encodedMonsterId"
-                                    Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}, graph id: ${navController?.graph?.id}")
+                                    val route = "create_monster?monsterId=$encodedMonsterId"
+                                    Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}")
                                     try {
                                         navController?.navigate(route) {
                                             launchSingleTop = true
                                         } ?: Log.e("MonsterItem", "NavController is null")
                                     } catch (e: IllegalArgumentException) {
                                         Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
-                                        // Mostrar un mensaje al usuario en lugar de redirigir
-                                        // Nota: Necesitarás un estado para mostrar un Snackbar o Toast
-                                        Log.w("MonsterItem", "Showing error to user: No se pudo navegar a la edición del monstruo")
                                     }
                                 } else {
                                     Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
