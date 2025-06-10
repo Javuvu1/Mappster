@@ -120,7 +120,8 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                             isTwoPaneMode = true,
                                             onItemClick = { selectedMonster = it },
                                             onDeleteClick = { viewModel.deleteCustomMonster(it) },
-                                            navController = null
+                                            navController = null,
+                                            authManager = AuthManager.getInstance(context) // Añadir este parámetro
                                         )
                                     }
                                 }

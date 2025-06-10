@@ -54,7 +54,12 @@ fun NavGraph(navController: NavHostController) {
     val authManager = remember { AuthManager.getInstance(context) }
 
     LaunchedEffect(navController) {
-        Log.d("NavGraph", "Available routes: ${navController.graph.map { it.route ?: "null" }.joinToString(", ")}")
+        val routes = navController.graph.mapNotNull { it.route }.joinToString(", ")
+        Log.d("NavGraph", "Initial available routes: $routes")
+        navController.addOnDestinationChangedListener { controller, destination, _ ->
+            val currentRoutes = controller.graph.mapNotNull { it.route }.joinToString(", ")
+            Log.d("NavGraph", "Destination changed to: ${destination.route}, available routes: $currentRoutes")
+        }
     }
 
     NavHost(navController = navController, startDestination = Destinations.LOGIN) {
@@ -202,7 +207,8 @@ fun NavGraph(navController: NavHostController) {
                 )
                 MonsterListScreen(
                     navController = navController,
-                    viewModel = monsterViewModel
+                    viewModel = monsterViewModel,
+                    authManager = authManager // Añadir este parámetro
                 )
             }
         }
@@ -265,9 +271,20 @@ fun NavGraph(navController: NavHostController) {
                 navController.popBackStack(Destinations.MONSTER_LIST, inclusive = false)
             }
         }
-        composable(Destinations.CREATE_MONSTER) {
-            Log.d("NavGraph", "Navigating to create_monster")
-            CreateMonsterScreen(navController = navController)
+        composable(
+            route = "create_monster?monsterId={monsterId}",
+            arguments = listOf(
+                navArgument("monsterId") {
+                    type = NavType.StringType
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            Log.d("NavGraph", "Navigating to create_monster, monsterId: '${backStackEntry.arguments?.getString("monsterId")}'")
+            CreateMonsterScreen(
+                navController = navController,
+                monsterId = backStackEntry.arguments?.getString("monsterId")
+            )
         }
         composable(
             route = "${Destinations.CUSTOM_MONSTER_DETAIL}/{monsterId}",

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.UnifiedMonster
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.sourceMap
@@ -32,89 +34,114 @@ import com.javier.mappster.viewmodel.MonsterListViewModel
 @Composable
 fun MonsterListScreen(
     navController: NavHostController,
-    viewModel: MonsterListViewModel
+    viewModel: MonsterListViewModel,
+    authManager: AuthManager
 ) {
     val state = viewModel.state.collectAsState().value
     val searchQuery = viewModel.searchQuery.collectAsState().value
+    var isCheckingAuth by remember { mutableStateOf(true) }
+    var userId by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+    LaunchedEffect(Unit) {
+        userId = authManager.getCurrentUserId()
+        isCheckingAuth = false
+        if (userId == null) {
+            Log.e("MonsterListScreen", "User not authenticated, navigating to login")
+            navController.navigate(Destinations.LOGIN) {
+                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    if (isCheckingAuth) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (userId != null) {
+        Scaffold(
+            topBar = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
                 ) {
-                    SearchBar(
-                        query = searchQuery,
-                        onQueryChanged = viewModel::onSearchQueryChanged,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(
-                        onClick = { navController.navigate(Destinations.CREATE_MONSTER) },
-                        modifier = Modifier.size(48.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Crear Monstruo",
-                            tint = MaterialTheme.colorScheme.primary
+                        SearchBar(
+                            query = searchQuery,
+                            onQueryChanged = viewModel::onSearchQueryChanged,
+                            modifier = Modifier.weight(1f)
                         )
+                        IconButton(
+                            onClick = {
+                                Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
+                                navController.navigate(Destinations.CREATE_MONSTER)
+                            },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Crear Monstruo",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
+            },
+            bottomBar = {
+                BottomNavigationBar(navController = navController)
             }
-        },
-        bottomBar = {
-            BottomNavigationBar(navController = navController)
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (state.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (state.error != null) {
-                Text(
-                    text = "Error al cargar monstruos: ${state.error}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error
-                )
-            } else if (state.monsters.isEmpty()) {
-                Text(
-                    text = if (searchQuery.isEmpty()) "No hay monstruos disponibles." else "No se encontraron monstruos para \"$searchQuery\"",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error
-                )
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = 8.dp,
-                        end = 8.dp,
-                        top = 8.dp,
-                        bottom = 16.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(state.monsters) { monster ->
-                        MonsterItem(
-                            monster = monster,
-                            navController = navController,
-                            onDeleteClick = { viewModel.deleteCustomMonster(monster) }
-                        )
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                if (state.isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (state.error != null) {
+                    Text(
+                        text = "Error al cargar monstruos: ${state.error}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else if (state.monsters.isEmpty()) {
+                    Text(
+                        text = if (searchQuery.isEmpty()) "No hay monstruos disponibles." else "No se encontraron monstruos para \"$searchQuery\"",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(
+                            start = 8.dp,
+                            end = 8.dp,
+                            top = 8.dp,
+                            bottom = 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.monsters) { monster ->
+                            MonsterItem(
+                                monster = monster,
+                                navController = navController,
+                                onDeleteClick = { viewModel.deleteCustomMonster(monster) },
+                                authManager = authManager
+                            )
+                        }
                     }
                 }
             }
@@ -162,6 +189,7 @@ fun MonsterItem(
     isTwoPaneMode: Boolean = false,
     onItemClick: (UnifiedMonster) -> Unit = {},
     onDeleteClick: (UnifiedMonster) -> Unit,
+    authManager: AuthManager, // Añadir este parámetro
     modifier: Modifier = Modifier
 ) {
     val defaultColor = MaterialTheme.colorScheme.primary
@@ -296,10 +324,46 @@ fun MonsterItem(
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(end = if (monster.isCustom) 8.dp else 0.dp)
+                        modifier = Modifier.padding(end = if (monster.isCustom) 4.dp else 0.dp)
                     )
 
-                    if (monster.isCustom) {
+                    if (monster.isCustom && monster.id != null) {
+                        val userId = authManager.getCurrentUserId()
+                        IconButton(
+                            onClick = {
+                                if (userId == null) {
+                                    Log.e("MonsterItem", "User not authenticated, redirecting to login")
+                                    navController?.navigate(Destinations.LOGIN) {
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                } else if (!isTwoPaneMode) {
+                                    val encodedMonsterId = java.net.URLEncoder.encode(monster.id, "UTF-8")
+                                    val route = "create_monster/$encodedMonsterId"
+                                    Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}, graph id: ${navController?.graph?.id}")
+                                    try {
+                                        navController?.navigate(route) {
+                                            launchSingleTop = true
+                                        } ?: Log.e("MonsterItem", "NavController is null")
+                                    } catch (e: IllegalArgumentException) {
+                                        Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
+                                        // Mostrar un mensaje al usuario en lugar de redirigir
+                                        // Nota: Necesitarás un estado para mostrar un Snackbar o Toast
+                                        Log.w("MonsterItem", "Showing error to user: No se pudo navegar a la edición del monstruo")
+                                    }
+                                } else {
+                                    Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
+                                }
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar monstruo",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         IconButton(
                             onClick = { showDeleteDialog = true },
                             modifier = Modifier.size(24.dp)

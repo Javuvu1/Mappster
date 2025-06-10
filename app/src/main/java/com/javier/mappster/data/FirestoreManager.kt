@@ -310,4 +310,19 @@ class FirestoreManager {
             throw Exception("Error updating monster: ${e.message}")
         }
     }
+
+    suspend fun getSpellById(spellId: String): Spell? {
+        return try {
+            val doc = spellsCollection.document(spellId).get().await()
+            doc.toObject(Spell::class.java)?.also {
+                Log.d("FirestoreManager", "Fetched spell: ${it.name}, id=$spellId")
+            } ?: run {
+                Log.d("FirestoreManager", "Spell with id $spellId not found")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error fetching spell $spellId: ${e.message}", e)
+            null
+        }
+    }
 }

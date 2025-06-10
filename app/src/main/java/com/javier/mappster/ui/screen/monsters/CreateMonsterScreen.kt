@@ -47,6 +47,7 @@ import com.javier.mappster.model.CustomSpellLevel
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SpellcastingEntry
 import com.javier.mappster.model.TraitEntry
+import com.javier.mappster.utils.normalizeSpellName
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.floor
@@ -131,7 +132,8 @@ private fun SectionTitle(title: String, icon: ImageVector) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateMonsterScreen(navController: NavHostController) {
+fun CreateMonsterScreen(navController: NavHostController,
+                        monsterId: String? = null) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
     val firestoreManager = remember { FirestoreManager() }
@@ -141,6 +143,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
     )
     val coroutineScope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(monsterId != null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Estados generales
@@ -289,6 +292,174 @@ fun CreateMonsterScreen(navController: NavHostController) {
     val spellcastingEntries = remember { mutableStateListOf<SpellcastingEntry>() }
     // En los estados de CreateMonsterScreen, añade:
     var spellcastingAbility by remember { mutableStateOf("cha") }
+
+    // Cargar datos del monstruo si monsterId no es nulo
+    // Cargar datos del monstruo si monsterId no es nulo
+    LaunchedEffect(monsterId) {
+        if (monsterId != null) {
+            try {
+                val userId = authManager.getCurrentUserId() ?: throw Exception("Usuario no autenticado")
+                val monster = firestoreManager.getCustomMonsterById(userId, monsterId)
+                monster?.let {
+                    name = it.name
+                    size = it.size ?: "Medium"
+                    type1 = it.type?.getOrNull(0) ?: "Humanoid"
+                    type2 = it.type?.getOrNull(1) ?: ""
+                    alignment = it.alignment ?: "Neutral"
+                    cr = it.cr ?: "0"
+                    hp = it.hp?.toString() ?: ""
+                    ac = it.ac ?: ""
+                    str = it.str?.toString() ?: ""
+                    dex = it.dex?.toString() ?: ""
+                    con = it.con?.toString() ?: ""
+                    int = it.int?.toString() ?: ""
+                    wis = it.wis?.toString() ?: ""
+                    cha = it.cha?.toString() ?: ""
+                    proficiencyBonus = it.proficiencyBonus?.toString() ?: "2"
+                    source = it.source ?: "Custom"
+                    initiative = it.initiative?.toString() ?: ""
+
+                    // Saving throws
+                    it.saves?.let { saves ->
+                        saveStr = saves.containsKey("str")
+                        saveDex = saves.containsKey("dex")
+                        saveCon = saves.containsKey("con")
+                        saveInt = saves.containsKey("int")
+                        saveWis = saves.containsKey("wis")
+                        saveCha = saves.containsKey("cha")
+                    }
+
+                    // Skills
+                    it.skills?.let { skills ->
+                        skillAthletics = skills.containsKey("athletics")
+                        skillAcrobatics = skills.containsKey("acrobatics")
+                        skillSleightOfHand = skills.containsKey("sleight_of_hand")
+                        skillStealth = skills.containsKey("stealth")
+                        skillArcana = skills.containsKey("arcana")
+                        skillHistory = skills.containsKey("history")
+                        skillInvestigation = skills.containsKey("investigation")
+                        skillNature = skills.containsKey("nature")
+                        skillReligion = skills.containsKey("religion")
+                        skillAnimalHandling = skills.containsKey("animal_handling")
+                        skillInsight = skills.containsKey("insight")
+                        skillMedicine = skills.containsKey("medicine")
+                        skillPerception = skills.containsKey("perception")
+                        skillSurvival = skills.containsKey("survival")
+                        skillDeception = skills.containsKey("deception")
+                        skillIntimidation = skills.containsKey("intimidation")
+                        skillPerformance = skills.containsKey("performance")
+                        skillPersuasion = skills.containsKey("persuasion")
+                    }
+
+                    // Speeds
+                    it.speed?.let { speeds ->
+                        walkSpeed = speeds["walk"]?.toString() ?: ""
+                        flySpeed = speeds["fly"]?.toString() ?: ""
+                        swimSpeed = speeds["swim"]?.toString() ?: ""
+                        climbSpeed = speeds["climb"]?.toString() ?: ""
+                        burrowSpeed = speeds["burrow"]?.toString() ?: ""
+                    }
+
+                    // Resistencias e inmunidades
+                    it.resist?.forEach { resist ->
+                        if (damageTypes.contains(resist.capitalize())) {
+                            selectedResistances += resist.capitalize()
+                        } else {
+                            customResistance = resist
+                        }
+                    }
+                    it.immune?.forEach { immune ->
+                        if (damageTypes.contains(immune.capitalize())) {
+                            selectedImmunities += immune.capitalize()
+                        } else {
+                            customImmunity = immune
+                        }
+                    }
+
+                    // Sentidos
+                    it.senses?.forEach { sense ->
+                        if (sensesTypes.contains(sense)) {
+                            selectedSenses.add(sense)
+                        } else {
+                            customSense = sense
+                        }
+                    }
+
+                    // Idiomas
+                    it.languages?.forEach { language ->
+                        if (languageTypes.contains(language)) {
+                            selectedLanguages.add(language)
+                        } else {
+                            customLanguage = language
+                        }
+                    }
+
+                    // Rasgos
+                    it.traits?.forEach { trait ->
+                        trait.entries?.firstOrNull()?.let { entry ->
+                            traits.add(trait.name to entry)
+                            traitNameErrors.add(null)
+                            traitEntryErrors.add(null)
+                        }
+                    }
+
+                    // Acciones
+                    it.actions?.forEach { action ->
+                        action.entries?.firstOrNull()?.let { entry ->
+                            actions.add(action.name to entry)
+                            actionNameErrors.add(null)
+                            actionEntryErrors.add(null)
+                        }
+                    }
+
+                    // Acciones bonus
+                    it.bonus?.forEach { bonus ->
+                        bonus.entries?.firstOrNull()?.let { entry ->
+                            bonusActions.add(bonus.name to entry)
+                            bonusActionNameErrors.add(null)
+                            bonusActionEntryErrors.add(null)
+                        }
+                    }
+
+                    // Reacciones
+                    it.reactions?.forEach { reaction ->
+                        reaction.entries?.firstOrNull()?.let { entry ->
+                            reactions.add(reaction.name to entry)
+                            reactionNameErrors.add(null)
+                            reactionEntryErrors.add(null)
+                        }
+                    }
+
+                    // Acciones legendarias
+                    it.legendary?.forEach { legendary ->
+                        legendary.entries?.firstOrNull()?.let { entry ->
+                            legendaryActions.add(legendary.name to entry)
+                            legendaryActionNameErrors.add(null)
+                            legendaryActionEntryErrors.add(null)
+                        }
+                    }
+
+                    // Hechizos
+                    it.spellcasting?.firstOrNull()?.let { spellcasting ->
+                        spellcastingAbility = spellcasting.ability ?: "cha"
+                        spellcasting.spells?.forEach { (level, spellLevel) ->
+                            spellLevel.spells?.forEach { spellName ->
+                                val spell = firestoreManager.getSpellById(normalizeSpellName(spellName))
+                                spell?.let { selectedSpells.add(it) }
+                            }
+                        }
+                    }
+                } ?: run {
+                    errorMessage = "Monstruo no encontrado"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error al cargar el monstruo: ${e.message}"
+                Log.e("CreateMonsterScreen", "Error loading monster: ${e.message}", e)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     fun buildSpellcastingList(): List<SpellcastingEntry>? {
         if (selectedSpells.isEmpty()) return null
@@ -645,7 +816,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Custom Monster") },
+                title = { Text(if (monsterId == null) "Create Custom Monster" else "Edit Custom Monster") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -685,7 +856,6 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     if (saveWis) savesMap["wis"] = calculateModifier(wis, pb)
                     if (saveCha) savesMap["cha"] = calculateModifier(cha, pb)
 
-                    // Mapa de habilidades
                     val skillsMap = mutableMapOf<String, String>()
                     if (skillAthletics) calculateModifier(str, pb)?.let { skillsMap["athletics"] = it }
                     if (skillAcrobatics) calculateModifier(dex, pb)?.let { skillsMap["acrobatics"] = it }
@@ -713,6 +883,7 @@ fun CreateMonsterScreen(navController: NavHostController) {
                     val legendaryActionsList = buildLegendaryActionsList()
 
                     val customMonster = CustomMonster(
+                        id = monsterId, // Incluye monsterId para edición
                         userId = userId,
                         name = name,
                         size = size,
@@ -742,17 +913,21 @@ fun CreateMonsterScreen(navController: NavHostController) {
                         bonus = bonusActionsList,
                         reactions = reactionsList,
                         legendary = legendaryActionsList,
-                        spellcasting = buildSpellcastingList(),  // Añadido aquí
+                        spellcasting = buildSpellcastingList(),
                         public = false
                     )
 
                     isSaving = true
                     coroutineScope.launch {
                         try {
-                            firestoreManager.saveCustomMonster(customMonster)
+                            if (monsterId == null) {
+                                firestoreManager.saveCustomMonster(customMonster)
+                            } else {
+                                firestoreManager.updateCustomMonster(customMonster)
+                            }
                             viewModel.refreshCustomMonsters()
                             delay(500)
-                            navController.popBackStack(route = Destinations.MONSTER_LIST, inclusive = false)
+                            navController.popBackStack(route = Destinations.CUSTOM_MONSTER_LISTS, inclusive = false)
                         } catch (e: Exception) {
                             errorMessage = "Error saving: ${e.message}"
                             Log.e("CreateMonsterScreen", "Error saving monster: ${e.message}", e)
@@ -764,13 +939,13 @@ fun CreateMonsterScreen(navController: NavHostController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                enabled = !isSaving && isFormValid,
+                enabled = !isSaving && !isLoading && isFormValid,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF0D47A1),
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text("Save Monster")
+                Text(if (monsterId == null) "Save Monster" else "Update Monster")
             }
         }
     ) { paddingValues ->
