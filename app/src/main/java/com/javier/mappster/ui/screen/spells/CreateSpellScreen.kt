@@ -57,7 +57,8 @@ private fun SectionTitle(title: String, icon: ImageVector) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateSpellScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: SpellListViewModel = provideSpellListViewModel(LocalContext.current)
 ) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
@@ -350,10 +351,12 @@ fun CreateSpellScreen(
                         try {
                             val success = firestoreManager.createSpell(normalizedId, spell)
                             if (success) {
-                                snackbarHostState.showSnackbar("Hechizo creado exitosamente")
-                                navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
+                                snackbarHostState.showSnackbar("Hechizo creado")
+                                // Notificar al ViewModel que refresque
+                                viewModel.refreshSpellsPublic()
+                                navController.popBackStack()
                             } else {
-                                snackbarHostState.showSnackbar("Error: El hechizo ya existe")
+                                snackbarHostState.showSnackbar("El hechizo ya existe")
                             }
                         } catch (e: Exception) {
                             snackbarHostState.showSnackbar("Error: ${e.message}")

@@ -18,71 +18,30 @@ class FirestoreManager {
     private val monstersCollection = db.collection("custom_monsters")
 
     suspend fun getSpells(userId: String? = null): List<Spell> {
-        if (userId == null) {
-            Log.e("FirestoreManager", "User ID is null, fetching only non-custom spells")
-            try {
-                val nonCustomQuery = spellsCollection
-                    .whereEqualTo("custom", false)
-                    .get()
-                    .await()
-                val spells = nonCustomQuery.documents.mapNotNull {
-                    it.toObject(Spell::class.java)?.also { spell ->
-                        Log.d("FirestoreManager", "Parsed non-custom spell: ${spell.name}, custom=${spell.custom}, userId=${spell.userId}, public=${spell.public}")
-                    }
-                }.sortedBy { it.name.trim().lowercase() }
-                Log.d("FirestoreManager", "Fetched ${spells.size} non-custom spells: ${spells.map { it.name }}")
-                return spells
-            } catch (e: Exception) {
-                Log.e("FirestoreManager", "Error fetching non-custom spells: ${e.message}", e)
-                return emptyList()
-            }
-        }
-
         return try {
-            val nonCustomQuery = spellsCollection
-                .whereEqualTo("custom", false)
-            val userCustomQuery = spellsCollection
-                .whereEqualTo("custom", true)
-                .whereEqualTo("userId", userId)
-            val publicCustomQuery = spellsCollection
-                .whereEqualTo("custom", true)
-                .whereEqualTo("public", true)
-
-            val results = listOf(
-                nonCustomQuery.get().also { Log.d("FirestoreManager", "Executing nonCustomQuery") },
-                userCustomQuery.get().also { Log.d("FirestoreManager", "Executing userCustomQuery for userId=$userId") },
-                publicCustomQuery.get().also { Log.d("FirestoreManager", "Executing publicCustomQuery") }
-            ).map { task ->
-                try {
-                    task.await().also { snapshot ->
-                        Log.d("FirestoreManager", "Query returned ${snapshot.size()} documents: ${snapshot.documents.map { it.id }}")
-                        snapshot.documents.forEach { doc ->
-                            Log.d("FirestoreManager", "Document data: ${doc.id} -> ${doc.data}")
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("FirestoreManager", "Query failed: ${e.message}", e)
-                    throw e
-                }
+            val queries = mutableListOf<com.google.firebase.firestore.Query>()
+            if (userId == null) {
+                queries.add(spellsCollection.whereEqualTo("custom", false))
+                Log.d("FirestoreManager", "Fetching only non-custom spells")
+            } else {
+                queries.add(spellsCollection.whereEqualTo("custom", false))
+                queries.add(spellsCollection.whereEqualTo("custom", true).whereEqualTo("userId", userId))
+                queries.add(spellsCollection.whereEqualTo("custom", true).whereEqualTo("public", true))
+                Log.d("FirestoreManager", "Fetching spells for userId: $userId")
             }
 
+            val tasks = queries.map { it.get() }
+            val results = tasks.map { it.await() }
             val spells = results.flatMap { snapshot ->
-                snapshot.documents.mapNotNull { document ->
-                    try {
-                        document.toObject(Spell::class.java)?.also {
-                            Log.d("FirestoreManager", "Parsed spell: ${it.name}, custom=${it.custom}, userId=${it.userId}, public=${it.public}")
-                        }
-                    } catch (e: Exception) {
-                        Log.e("FirestoreManager", "Error parsing spell document ${document.id}: ${e.message}", e)
-                        null
-                    }
+                snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Spell::class.java)
                 }
             }.distinctBy { it.name }.sortedBy { it.name.trim().lowercase() }
 
-            Log.d("FirestoreManager", "Fetched ${spells.size} spells from spells collection: ${spells.map { it.name }}")
+            Log.d("FirestoreManager", "Total unique spells fetched: ${spells.size}")
             spells
         } catch (e: Exception) {
-            Log.e("FirestoreManager", "Error fetching spells from spells collection: ${e.message}", e)
+            Log.e("FirestoreManager", "Error fetching spells: ${e.message}", e)
             emptyList()
         }
     }

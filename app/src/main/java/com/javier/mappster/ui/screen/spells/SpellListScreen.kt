@@ -434,6 +434,10 @@ private fun SinglePaneSpellListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.refreshSpellsPublic()
+    }
+
     Scaffold(
         topBar = {
             Box(

@@ -55,15 +55,24 @@ class SpellListViewModel(
         _isLoading.value = true
         try {
             Log.d("SpellListViewModel", "Fetching spells for userId=$userId")
-            allSpells = firestoreManager.getSpells(userId)
-            Log.d("SpellListViewModel", "Fetched ${allSpells.size} spells: ${allSpells.map { it.name }}")
+            val spells = firestoreManager.getSpells(userId)
+            allSpells = spells.sortedBy { it.name.lowercase() }
+            Log.d("SpellListViewModel", "Fetched ${allSpells.size} spells")
             filterSpells()
         } catch (e: Exception) {
-            Log.e("SpellListViewModel", "Error fetching spells: ${e.message}", e)
+            Log.e("SpellListViewModel", "Error fetching spells", e)
             _error.value = "Error al cargar hechizos: ${e.message}"
         } finally {
             _isLoading.value = false
         }
+    }
+
+    fun clearState() {
+        allSpells = emptyList()
+        _spells.value = emptyList()
+        _searchQuery.value = ""
+        _isLoading.value = false
+        _error.value = null
     }
 
     private fun filterSpells() {
