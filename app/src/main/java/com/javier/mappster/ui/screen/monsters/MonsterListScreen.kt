@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -79,13 +81,13 @@ fun MonsterListScreen(
                         IconButton(
                             onClick = {
                                 Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                                navController.navigate("${Destinations.CREATE_MONSTER}?monsterId=null")
+                                navController.navigate("${Destinations.CREATE_MONSTER}?monsterId=${null}")
                             },
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Crear Monstruo",
+                                contentDescription = "Create Monster",
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -107,7 +109,7 @@ fun MonsterListScreen(
                     }
                 } else if (state.error != null) {
                     Text(
-                        text = "Error al cargar monstruos: ${state.error}",
+                        text = "Error loading monsters: ${state.error}",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
@@ -116,7 +118,7 @@ fun MonsterListScreen(
                     )
                 } else if (state.monsters.isEmpty()) {
                     Text(
-                        text = if (searchQuery.isEmpty()) "No hay monstruos disponibles." else "No se encontraron monstruos para \"$searchQuery\"",
+                        text = if (searchQuery.isEmpty()) "No monsters available." else "No monsters found for \"$searchQuery\"",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
@@ -139,6 +141,7 @@ fun MonsterListScreen(
                                 monster = monster,
                                 navController = navController,
                                 onDeleteClick = { viewModel.deleteCustomMonster(monster) },
+                                onToggleVisibilityClick = { monster, isPublic -> viewModel.updateMonsterVisibility(monster, isPublic) },
                                 authManager = authManager
                             )
                         }
@@ -189,36 +192,71 @@ fun MonsterItem(
     isTwoPaneMode: Boolean = false,
     onItemClick: (UnifiedMonster) -> Unit = {},
     onDeleteClick: (UnifiedMonster) -> Unit,
-    authManager: AuthManager, // Añadir este parámetro
+    onToggleVisibilityClick: (UnifiedMonster, Boolean) -> Unit,
+    authManager: AuthManager,
     modifier: Modifier = Modifier
 ) {
-    Log.d("MonsterItem", "Rendering monster: ${monster.name}, id=${monster.id}, isCustom=${monster.isCustom}")
+    Log.d("MonsterItem", "Rendering monster: ${monster.name}, id=${monster.id}, isCustom=${monster.isCustom}, userId=${monster.userId}, public=${monster.public}")
     val defaultColor = MaterialTheme.colorScheme.primary
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showVisibilityDialog by remember { mutableStateOf(false) }
+    var pendingVisibility by remember { mutableStateOf(monster.public) }
+
+    val currentUserId = authManager.getCurrentUserId()
+    Log.d("MonsterItem", "Current user ID: $currentUserId")
+
+    val isOwner = currentUserId != null && monster.userId == currentUserId
+    Log.d("MonsterItem", "isOwner for ${monster.name}: $isOwner")
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Confirmar eliminación") },
-            text = { Text("¿Estás seguro de que quieres borrar el monstruo \"${monster.name}\"?") },
+            title = { Text("Confirm deletion") },
+            text = { Text("Are you sure you want to delete the monster \"${monster.name}\"?") },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteClick(monster)
                     showDeleteDialog = false
                 }) {
-                    Text("Confirmar")
+                    Text("Confirm")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showVisibilityDialog) {
+        AlertDialog(
+            onDismissRequest = { showVisibilityDialog = false },
+            title = { Text("Confirm visibility change") },
+            text = {
+                Text(
+                    "Are you sure you want to make the monster \"${monster.name}\" " +
+                            "${if (pendingVisibility) "public" else "private"}?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onToggleVisibilityClick(monster, pendingVisibility)
+                    showVisibilityDialog = false
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVisibilityDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )
     }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
             .clickable {
@@ -293,17 +331,17 @@ fun MonsterItem(
                 ) {
                     val sizeText = monster.size?.let { size ->
                         when (size.uppercase()) {
-                            "M" -> "Mediano"
-                            "L" -> "Grande"
-                            "S" -> "Pequeño"
-                            "T" -> "Diminuto"
-                            "H" -> "Enorme"
-                            "G" -> "Gigantesco"
+                            "M" -> "Medium"
+                            "L" -> "Large"
+                            "S" -> "Small"
+                            "T" -> "Tiny"
+                            "H" -> "Huge"
+                            "G" -> "Gargantuan"
                             else -> size
                         }
-                    } ?: "Desconocido"
+                    } ?: "Unknown"
 
-                    val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Desconocido"
+                    val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Unknown"
 
                     val alignmentText = monster.alignment?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
 
@@ -315,65 +353,87 @@ fun MonsterItem(
                 }
 
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 8.dp)
                 ) {
+                    if (monster.isCustom && monster.id != null) {
+                        Log.d("MonsterItem", "Custom monster block entered: id=${monster.id}, isCustom=${monster.isCustom}")
+                        // Visibility toggle for all users
+                        IconButton(
+                            onClick = {
+                                pendingVisibility = !monster.public
+                                showVisibilityDialog = true
+                                Log.d("MonsterItem", "Visibility toggle clicked for ${monster.name}, new pendingVisibility=$pendingVisibility")
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (monster.public) Icons.Default.Public else Icons.Default.Lock,
+                                contentDescription = if (monster.public) "Make private" else "Make public",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        // Edit button only for owner
+                        if (isOwner) {
+                            IconButton(
+                                onClick = {
+                                    if (currentUserId == null) {
+                                        Log.e("MonsterItem", "User not authenticated, redirecting to login")
+                                        navController?.navigate(Destinations.LOGIN) {
+                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                            launchSingleTop = true
+                                        }
+                                    } else if (!isTwoPaneMode) {
+                                        val encodedMonsterId = java.net.URLEncoder.encode(monster.id, "UTF-8")
+                                        val route = "create_monster?monsterId=$encodedMonsterId"
+                                        Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}")
+                                        try {
+                                            navController?.navigate(route) {
+                                                launchSingleTop = true
+                                            } ?: Log.e("MonsterItem", "NavController is null")
+                                        } catch (e: IllegalArgumentException) {
+                                            Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
+                                        }
+                                    } else {
+                                        Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
+                                    }
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit monster",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        // Delete button only for owner
+                        if (isOwner) {
+                            IconButton(
+                                onClick = { showDeleteDialog = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete monster",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
                     Text(
-                        text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Desconocido",
+                        text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             fontStyle = FontStyle.Italic
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(end = if (monster.isCustom) 4.dp else 0.dp)
+                        modifier = Modifier.padding(start = if (monster.isCustom) 4.dp else 0.dp)
                     )
-
-                    if (monster.isCustom && monster.id != null) {
-                        val userId = authManager.getCurrentUserId()
-                        IconButton(
-                            onClick = {
-                                if (userId == null) {
-                                    Log.e("MonsterItem", "User not authenticated, redirecting to login")
-                                    navController?.navigate(Destinations.LOGIN) {
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                } else if (!isTwoPaneMode) {
-                                    val encodedMonsterId = java.net.URLEncoder.encode(monster.id, "UTF-8")
-                                    val route = "create_monster?monsterId=$encodedMonsterId"
-                                    Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}")
-                                    try {
-                                        navController?.navigate(route) {
-                                            launchSingleTop = true
-                                        } ?: Log.e("MonsterItem", "NavController is null")
-                                    } catch (e: IllegalArgumentException) {
-                                        Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
-                                    }
-                                } else {
-                                    Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
-                                }
-                            },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Editar monstruo",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        IconButton(
-                            onClick = { showDeleteDialog = true },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Borrar monstruo",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
                 }
             }
         }

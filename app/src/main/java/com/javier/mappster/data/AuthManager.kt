@@ -47,7 +47,7 @@ class AuthManager private constructor(private val context: Context) {
         if (userId == null) {
             Log.e("AuthManager", "No authenticated user found")
         } else {
-            Log.d("AuthManager", "Current user ID: $userId")
+            //Log.d("AuthManager", "Current user ID: $userId")
         }
         return userId
     }

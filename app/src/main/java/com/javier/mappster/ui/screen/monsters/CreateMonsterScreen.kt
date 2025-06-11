@@ -881,7 +881,7 @@ fun CreateMonsterScreen(navController: NavHostController,
                     val legendaryActionsList = buildLegendaryActionsList()
 
                     val customMonster = CustomMonster(
-                        id = monsterId, // Incluye monsterId para edición
+                        id = monsterId, // Mantén el id original para edición
                         userId = userId,
                         name = name,
                         size = size,

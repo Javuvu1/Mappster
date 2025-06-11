@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.javier.mappster.model.CustomMonster
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SpellList
@@ -222,12 +223,18 @@ class FirestoreManager {
 
     // Guardar un monstruo personalizado
     suspend fun saveCustomMonster(customMonster: CustomMonster) {
-        val monsterId = customMonster.id ?: monstersCollection.document().id
-        monstersCollection
-            .document(monsterId)
-            .set(customMonster.copy(id = monsterId))
-            .await()
-        Log.d("FirestoreManager", "CustomMonster saved successfully: ${customMonster.name}, id: $monsterId")
+        try {
+            val monsterId = customMonster.id ?: monstersCollection.document().id // Genera un nuevo id si es null
+            val monsterToSave = customMonster.copy(id = monsterId) // Asegura que el id se asigne al objeto
+            monstersCollection
+                .document(monsterId)
+                .set(monsterToSave, SetOptions.merge()) // Usa merge para no sobrescribir campos no proporcionados
+                .await()
+            Log.d("FirestoreManager", "CustomMonster saved successfully: ${customMonster.name}, id: $monsterId")
+        } catch (e: Exception) {
+            Log.e("FirestoreManager", "Error saving custom monster: ${e.message}", e)
+            throw e
+        }
     }
 
     // Obtener monstruos personalizados
@@ -323,6 +330,12 @@ class FirestoreManager {
             Log.e("FirestoreManager", "Error updating monster: ${e.message}", e)
             throw Exception("Error updating monster: ${e.message}", e)
         }
+    }
+
+    suspend fun updateMonsterVisibility(monsterId: String, isPublic: Boolean) {
+        db.collection("custom_monsters").document(monsterId)
+            .update("public", isPublic)
+            .await()
     }
 
     suspend fun getSpellById(spellId: String): Spell? {

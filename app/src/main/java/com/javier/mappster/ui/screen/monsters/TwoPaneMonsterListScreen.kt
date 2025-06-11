@@ -77,7 +77,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
-                                        contentDescription = "Crear Monstruo",
+                                        contentDescription = "Create Monster",
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -100,8 +100,8 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                             }
                             state.monsters.isEmpty() -> {
                                 Text(
-                                    text = if (searchQuery.isEmpty()) "No hay monstruos"
-                                    else "No se encontraron resultados",
+                                    text = if (searchQuery.isEmpty()) "No monsters"
+                                    else "No results found",
                                     modifier = Modifier.padding(16.dp),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -120,8 +120,9 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                             isTwoPaneMode = true,
                                             onItemClick = { selectedMonster = it },
                                             onDeleteClick = { viewModel.deleteCustomMonster(it) },
+                                            onToggleVisibilityClick = { monster, isPublic -> viewModel.updateMonsterVisibility(monster, isPublic) }, // Pass the callback
                                             navController = null,
-                                            authManager = AuthManager.getInstance(context) // Añadir este parámetro
+                                            authManager = AuthManager.getInstance(context)
                                         )
                                     }
                                 }
@@ -158,7 +159,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                     )
                                     loadedMonster = result
                                 } catch (e: Exception) {
-                                    error = "Error al cargar el monstruo: ${e.message}"
+                                    error = "Error loading monster: ${e.message}"
                                 } finally {
                                     isLoading = false
                                 }
@@ -172,7 +173,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                 when {
                                     isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                                     error != null -> Text(
-                                        text = error ?: "Error desconocido",
+                                        text = error ?: "Unknown error",
                                         modifier = Modifier.align(Alignment.Center),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
@@ -181,7 +182,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                         isTwoPaneMode = true
                                     )
                                     else -> Text(
-                                        text = "Monstruo no encontrado",
+                                        text = "Monster not found",
                                         modifier = Modifier.align(Alignment.Center),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
@@ -195,7 +196,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                             .background(MaterialTheme.colorScheme.surface)
                     ) {
                         Text(
-                            "Selecciona un monstruo para ver los detalles",
+                            "Select a monster to see details",
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -217,10 +218,10 @@ fun SearchBar(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Buscar"
+                contentDescription = "Search"
             )
         },
-        placeholder = { Text("Buscar monstruos...") },
+        placeholder = { Text("Search monsters...") },
         modifier = modifier,
         singleLine = true
     )
