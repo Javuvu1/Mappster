@@ -277,13 +277,18 @@ fun NavGraph(navController: NavHostController) {
                 navArgument("monsterId") {
                     type = NavType.StringType
                     nullable = true
+                    defaultValue = null // Asegura que sea null si no se pasa
                 }
             )
         ) { backStackEntry ->
-            Log.d("NavGraph", "Navigating to create_monster, monsterId: '${backStackEntry.arguments?.getString("monsterId")}'")
+            val monsterId = backStackEntry.arguments?.getString("monsterId")
+            Log.d("NavGraph", "Navigating to create_monster, raw monsterId: '$monsterId'")
+            // Si monsterId es '{monsterId}?monsterId=null', forzarlo a null
+            val cleanedMonsterId = if (monsterId == "{monsterId}?monsterId=null") null else monsterId
+            Log.d("NavGraph", "Navigating to create_monster, cleaned monsterId: '$cleanedMonsterId'")
             CreateMonsterScreen(
                 navController = navController,
-                monsterId = backStackEntry.arguments?.getString("monsterId")
+                monsterId = cleanedMonsterId
             )
         }
         composable(

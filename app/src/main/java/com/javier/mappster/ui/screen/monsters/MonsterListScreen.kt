@@ -81,7 +81,7 @@ fun MonsterListScreen(
                         IconButton(
                             onClick = {
                                 Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                                navController.navigate("${Destinations.CREATE_MONSTER}?monsterId=${null}")
+                                navController.navigate(Destinations.CREATE_MONSTER) // Navega sin parámetros
                             },
                             modifier = Modifier.size(48.dp)
                         ) {
