@@ -53,6 +53,8 @@ fun MonsterListScreen(
                 popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 launchSingleTop = true
             }
+        } else {
+            viewModel.refreshCustomMonsters() // Forzar recarga al entrar
         }
     }
 

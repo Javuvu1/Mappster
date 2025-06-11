@@ -121,8 +121,54 @@ class MonsterListViewModel(
         Log.d("MonsterListViewModel", "Filtrados ${filtered.size} monstruos")
     }
 
-    fun refreshCustomMonsters() {
-        loadMonsters()
+    fun refreshCustomMonsters(): Job {
+        return viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                // Cargar monstruos desde JSON local
+                val localResult = dataManager.loadMonsters()
+                val localMonsters = localResult.getOrDefault(emptyList())
+                val unifiedLocalMonsters = localMonsters.mapIndexed { index, monster ->
+                    monster.toUnifiedMonster()
+                }
+
+                // Cargar monstruos personalizados desde Firestore
+                val userId = authManager.getCurrentUserId()
+                val customMonsters = if (userId != null) {
+                    firestoreManager.getCustomMonsters(userId)
+                } else {
+                    emptyList()
+                }
+                val unifiedCustomMonsters = customMonsters.map { customMonster ->
+                    customMonster.toUnifiedMonster()
+                }
+
+                // Combinar y eliminar duplicados por nombre
+                allMonsters = (unifiedLocalMonsters + unifiedCustomMonsters)
+                    .distinctBy { it.name.lowercase() }
+                    .sortedBy { it.name.trim().lowercase() }
+
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        monsters = allMonsters.filter {
+                            it.name.contains(_searchQuery.value, ignoreCase = true)
+                        },
+                        error = localResult.exceptionOrNull()?.message
+                    )
+                }
+                Log.d("MonsterListViewModel", "Obtenidos ${allMonsters.size} monstruos (locales + personalizados)")
+            } catch (e: Exception) {
+                Log.e("MonsterListViewModel", "Error al cargar monstruos: ${e.message}", e)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        monsters = emptyList(),
+                        error = "Error al cargar monstruos: ${e.message}"
+                    )
+                }
+            }
+        }
     }
 
     fun deleteCustomMonster(monster: UnifiedMonster) {

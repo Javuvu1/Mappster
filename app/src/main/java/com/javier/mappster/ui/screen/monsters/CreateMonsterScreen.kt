@@ -881,7 +881,7 @@ fun CreateMonsterScreen(navController: NavHostController,
                     val legendaryActionsList = buildLegendaryActionsList()
 
                     val customMonster = CustomMonster(
-                        id = monsterId, // Mantén el id original para edición
+                        id = monsterId,
                         userId = userId,
                         name = name,
                         size = size,
@@ -923,9 +923,20 @@ fun CreateMonsterScreen(navController: NavHostController,
                             } else {
                                 firestoreManager.updateCustomMonster(customMonster)
                             }
-                            viewModel.refreshCustomMonsters()
-                            delay(500)
-                            navController.popBackStack(route = Destinations.CUSTOM_MONSTER_LISTS, inclusive = false)
+                            // Esperar a que el estado refleje el nuevo monstruo
+                            val job = viewModel.refreshCustomMonsters()
+                            job.join()
+                            // Verificar que el nuevo monstruo esté en el estado
+                            var newMonsterFound = false
+                            while (!newMonsterFound) {
+                                val state = viewModel.state.value
+                                newMonsterFound = state.monsters.any { it.id == customMonster.id }
+                                if (!newMonsterFound) delay(100) // Esperar un poco y reintentar
+                            }
+                            navController.navigate(Destinations.MONSTER_LIST) {
+                                popUpTo(Destinations.MONSTER_LIST) { inclusive = false }
+                                launchSingleTop = true
+                            }
                         } catch (e: Exception) {
                             errorMessage = "Error saving: ${e.message}"
                             Log.e("CreateMonsterScreen", "Error saving monster: ${e.message}", e)
