@@ -48,13 +48,22 @@ fun MonsterListScreen(
         userId = authManager.getCurrentUserId()
         isCheckingAuth = false
         if (userId == null) {
-            Log.e("MonsterListScreen", "User not authenticated, navigating to login")
             navController.navigate(Destinations.LOGIN) {
                 popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 launchSingleTop = true
             }
         } else {
-            viewModel.refreshCustomMonsters() // Forzar recarga al entrar
+            // Cambia esto:
+            viewModel.refreshCustomMonsters()
+        }
+    }
+
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collect { backStackEntry ->
+            if (backStackEntry.destination.route == Destinations.MONSTER_LIST) {
+                Log.d("MonsterList", "Returned to list, refreshing...")
+                viewModel.refreshCustomMonsters()
+            }
         }
     }
 

@@ -125,26 +125,19 @@ class MonsterListViewModel(
         return viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                // Cargar monstruos desde JSON local
-                val localResult = dataManager.loadMonsters()
-                val localMonsters = localResult.getOrDefault(emptyList())
-                val unifiedLocalMonsters = localMonsters.mapIndexed { index, monster ->
-                    monster.toUnifiedMonster()
-                }
-
-                // Cargar monstruos personalizados desde Firestore
+                // Solo cargar monstruos personalizados si hay usuario autenticado
                 val userId = authManager.getCurrentUserId()
                 val customMonsters = if (userId != null) {
-                    firestoreManager.getCustomMonsters(userId)
+                    firestoreManager.getCustomMonsters(userId).map { it.toUnifiedMonster() }
                 } else {
                     emptyList()
                 }
-                val unifiedCustomMonsters = customMonsters.map { customMonster ->
-                    customMonster.toUnifiedMonster()
-                }
 
-                // Combinar y eliminar duplicados por nombre
-                allMonsters = (unifiedLocalMonsters + unifiedCustomMonsters)
+                // Mantener los monstruos locales existentes (no los recargamos cada vez)
+                val localMonsters = allMonsters.filter { !it.isCustom }
+
+                // Combinar manteniendo el orden
+                allMonsters = (localMonsters + customMonsters)
                     .distinctBy { it.name.lowercase() }
                     .sortedBy { it.name.trim().lowercase() }
 
@@ -154,17 +147,16 @@ class MonsterListViewModel(
                         monsters = allMonsters.filter {
                             it.name.contains(_searchQuery.value, ignoreCase = true)
                         },
-                        error = localResult.exceptionOrNull()?.message
+                        error = null
                     )
                 }
-                Log.d("MonsterListViewModel", "Obtenidos ${allMonsters.size} monstruos (locales + personalizados)")
+                Log.d("MonsterListViewModel", "Monsters refreshed. Total: ${allMonsters.size}")
             } catch (e: Exception) {
-                Log.e("MonsterListViewModel", "Error al cargar monstruos: ${e.message}", e)
+                Log.e("MonsterListViewModel", "Refresh error", e)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        monsters = emptyList(),
-                        error = "Error al cargar monstruos: ${e.message}"
+                        error = "Refresh error: ${e.message}"
                     )
                 }
             }

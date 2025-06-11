@@ -923,23 +923,12 @@ fun CreateMonsterScreen(navController: NavHostController,
                             } else {
                                 firestoreManager.updateCustomMonster(customMonster)
                             }
-                            // Esperar a que el estado refleje el nuevo monstruo
-                            val job = viewModel.refreshCustomMonsters()
-                            job.join()
-                            // Verificar que el nuevo monstruo esté en el estado
-                            var newMonsterFound = false
-                            while (!newMonsterFound) {
-                                val state = viewModel.state.value
-                                newMonsterFound = state.monsters.any { it.id == customMonster.id }
-                                if (!newMonsterFound) delay(100) // Esperar un poco y reintentar
-                            }
-                            navController.navigate(Destinations.MONSTER_LIST) {
-                                popUpTo(Destinations.MONSTER_LIST) { inclusive = false }
-                                launchSingleTop = true
-                            }
+
+                            // Cambia esta parte:
+                            navController.popBackStack() // Simplemente volvemos atrás
                         } catch (e: Exception) {
                             errorMessage = "Error saving: ${e.message}"
-                            Log.e("CreateMonsterScreen", "Error saving monster: ${e.message}", e)
+                            Log.e("CreateMonsterScreen", "Error saving monster", e)
                         } finally {
                             isSaving = false
                         }
