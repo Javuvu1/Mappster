@@ -2,13 +2,16 @@ package com.javier.mappster.ui.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +27,9 @@ import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.CustomMonster
 import androidx.compose.ui.platform.LocalContext
+
+import com.javier.mappster.ui.theme.MappsterTheme
+
 import kotlinx.coroutines.launch
 import kotlin.math.floor
 import kotlin.random.Random
@@ -61,90 +67,105 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
         }
     }
 
-    Scaffold(
-        topBar = {
-            if (!isTwoPaneMode) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = customMonster?.name ?: "Unknown Monster",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Volver"
-                            )
-                        }
-                    }
-                )
-            }
+    MappsterTheme {
+        val colorScheme = MaterialTheme.colorScheme
+        LaunchedEffect(Unit) {
+            println("Primary color: ${colorScheme.primary}")
+            println("Secondary color: ${colorScheme.secondary}")
+            println("Tertiary color: ${colorScheme.tertiary}")
         }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (errorMessage != null) {
-                Text(
-                    text = errorMessage!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp)
-                )
-            } else if (customMonster != null) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = if (isTwoPaneMode) 16.dp else 16.dp)
-                        .padding(top = if (!isTwoPaneMode) 0.dp else 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item {
-                        customMonster?.source?.let { source ->
+        Scaffold(
+            topBar = {
+                if (!isTwoPaneMode) {
+                    TopAppBar(
+                        title = {
                             Text(
-                                text = "Source: $source",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                text = customMonster?.name ?: "Unknown Monster",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 24.sp
                                 ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                color = colorScheme.onSurface
                             )
-                        }
-                    }
-                    item { MonsterInfoSection(customMonster!!) }
-                    item { MonsterCombatStats(customMonster!!) }
-                    item { MonsterSpeedSection(customMonster!!) }
-                    item { MonsterStats(customMonster!!) }
-                    item { MonsterSkillsSection(customMonster!!) }
-                    item { MonsterSensesSection(customMonster!!) }
-                    item { MonsterLanguagesSection(customMonster!!) }
-                    item { MonsterResistancesImmunitiesSection(customMonster!!) }
-                    item { MonsterTraitsSection(customMonster!!) }
-                    if (customMonster?.spellcasting?.firstOrNull() != null) {
-                        item { SpellcastingDetailSection(customMonster!!) }
-                    }
-                    item { MonsterActionsSection(customMonster!!) }
-                    item { MonsterBonusActionsSection(customMonster!!) }
-                    item { MonsterReactionsSection(customMonster!!) }
-                    item { MonsterLegendaryActionsSection(customMonster!!) }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = "Volver",
+                                    tint = colorScheme.onSurface
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = colorScheme.surface,
+                            titleContentColor = colorScheme.onSurface,
+                            navigationIconContentColor = colorScheme.onSurface
+                        )
+                    )
                 }
-            } else {
-                Text(
-                    text = "Monstruo no encontrado",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(colorScheme.background)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (errorMessage != null) {
+                    Text(
+                        text = errorMessage!!,
+                        color = colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
+                    )
+                } else if (customMonster != null) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = if (isTwoPaneMode) 16.dp else 16.dp)
+                            .padding(top = if (!isTwoPaneMode) 0.dp else 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            customMonster?.source?.let { source ->
+                                Text(
+                                    text = "Source: $source",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    ),
+                                    color = colorScheme.secondary,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+                        }
+                        item { MonsterInfoSection(customMonster!!) }
+                        item { MonsterCombatStats(customMonster!!) }
+                        item { MonsterSpeedSection(customMonster!!) }
+                        item { MonsterStats(customMonster!!) }
+                        item { MonsterSkillsSection(customMonster!!) }
+                        item { MonsterSensesSection(customMonster!!) }
+                        item { MonsterLanguagesSection(customMonster!!) }
+                        item { MonsterResistancesImmunitiesSection(customMonster!!) }
+                        item { MonsterTraitsSection(customMonster!!) }
+                        if (customMonster?.spellcasting?.firstOrNull() != null) {
+                            item { SpellcastingDetailSection(customMonster!!) }
+                        }
+                        item { MonsterActionsSection(customMonster!!) }
+                        item { MonsterBonusActionsSection(customMonster!!) }
+                        item { MonsterReactionsSection(customMonster!!) }
+                        item { MonsterLegendaryActionsSection(customMonster!!) }
+                    }
+                } else {
+                    Text(
+                        text = "Monstruo no encontrado",
+                        color = colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         }
     }
@@ -152,17 +173,19 @@ fun CustomMonsterDetailScreen(navController: NavHostController, monsterId: Strin
 
 @Composable
 fun MonsterCard(content: @Composable ColumnScope.() -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
+            containerColor = colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         border = BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            color = colorScheme.primary.copy(alpha = 0.2f)
         )
     ) {
         Box(
@@ -171,8 +194,8 @@ fun MonsterCard(content: @Composable ColumnScope.() -> Unit) {
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            colorScheme.primaryContainer.copy(alpha = 0.3f)
                         ),
                         start = Offset(0f, 0f),
                         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
@@ -442,13 +465,16 @@ fun MonsterSkillsSection(monster: CustomMonster) {
     if (showRollDialog && rollResult != null) {
         AlertDialog(
             onDismissRequest = { showRollDialog = false },
-            title = { Text("Skill Check: ${rollResult!!.first}") },
-            text = { Text("Result: ${rollResult!!.second}") },
+            title = { Text("Skill Check: ${rollResult!!.first}", color = colorScheme.onSurface) },
+            text = { Text("Result: ${rollResult!!.second}", color = colorScheme.onSurface) },
             confirmButton = {
                 TextButton(onClick = { showRollDialog = false }) {
-                    Text("OK")
+                    Text("OK", color = colorScheme.primary)
                 }
-            }
+            },
+            containerColor = colorScheme.surface,
+            titleContentColor = colorScheme.onSurface,
+            textContentColor = colorScheme.onSurface
         )
     }
 }
@@ -466,14 +492,14 @@ fun MonsterResistancesImmunitiesSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             if (resistances.isNotEmpty()) {
                 Text(
                     text = "Resistances: ${resistances.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
             }
@@ -481,7 +507,7 @@ fun MonsterResistancesImmunitiesSection(monster: CustomMonster) {
                 Text(
                     text = "Immunities: ${immunities.joinToString(", ") { it.replaceFirstChar { char -> char.uppercase() } }}",
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
             }
@@ -507,19 +533,19 @@ fun MonsterSensesSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
                 text = senses.joinToString(", ") { it },
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
             Text(
                 text = "Passive Perception: $passivePerception",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
         }
@@ -538,13 +564,13 @@ fun MonsterLanguagesSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
                 text = languages.joinToString(", ") { it },
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
         }
@@ -563,7 +589,7 @@ fun MonsterTraitsSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             traits.forEach { trait ->
@@ -573,14 +599,14 @@ fun MonsterTraitsSection(monster: CustomMonster) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
                 trait.entries.forEach { entry ->
                     Text(
                         text = entry,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                 }
@@ -601,7 +627,7 @@ fun MonsterActionsSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface, // Correct: Uses Color
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             actions.forEach { action ->
@@ -611,14 +637,14 @@ fun MonsterActionsSection(monster: CustomMonster) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
                 action.entries.forEach { entry ->
                     Text(
                         text = entry,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                 }
@@ -639,7 +665,7 @@ fun MonsterBonusActionsSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             bonusActions.forEach { bonusAction ->
@@ -649,14 +675,14 @@ fun MonsterBonusActionsSection(monster: CustomMonster) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
                 bonusAction.entries.forEach { entry ->
                     Text(
                         text = entry,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                 }
@@ -677,7 +703,7 @@ fun MonsterReactionsSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             reactions.forEach { reaction ->
@@ -687,14 +713,14 @@ fun MonsterReactionsSection(monster: CustomMonster) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
                 reaction.entries.forEach { entry ->
                     Text(
                         text = entry,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                 }
@@ -715,7 +741,7 @@ fun MonsterLegendaryActionsSection(monster: CustomMonster) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             legendaryActions.forEach { legendaryAction ->
@@ -725,14 +751,14 @@ fun MonsterLegendaryActionsSection(monster: CustomMonster) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
                 legendaryAction.entries.forEach { entry ->
                     Text(
                         text = entry,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                 }
@@ -772,13 +798,13 @@ fun SpellcastingDetailSection(monster: CustomMonster) {
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 18.sp
             ),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
             text = "Its spellcasting ability is $abilityName (spell save DC $spellSaveDC, +$spellAttackBonus to hit with spell attacks). ${monster.name} has the following spells:",
             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         spellcasting.spells.entries.sortedBy { it.key.toIntOrNull() ?: 0 }.forEach { (level, spellLevel) ->
@@ -801,7 +827,7 @@ fun SpellcastingDetailSection(monster: CustomMonster) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
             val sortedSpells = spellLevel.spells.sorted()
@@ -811,7 +837,7 @@ fun SpellcastingDetailSection(monster: CustomMonster) {
                         Text(
                             text = "• $spellName",
                             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = colorScheme.onSurface,
                             modifier = Modifier.padding(vertical = 2.dp)
                         )
                     }

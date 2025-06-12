@@ -186,6 +186,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                     )
                                     loadedMonster != null -> MonsterDetailScreen(
                                         monster = loadedMonster!!,
+                                        navController = navController,
                                         isTwoPaneMode = true
                                     )
                                     else -> Text(

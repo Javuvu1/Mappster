@@ -4,6 +4,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.*
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
@@ -33,18 +36,21 @@ import java.net.URLEncoder
 import kotlin.random.Random
 
 @Composable
-private fun SectionTitle(title: String, icon: ImageVector, color: Color) {
+private fun SectionTitle(title: String, icon: ImageVector, schoolColor: Color) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(bottom = 8.dp)
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = color)
+        Icon(imageVector = icon, contentDescription = null, tint = schoolColor)
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = title, style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            color = schoolColor
+        )
     }
 }
 
-// Datos de la tirada de dados
 data class DiceRollData(
     val numDice: Int,
     val dieSides: Int,
@@ -54,14 +60,12 @@ data class DiceRollData(
     val levelRange: String? = null
 )
 
-// Datos para {@chance}
 data class ChanceData(
     val percentage: Int,
     val failMessage: String,
     val successMessage: String
 )
 
-// Mapa de descripciones para {@quickref} clicables
 val quickRefDescriptions = mapOf(
     "half cover" to "A target with half cover has a +2 bonus to AC and Dexterity saving throws. A target has half cover if an obstacle blocks at least half of its body. The obstacle might be a low wall, a large piece of furniture, a narrow tree trunk, or a creature, whether that creature is an enemy or a friend.",
     "three-quarters cover" to "A target with three-quarters cover has a +5 bonus to AC and Dexterity saving throws. A target has three-quarters cover if about three-quarters of it is covered by an obstacle. The obstacle might be a portcullis, an arrow slit, or a thick tree trunk.",
@@ -70,7 +74,6 @@ val quickRefDescriptions = mapOf(
     "total cover" to "A target with total cover can't be targeted directly by an attack or a spell, although some spells can reach such a target by including it in an area of effect. A target has total cover if it is completely concealed by an obstacle."
 )
 
-// Construye un AnnotatedString con partes clicables
 fun buildDamageAnnotatedString(
     text: String,
     diceDataList: MutableList<DiceRollData>,
@@ -233,7 +236,6 @@ fun buildDamageAnnotatedString(
     }
 }
 
-// Restaurar tirada de dados
 fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
     val baseNumDice = dice.numDice
     val scaledNumDice = if (dice.type == "scaledice" || dice.type == "scaledamage") {
@@ -255,7 +257,6 @@ fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
     return rolls to total
 }
 
-// Tirada d100 para {@chance}
 fun rollChance(percentage: Int): Pair<Int, Boolean> {
     val roll = Random.nextInt(1, 101)
     val isSuccess = roll <= percentage
@@ -263,7 +264,7 @@ fun rollChance(percentage: Int): Pair<Int, Boolean> {
     return roll to isSuccess
 }
 
-// Construir texto de desglose de tirada
+@Composable
 fun buildDiceRollBreakdown(
     rolls: List<Int>,
     dieSides: Int,
@@ -273,8 +274,8 @@ fun buildDiceRollBreakdown(
     return buildAnnotatedString {
         rolls.forEachIndexed { index, roll ->
             val color = when {
-                roll == dieSides -> Color.Green
-                roll == 1 -> Color.Red
+                roll == dieSides -> MaterialTheme.colorScheme.tertiary // Success (max roll)
+                roll == 1 -> MaterialTheme.colorScheme.tertiary // Failure (min roll)
                 else -> defaultColor
             }
             withStyle(style = SpanStyle(color = color)) {
@@ -312,7 +313,7 @@ fun SpellDetailScreen(
         "I" -> SchoolData("Ilusión", Color(0xFF7C4DFF), Icons.Default.Masks)
         "N" -> SchoolData("Nigromancia", Color(0xFF607D8B), Icons.Default.Coronavirus)
         "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
-        else -> SchoolData(spell.school, Color.Gray, Icons.Default.AutoFixHigh)
+        else -> SchoolData(spell.school, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.AutoFixHigh)
     }
 
     var showDiceRollDialog by remember { mutableStateOf(false) }
@@ -336,12 +337,13 @@ fun SpellDetailScreen(
                         Text(
                             text = spell.name,
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = schoolData.color
                         )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = schoolData.color,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary
+                        containerColor = MaterialTheme.colorScheme.surface ,
+                        titleContentColor = schoolData.color
                     )
                 )
             }
@@ -360,49 +362,57 @@ fun SpellDetailScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+                        .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Detalles", Icons.Default.Info, schoolData.color)
                         Text(
                             text = if (spell.level == 0) "Truco" else "Nivel ${spell.level}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Escuela: ${schoolData.name}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Fuente: ${sourceMap[spell.source] ?: spell.source}, ${spell.page}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Tiempo de lanzamiento: ${spell.time.joinToString { "${it.number} ${it.unit}" }}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Rango: ${spell.range.type}${spell.range.distance.amount?.let { " ($it ${spell.range.distance.type})" } ?: ""}",
-                            style = MaterialTheme.typography.bodyLarge
+                            text = "Rango: ${spell.range?.type ?: "Unknown"}${spell.range?.distance?.amount?.let { " ($it ${spell.range.distance.type ?: "unknown"})" } ?: ""}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         val componentsList = buildList {
-                            if (spell.components.v == true) add("V")
-                            if (spell.components.s == true) add("S")
-                            if (spell.components.m != null) add("M (${spell.components.m})")
-                            if (spell.components.r == true) add("R")
+                            if (spell.components?.v == true) add("V")
+                            if (spell.components?.s == true) add("S")
+                            if (spell.components?.m != null) add("M (${spell.components.m})")
+                            if (spell.components?.r == true) add("R")
                         }
                         Text(
                             text = "Componentes: ${componentsList.joinToString(", ")}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Duración: ${spell.duration.firstOrNull()?.type ?: "Instantánea"}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (spell.meta.ritual) {
+                        if (spell.meta?.ritual == true) {
                             Text(
                                 text = "Ritual: Sí",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -413,8 +423,8 @@ fun SpellDetailScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+                        .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Descripción", Icons.Default.Description, schoolData.color)
@@ -428,7 +438,7 @@ fun SpellDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(vertical = 2.dp)
                             ) {
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 ClickableText(
                                     text = annotatedText,
                                     onClick = { offset ->
@@ -499,16 +509,17 @@ fun SpellDetailScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+                        .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Acceso", Icons.Default.Group, schoolData.color)
                         val classList = spell.classes?.fromClassList?.joinToString { it.name } ?: "Ninguna"
-                        val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: "Ninguna"
+                        val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: ""
                         Text(
-                            text = "Clases: $classList, $subclassList",
-                            style = MaterialTheme.typography.bodyLarge
+                            text = "Clases: $classList" + if (subclassList.isNotEmpty()) ", $subclassList" else "",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -519,8 +530,8 @@ fun SpellDetailScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, schoolData.color.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+                            .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             SectionTitle("A nivel superior", Icons.Default.Upgrade, schoolData.color)
@@ -535,7 +546,7 @@ fun SpellDetailScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.padding(vertical = 2.dp)
                                     ) {
-                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         ClickableText(
                                             text = annotatedText,
                                             onClick = { offset ->
@@ -617,7 +628,7 @@ fun SpellDetailScreen(
                         Text(
                             text = "Resultado de la tirada",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = schoolData.color
                         )
                     }
                 },
@@ -661,16 +672,16 @@ fun SpellDetailScreen(
                     }
                 },
                 containerColor = Color.Transparent,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                schoolData.color,
-                                MaterialTheme.colorScheme.background
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surface
                             )
                         ),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
                     .padding(16.dp)
             )
@@ -696,7 +707,7 @@ fun SpellDetailScreen(
                         modifier = Modifier
                             .heightIn(max = 300.dp)
                             .fillMaxWidth()
-                            .padding(10.dp)
+                            .padding(8.dp)
                     ) {
                         val description = buildDamageAnnotatedString(
                             conditionDescriptions[currentCondition] ?: "",
@@ -720,18 +731,18 @@ fun SpellDetailScreen(
                     }
                 },
                 containerColor = Color.Transparent,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                schoolData.color,
-                                MaterialTheme.colorScheme.background
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surface
                             )
                         ),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(10.dp)
+                    .padding(8.dp)
             )
         }
 
@@ -756,7 +767,7 @@ fun SpellDetailScreen(
                         modifier = Modifier
                             .heightIn(max = 300.dp)
                             .fillMaxWidth()
-                            .padding(10.dp)
+                            .padding(8.dp)
                     ) {
                         val descriptionText = quickRefDescriptions[currentQuickRef] ?: "No description available."
                         Log.d("SpellDetailScreen", "Quickref description: '$descriptionText'")
@@ -782,18 +793,18 @@ fun SpellDetailScreen(
                     }
                 },
                 containerColor = Color.Transparent,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                schoolData.color,
-                                MaterialTheme.colorScheme.background
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surface
                             )
                         ),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(10.dp)
+                    .padding(8.dp)
             )
         }
 
@@ -808,22 +819,22 @@ fun SpellDetailScreen(
                         Text(
                             text = "Resultado de probabilidad",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = schoolData.color
                         )
                     }
                 },
                 text = {
-                    Column(modifier = Modifier.padding(10.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
                         Text(
                             text = "Probabilidad: ${currentChanceData!!.percentage}%",
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Roll (d100): $chanceRollResult",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (chanceIsSuccess!!) Color.Green else Color.Red
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (chanceIsSuccess!!) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.tertiary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -843,18 +854,18 @@ fun SpellDetailScreen(
                     }
                 },
                 containerColor = Color.Transparent,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                schoolData.color,
-                                MaterialTheme.colorScheme.background
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surface
                             )
                         ),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(10.dp)
+                    .padding(8.dp)
             )
         }
     }

@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -258,6 +259,7 @@ fun NavGraph(navController: NavHostController) {
                         )
                         monster != null -> MonsterDetailScreen(
                             monster = monster!!,
+                            navController = navController,
                             isTwoPaneMode = false
                         )
                         else -> Text(

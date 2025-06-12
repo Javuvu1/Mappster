@@ -9,9 +9,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.javier.mappster.model.*
 import com.javier.mappster.utils.conditionDescriptions
 import com.javier.mappster.utils.sourceMap
@@ -63,7 +66,8 @@ fun MonsterDetailCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MonsterDetailScreen(monster: Monster, isTwoPaneMode: Boolean = false) {
+fun MonsterDetailScreen(monster: Monster,
+                        navController: NavHostController, isTwoPaneMode: Boolean = false) {
     var showDiceRollDialog by remember { mutableStateOf(false) }
     var diceRollDetails by remember { mutableStateOf<List<Int>>(emptyList()) }
     var diceRollTotal by remember { mutableStateOf(0) }
@@ -100,9 +104,20 @@ fun MonsterDetailScreen(monster: Monster, isTwoPaneMode: Boolean = false) {
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     },
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(top = 16.dp)
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
         }

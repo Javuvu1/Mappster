@@ -30,9 +30,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.javier.mappster.R
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.UnifiedMonster
 import com.javier.mappster.navigation.Destinations
+import com.javier.mappster.ui.theme.MappsterTheme
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import java.net.URLEncoder
@@ -70,94 +72,98 @@ fun MonsterListScreen(
         }
     }
 
-    if (isCheckingAuth) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else if (userId != null) {
-        Scaffold(
-            topBar = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+    MappsterTheme {
+        if (isCheckingAuth) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (userId != null) {
+            Scaffold(
+                topBar = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
                     ) {
-                        SearchBar(
-                            query = searchQuery,
-                            onQueryChanged = viewModel::onSearchQueryChanged,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = {
-                                Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                                navController.navigate(Destinations.CREATE_MONSTER)
-                            },
-                            modifier = Modifier.size(48.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Create Monster",
-                                tint = MaterialTheme.colorScheme.primary
+                            SearchBar(
+                                query = searchQuery,
+                                onQueryChanged = viewModel::onSearchQueryChanged,
+                                modifier = Modifier.weight(1f)
                             )
+                            IconButton(
+                                onClick = {
+                                    Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
+                                    navController.navigate(Destinations.CREATE_MONSTER)
+                                },
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Create Monster",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
+                },
+                bottomBar = {
+                    BottomNavigationBar(navController = navController)
                 }
-            },
-            bottomBar = {
-                BottomNavigationBar(navController = navController)
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                if (state.isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else if (state.error != null) {
-                    Text(
-                        text = "Error loading monsters: ${state.error}",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                } else if (state.monsters.isEmpty()) {
-                    Text(
-                        text = if (searchQuery.isEmpty()) "No monsters available." else "No monsters found for \"$searchQuery\"",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(
-                            start = 8.dp,
-                            end = 8.dp,
-                            top = 8.dp,
-                            bottom = 16.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(state.monsters) { monster ->
-                            MonsterItem(
-                                monster = monster,
-                                navController = navController,
-                                onDeleteClick = { viewModel.deleteCustomMonster(monster) },
-                                onToggleVisibilityClick = { monster, isPublic -> viewModel.updateMonsterVisibility(monster, isPublic) },
-                                authManager = authManager
-                            )
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    if (state.isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else if (state.error != null) {
+                        Text(
+                            text = "Error loading monsters: ${state.error}",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else if (state.monsters.isEmpty()) {
+                        Text(
+                            text = if (searchQuery.isEmpty()) "No monsters available." else "No monsters found for \"$searchQuery\"",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
+                                start = 8.dp,
+                                end = 8.dp,
+                                top = 8.dp,
+                                bottom = 16.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(state.monsters) { monster ->
+                                MonsterItem(
+                                    monster = monster,
+                                    navController = navController,
+                                    onDeleteClick = { viewModel.deleteCustomMonster(monster) },
+                                    onToggleVisibilityClick = { monster, isPublic ->
+                                        viewModel.updateMonsterVisibility(monster, isPublic)
+                                    },
+                                    authManager = authManager
+                                )
+                            }
                         }
                     }
                 }
@@ -180,19 +186,32 @@ fun SearchBar(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Buscar",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         },
-        placeholder = { Text("Buscar monstruos...") },
+        placeholder = {
+            Text(
+                "Buscar monstruos...",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            )
+        },
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp),
         colors = TextFieldDefaults.textFieldColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
             focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
+            unfocusedIndicatorColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         ),
-        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+        textStyle = MaterialTheme.typography.bodyMedium,
         singleLine = true,
         shape = RoundedCornerShape(12.dp)
     )
@@ -220,47 +239,91 @@ fun MonsterItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Confirm deletion") },
-            text = { Text("Are you sure you want to delete the monster \"${monster.name}\"?") },
+            title = {
+                Text(
+                    "Confirm deletion",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    "Are you sure you want to delete the monster \"${monster.name}\"?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    onDeleteClick(monster)
-                    showDeleteDialog = false
-                }) {
+                TextButton(
+                    onClick = {
+                        onDeleteClick(monster)
+                        showDeleteDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
                     Text("Cancel")
                 }
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
     if (showVisibilityDialog) {
         AlertDialog(
             onDismissRequest = { showVisibilityDialog = false },
-            title = { Text("Confirm visibility change") },
+            title = {
+                Text(
+                    "Confirm visibility change",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
             text = {
                 Text(
                     "Are you sure you want to make the monster \"${monster.name}\" " +
-                            "${if (pendingVisibility) "public" else "private"}?"
+                            "${if (pendingVisibility) "public" else "private"}?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    onToggleVisibilityClick(monster, pendingVisibility)
-                    showVisibilityDialog = false
-                }) {
+                TextButton(
+                    onClick = {
+                        onToggleVisibilityClick(monster, pendingVisibility)
+                        showVisibilityDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showVisibilityDialog = false }) {
+                TextButton(
+                    onClick = { showVisibilityDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
                     Text("Cancel")
                 }
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
@@ -285,15 +348,16 @@ fun MonsterItem(
             }
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
                 shape = RoundedCornerShape(16.dp)
             )
             .shadow(
                 elevation = 4.dp,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             ),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         )
     ) {
         Box(
@@ -324,13 +388,14 @@ fun MonsterItem(
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 0.1.sp
                         ),
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                     monster.cr?.let { cr ->
                         Text(
                             text = "CR: $cr",
                             style = MaterialTheme.typography.labelMedium.copy(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
                             )
@@ -367,7 +432,7 @@ fun MonsterItem(
                         Text(
                             text = "$sizeText $typeText$alignmentText",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -446,7 +511,7 @@ fun MonsterItem(
                         Text(
                             text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 fontStyle = FontStyle.Italic
                             ),
                             maxLines = 1,

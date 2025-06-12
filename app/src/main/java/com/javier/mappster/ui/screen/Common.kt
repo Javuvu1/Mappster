@@ -1,5 +1,7 @@
 package com.javier.mappster.ui.screen
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,134 +34,150 @@ fun BottomNavigationBar(navController: NavHostController) {
     val authManager = remember { AuthManager.getInstance(context) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    NavigationBar(
-        containerColor = Color(0xFF0D47A1), // Azul oscuro
-        contentColor = MaterialTheme.colorScheme.onSurface,
+    val colorScheme = MaterialTheme.colorScheme
+
+    // Contenedor principal con bordes redondeados solo arriba
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp)
-            .height(96.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(24.dp))
+            .shadow(elevation = 4.dp)
+            .background(
+                color = colorScheme.primaryContainer,
+                shape = RoundedCornerShape(
+                    topStart = 24.dp,
+                    topEnd = 24.dp,
+                    bottomStart = 0.dp,
+                    bottomEnd = 0.dp
+                )
+            )
+            .clip(
+                RoundedCornerShape(
+                    topStart = 24.dp,
+                    topEnd = 24.dp,
+                    bottomStart = 0.dp,
+                    bottomEnd = 0.dp
+                )
+            )
     ) {
-        val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-        NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Hechizos") },
-            label = {
-                Text(
-                    text = "Spells",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            selected = currentRoute == Destinations.SPELL_LIST,
-            onClick = {
-                navController.navigate(Destinations.SPELL_LIST) {
-                    if (currentRoute != Destinations.SPELL_LIST) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+        NavigationBar(
+            containerColor = Color.Transparent, // Hacemos transparente el fondo del NavigationBar
+            contentColor = colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(96.dp)
+        ) {
+            val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+            NavigationBarItem(
+                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Hechizos") },
+                label = {
+                    Text("Spells", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                selected = currentRoute == Destinations.SPELL_LIST,
+                onClick = {
+                    navController.navigate(Destinations.SPELL_LIST) {
+                        if (currentRoute != Destinations.SPELL_LIST) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        }
+                        launchSingleTop = true
                     }
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Listas Hechizos") },
-            label = {
-                Text(
-                    text = "Spell Lists",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = colorScheme.onPrimaryContainer,
+                    selectedTextColor = colorScheme.onPrimaryContainer,
+                    unselectedIconColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    unselectedTextColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    indicatorColor = colorScheme.primary.copy(alpha = 0.3f)
                 )
-            },
-            selected = currentRoute == Destinations.CUSTOM_SPELL_LISTS,
-            onClick = {
-                navController.navigate(Destinations.CUSTOM_SPELL_LISTS) {
-                    if (currentRoute != Destinations.CUSTOM_SPELL_LISTS) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+            )
+
+            NavigationBarItem(
+                icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Listas Hechizos") },
+                label = {
+                    Text("Spell Lists", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                selected = currentRoute == Destinations.CUSTOM_SPELL_LISTS,
+                onClick = {
+                    navController.navigate(Destinations.CUSTOM_SPELL_LISTS) {
+                        if (currentRoute != Destinations.CUSTOM_SPELL_LISTS) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        }
+                        launchSingleTop = true
                     }
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Pets, contentDescription = "Monstruos") },
-            label = {
-                Text(
-                    text = "Monsters",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = colorScheme.onPrimaryContainer,
+                    selectedTextColor = colorScheme.onPrimaryContainer,
+                    unselectedIconColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    unselectedTextColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    indicatorColor = colorScheme.primary.copy(alpha = 0.3f)
                 )
-            },
-            selected = currentRoute == Destinations.MONSTER_LIST,
-            onClick = {
-                navController.navigate(Destinations.MONSTER_LIST) {
-                    if (currentRoute != Destinations.MONSTER_LIST) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+            )
+
+            NavigationBarItem(
+                icon = { Icon(Icons.Default.Pets, contentDescription = "Monstruos") },
+                label = {
+                    Text("Monsters", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                selected = currentRoute == Destinations.MONSTER_LIST,
+                onClick = {
+                    navController.navigate(Destinations.MONSTER_LIST) {
+                        if (currentRoute != Destinations.MONSTER_LIST) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        }
+                        launchSingleTop = true
                     }
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        // Pendiente de implementar en un futuro, no borrar
-        // NavigationBarItem(
-        //     icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = "Listas Monstruos") },
-        //     label = { Text("Monster Ls.") },
-        //     selected = currentRoute == Destinations.CUSTOM_MONSTER_LISTS,
-        //     onClick = {
-        //         navController.navigate(Destinations.CUSTOM_MONSTER_LISTS) {
-        //             if (currentRoute != Destinations.CUSTOM_MONSTER_LISTS) {
-        //                 popUpTo(navController.graph.startDestinationId) { inclusive = false }
-        //             }
-        //             launchSingleTop = true
-        //         }
-        //     }
-        // )
-        NavigationBarItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Timer,
-                    contentDescription = "Initiative Tracker"
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = colorScheme.onPrimaryContainer,
+                    selectedTextColor = colorScheme.onPrimaryContainer,
+                    unselectedIconColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    unselectedTextColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    indicatorColor = colorScheme.primary.copy(alpha = 0.3f)
                 )
-            },
-            label = {
-                Text(
-                    text = "Initiative",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            selected = currentRoute == Destinations.INITIATIVE_TRACKER,
-            onClick = {
-                navController.navigate(Destinations.INITIATIVE_TRACKER) {
-                    if (currentRoute != Destinations.INITIATIVE_TRACKER) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+            )
+
+            NavigationBarItem(
+                icon = { Icon(Icons.Default.Timer, contentDescription = "Initiative Tracker") },
+                label = {
+                    Text("Initiative", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                selected = currentRoute == Destinations.INITIATIVE_TRACKER,
+                onClick = {
+                    navController.navigate(Destinations.INITIATIVE_TRACKER) {
+                        if (currentRoute != Destinations.INITIATIVE_TRACKER) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        }
+                        launchSingleTop = true
                     }
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Log Out") },
-            label = {
-                Text(
-                    text = "C.Sesión",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = colorScheme.onPrimaryContainer,
+                    selectedTextColor = colorScheme.onPrimaryContainer,
+                    unselectedIconColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    unselectedTextColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    indicatorColor = colorScheme.primary.copy(alpha = 0.3f)
                 )
-            },
-            selected = currentRoute == Destinations.LOGIN,
-            onClick = {
-                showLogoutDialog = true
-            },
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
+            )
+
+            NavigationBarItem(
+                icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Log Out") },
+                label = {
+                    Text("C.Sesión", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                selected = currentRoute == Destinations.LOGIN,
+                onClick = { showLogoutDialog = true },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = colorScheme.onPrimaryContainer,
+                    selectedTextColor = colorScheme.onPrimaryContainer,
+                    unselectedIconColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    unselectedTextColor = colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    indicatorColor = colorScheme.primary.copy(alpha = 0.3f)
+                )
+            )
+        }
     }
 
-    // Diálogo de confirmación para cerrar sesión
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -167,14 +185,14 @@ fun BottomNavigationBar(navController: NavHostController) {
                 Text(
                     text = "Confirm",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = colorScheme.onSurface
                 )
             },
             text = {
                 Text(
                     text = "¿Estás seguro de que quieres cerrar sesión?",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = colorScheme.onSurface
                 )
             },
             confirmButton = {
@@ -187,7 +205,9 @@ fun BottomNavigationBar(navController: NavHostController) {
                         }
                         showLogoutDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF0D47A1))
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = colorScheme.primary
+                    )
                 ) {
                     Text("Sí")
                 }
@@ -195,13 +215,15 @@ fun BottomNavigationBar(navController: NavHostController) {
             dismissButton = {
                 TextButton(
                     onClick = { showLogoutDialog = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF0D47A1))
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = colorScheme.primary
+                    )
                 ) {
                     Text("No")
                 }
             },
             shape = RoundedCornerShape(12.dp),
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = colorScheme.surface
         )
     }
 }
