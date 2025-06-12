@@ -19,7 +19,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +35,7 @@ import com.javier.mappster.model.UnifiedMonster
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
+import java.net.URLEncoder
 
 @Composable
 fun MonsterListScreen(
@@ -53,7 +57,6 @@ fun MonsterListScreen(
                 launchSingleTop = true
             }
         } else {
-            // Cambia esto:
             viewModel.refreshCustomMonsters()
         }
     }
@@ -92,7 +95,7 @@ fun MonsterListScreen(
                         IconButton(
                             onClick = {
                                 Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                                navController.navigate(Destinations.CREATE_MONSTER) // Navega sin parámetros
+                                navController.navigate(Destinations.CREATE_MONSTER)
                             },
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -207,17 +210,12 @@ fun MonsterItem(
     authManager: AuthManager,
     modifier: Modifier = Modifier
 ) {
-    Log.d("MonsterItem", "Rendering monster: ${monster.name}, id=${monster.id}, isCustom=${monster.isCustom}, userId=${monster.userId}, public=${monster.public}")
-    val defaultColor = MaterialTheme.colorScheme.primary
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showVisibilityDialog by remember { mutableStateOf(false) }
     var pendingVisibility by remember { mutableStateOf(monster.public) }
 
     val currentUserId = authManager.getCurrentUserId()
-    Log.d("MonsterItem", "Current user ID: $currentUserId")
-
     val isOwner = currentUserId != null && monster.userId == currentUserId
-    Log.d("MonsterItem", "isOwner for ${monster.name}: $isOwner")
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -269,7 +267,7 @@ fun MonsterItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(16.dp))
             .clickable {
                 if (isTwoPaneMode) {
                     onItemClick(monster)
@@ -278,173 +276,184 @@ fun MonsterItem(
                         if (monster.isCustom) {
                             it.navigate("${Destinations.CUSTOM_MONSTER_DETAIL}/${monster.id}")
                         } else {
-                            val encodedName = java.net.URLEncoder.encode(monster.name, "UTF-8")
-                            val encodedSource = java.net.URLEncoder.encode(monster.source ?: "", "UTF-8")
+                            val encodedName = URLEncoder.encode(monster.name, "UTF-8")
+                            val encodedSource = URLEncoder.encode(monster.source ?: "", "UTF-8")
                             it.navigate("${Destinations.MONSTER_DETAIL}/$encodedName/$encodedSource")
                         }
                     }
                 }
             }
             .border(
-                width = 2.dp,
-                color = defaultColor.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(12.dp)
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp)
             )
             .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(12.dp),
-                spotColor = defaultColor.copy(alpha = 0.1f)
+                elevation = 4.dp,
+                shape = RoundedCornerShape(16.dp)
             ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        shape = RoundedCornerShape(12.dp)
+            containerColor = Color.Transparent
+        )
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = monster.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.1.sp
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-                monster.cr?.let { cr ->
-                    Text(
-                        text = "CR: $cr",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = defaultColor.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                     )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
                 Row(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val sizeText = monster.size?.let { size ->
-                        when (size.uppercase()) {
-                            "M" -> "Medium"
-                            "L" -> "Large"
-                            "S" -> "Small"
-                            "T" -> "Tiny"
-                            "H" -> "Huge"
-                            "G" -> "Gargantuan"
-                            else -> size
-                        }
-                    } ?: "Unknown"
-
-                    val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Unknown"
-
-                    val alignmentText = monster.alignment?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
-
                     Text(
-                        text = "$sizeText $typeText$alignmentText",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = monster.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.1.sp
+                        ),
+                        modifier = Modifier.weight(1f)
                     )
+                    monster.cr?.let { cr ->
+                        Text(
+                            text = "CR: $cr",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        )
+                    }
                 }
 
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (monster.isCustom && monster.id != null) {
-                        Log.d("MonsterItem", "Custom monster block entered: id=${monster.id}, isCustom=${monster.isCustom}")
-                        // Visibility toggle for all users
-                        IconButton(
-                            onClick = {
-                                pendingVisibility = !monster.public
-                                showVisibilityDialog = true
-                                Log.d("MonsterItem", "Visibility toggle clicked for ${monster.name}, new pendingVisibility=$pendingVisibility")
-                            },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (monster.public) Icons.Default.Public else Icons.Default.Lock,
-                                contentDescription = if (monster.public) "Make private" else "Make public",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        // Edit button only for owner
-                        if (isOwner) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val sizeText = monster.size?.let { size ->
+                            when (size.uppercase()) {
+                                "M" -> "Medium"
+                                "L" -> "Large"
+                                "S" -> "Small"
+                                "T" -> "Tiny"
+                                "H" -> "Huge"
+                                "G" -> "Gargantuan"
+                                else -> size
+                            }
+                        } ?: "Unknown"
+
+                        val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+                        val alignmentText = monster.alignment?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
+
+                        Text(
+                            text = "$sizeText $typeText$alignmentText",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        if (monster.isCustom && monster.id != null) {
+                            Log.d("MonsterItem", "Custom monster block entered: id=${monster.id}, isCustom=${monster.isCustom}")
+                            // Visibility toggle for all users
                             IconButton(
                                 onClick = {
-                                    if (currentUserId == null) {
-                                        Log.e("MonsterItem", "User not authenticated, redirecting to login")
-                                        navController?.navigate(Destinations.LOGIN) {
-                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                            launchSingleTop = true
-                                        }
-                                    } else if (!isTwoPaneMode) {
-                                        val encodedMonsterId = java.net.URLEncoder.encode(monster.id, "UTF-8")
-                                        val route = "create_monster?monsterId=$encodedMonsterId"
-                                        Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}")
-                                        try {
-                                            navController?.navigate(route) {
-                                                launchSingleTop = true
-                                            } ?: Log.e("MonsterItem", "NavController is null")
-                                        } catch (e: IllegalArgumentException) {
-                                            Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
-                                        }
-                                    } else {
-                                        Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
-                                    }
+                                    pendingVisibility = !monster.public
+                                    showVisibilityDialog = true
+                                    Log.d("MonsterItem", "Visibility toggle clicked for ${monster.name}, new pendingVisibility=$pendingVisibility")
                                 },
                                 modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit monster",
+                                    imageVector = if (monster.public) Icons.Default.Public else Icons.Default.Lock,
+                                    contentDescription = if (monster.public) "Make private" else "Make public",
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
-                        }
-                        // Delete button only for owner
-                        if (isOwner) {
-                            IconButton(
-                                onClick = { showDeleteDialog = true },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete monster",
-                                    tint = MaterialTheme.colorScheme.error,
+                            // Edit button only for owner
+                            if (isOwner) {
+                                IconButton(
+                                    onClick = {
+                                        if (currentUserId == null) {
+                                            Log.e("MonsterItem", "User not authenticated, redirecting to login")
+                                            navController?.navigate(Destinations.LOGIN) {
+                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        } else if (!isTwoPaneMode) {
+                                            val encodedMonsterId = URLEncoder.encode(monster.id, "UTF-8")
+                                            val route = "create_monster?monsterId=$encodedMonsterId"
+                                            Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}")
+                                            try {
+                                                navController?.navigate(route) {
+                                                    launchSingleTop = true
+                                                } ?: Log.e("MonsterItem", "NavController is null")
+                                            } catch (e: IllegalArgumentException) {
+                                                Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
+                                            }
+                                        } else {
+                                            Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
+                                        }
+                                    },
                                     modifier = Modifier.size(24.dp)
-                                )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit monster",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            // Delete button only for owner
+                            if (isOwner) {
+                                IconButton(
+                                    onClick = { showDeleteDialog = true },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete monster",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
+                        Text(
+                            text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                fontStyle = FontStyle.Italic
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = if (monster.isCustom) 4.dp else 0.dp)
+                        )
                     }
-                    Text(
-                        text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            fontStyle = FontStyle.Italic
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = if (monster.isCustom) 4.dp else 0.dp)
-                    )
                 }
             }
         }

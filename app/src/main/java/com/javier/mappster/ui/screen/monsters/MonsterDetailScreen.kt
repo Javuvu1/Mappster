@@ -36,6 +36,31 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.floor
 import kotlin.random.Random
 
+// Componente reutilizable para las tarjetas de detalle
+@Composable
+fun MonsterDetailCard(
+    title: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            title?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            content()
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonsterDetailScreen(monster: Monster, isTwoPaneMode: Boolean = false) {

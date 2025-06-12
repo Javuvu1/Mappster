@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,6 +40,8 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
     val state = viewModel.state.collectAsState().value
     val searchQuery = viewModel.searchQuery.collectAsState().value
     var selectedMonster by remember { mutableStateOf<UnifiedMonster?>(null) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
@@ -111,7 +114,11 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(MaterialTheme.colorScheme.surface),
-                                    contentPadding = PaddingValues(bottom = 16.dp)
+                                    contentPadding = PaddingValues(
+                                        bottom = if (isLandscape) 32.dp else 16.dp,
+                                        top = if (isLandscape) 16.dp else 8.dp
+                                    ),
+                                    verticalArrangement = Arrangement.spacedBy(if (isLandscape) 10.dp else 8.dp)
                                 ) {
                                     items(state.monsters) { monster ->
                                         MonsterItem(
@@ -120,7 +127,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                             isTwoPaneMode = true,
                                             onItemClick = { selectedMonster = it },
                                             onDeleteClick = { viewModel.deleteCustomMonster(it) },
-                                            onToggleVisibilityClick = { monster, isPublic -> viewModel.updateMonsterVisibility(monster, isPublic) }, // Pass the callback
+                                            onToggleVisibilityClick = { monster, isPublic -> viewModel.updateMonsterVisibility(monster, isPublic) },
                                             navController = null,
                                             authManager = AuthManager.getInstance(context)
                                         )
