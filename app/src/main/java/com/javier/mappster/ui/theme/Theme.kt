@@ -23,56 +23,32 @@ private val DefaultFontFamily = FontFamily(
     Font(R.font.default_font_family)
 )
 
-// Modo Claro
-val TurquesaRetro = Color(0xFF309898 )
-val AmarilloRetro = Color(0xFFFF9F00)
-val NaranjaRetro = Color(0xFFF4631E)
-val RojoRetro = Color(0xFFCB0404)
-
-// Modo oscuro
-val TurquesaRetroDark = Color(0xFF4DC5C5)
-val AmarilloRetroDark = Color(0xFFFFEB3B)
-val NaranjaRetroDark = Color(0xFFF57C3A)
-val RojoRetroDark = Color(0xFFE64A4A)
-
-// Light Theme Colors
-val ArcaneBlue = Color(0xFF1E3A8A) // Primary: Mystical blue for magic
-val ParchmentBeige = Color(0xFFF5E8C7) // Secondary: Aged parchment
-val DragonfireRed = Color(0xFFB91C1C) // Tertiary: Fiery red for danger
-val ForestGreen = Color(0xFF166534) // OnSurfaceVariant: Nature-inspired green
-
-// Dark Theme Colors
-val MidnightBlue = Color(0xFF3B82F6) // Primary: Deep, starry blue
-val TarnishedGold = Color(0xFFB89778) // Secondary: Ancient treasure gold
-val CrimsonGlow = Color(0xFFDC2626) // Tertiary: Blood-red for intensity
-val DarkForestGreen = Color(0xFF4B8A5C) // OnSurfaceVariant: Darker green
-
-private val DarkColorScheme = darkColorScheme(
-    primary = MidnightBlue,
-    secondary = TarnishedGold,
-    tertiary = CrimsonGlow,
-    primaryContainer = Color(0xFF1E3A8A), // Darker arcane blue
-    secondaryContainer = Color(0xFF8B6F47), // Darker gold
-    tertiaryContainer = Color(0xFF7F1D1D), // Darker crimson
-    surfaceVariant = Color(0xFF374151), // Shadowed stone gray
-    background = Color(0xFF111827), // Dungeon-like dark background
-    surface = Color(0xFF1C2526), // Dark stone surface
-    onSurface = Color(0xFFD1D5DB), // Light gray for text
-    onSurfaceVariant = DarkForestGreen // Dark green for accents
+private val LightColorScheme = lightColorScheme(
+    primary = Color(0xFF1E40AF), // Sapphire blue, vibrant and mystical
+    secondary = Color(0xFFF3E8C2), // Light golden beige, like illuminated parchment
+    tertiary = Color(0xFFD4A017), // Bright gold for ornate details
+    primaryContainer = Color(0xFF93C5FD), // Lighter sapphire blue
+    secondaryContainer = Color(0xFFF8F0D5), // Lighter golden beige
+    tertiaryContainer = Color(0xFFFFE082), // Soft golden tone
+    surfaceVariant = Color(0xFFE6E8F0), // Light blue-gray for subtle contrast
+    background = Color(0xFFF5F7FA), // Soft white-blue background
+    surface = Color(0xFFFCFDFF), // Near-white surface for clarity
+    onSurface = Color(0xFF1C2526), // Dark blue-gray for text
+    onSurfaceVariant = Color(0xFF334155) // Slate blue for accents
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = ArcaneBlue,
-    secondary = ParchmentBeige,
-    tertiary = DragonfireRed,
-    primaryContainer = Color(0xFFBFDBFE), // Light arcane blue
-    secondaryContainer = Color(0xFFE8D5A1), // Light parchment
-    tertiaryContainer = Color(0xFFFCA5A5), // Light rosy red
-    surfaceVariant = Color(0xFFE5E7EB), // Light stone gray
-    background = Color(0xFFEDE9E3), // Parchment-like background
-    surface = Color(0xFFF8FAF5), // Off-white surface
-    onSurface = Color(0xFF1F2937), // Dark gray for text
-    onSurfaceVariant = ForestGreen // Green for accents
+private val DarkColorScheme = darkColorScheme(
+    primary = Color(0xFF1E3A8A), // Midnight blue, deep and starry
+    secondary = Color(0xFFA68B4C), // Tarnished gold, like ancient ornaments
+    tertiary = Color(0xFFCBA135), // Warm gold for glowing highlights
+    primaryContainer = Color(0xFF2D4E9F), // Darker midnight blue
+    secondaryContainer = Color(0xFF856D3A), // Darker tarnished gold
+    tertiaryContainer = Color(0xFF9C7A26), // Darker gold
+    surfaceVariant = Color(0xFF2C3442), // Dark blue-gray for depth
+    background = Color(0xFF0F172A), // Deep slate blue background
+    surface = Color(0xFF1A2233), // Dark sapphire surface
+    onSurface = Color(0xFFE2E8F0), // Light blue-gray for text
+    onSurfaceVariant = Color(0xFF475569) // Dark slate blue for accents
 )
 
 private val MappsterTypography = Typography(

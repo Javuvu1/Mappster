@@ -327,7 +327,7 @@ fun SpellListItem(
                         Icon(
                             imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
                             contentDescription = if (spell.public) "Público" else "Privado",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -343,7 +343,7 @@ fun SpellListItem(
                             Icon(
                                 imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
                                 contentDescription = if (spell.public) "Hacer privado" else "Hacer público",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -354,7 +354,7 @@ fun SpellListItem(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Editar hechizo",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -365,7 +365,7 @@ fun SpellListItem(
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = "Borrar hechizo",
-                                tint = MaterialTheme.colorScheme.error,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -425,12 +425,14 @@ fun SpellListItem(
 
                     Text(
                         text = sourceMap[spell.source.uppercase()] ?: spell.source,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            fontStyle = FontStyle.Italic
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontStyle = FontStyle.Italic,
+                            fontWeight = FontWeight.Medium
                         ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 8.dp)
                     )
                 }
             }
