@@ -154,6 +154,9 @@ fun TwoPaneSpellListScreen(
                                 isTwoPaneMode = true,
                                 navController = navController,
                                 viewModel = viewModel,
+                                onSpellSelected = { newSpell ->
+                                    selectedSpell = newSpell
+                                },
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }

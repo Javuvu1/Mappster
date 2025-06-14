@@ -99,7 +99,7 @@ fun NavGraph(navController: NavHostController) {
                     it
                 }
             }
-            Log.d("NavGraph", "Registering route: ${Destinations.SPELL_DETAIL}, spellName: '$spellName'")
+            Log.d("NavGraph", "Registering route: ${Destinations.SPELL_DETAIL}/{spellName}, decoded spellName: '$spellName'")
             val spell = spellName?.let { spellListViewModel.getSpellByName(it) }
             Log.d("NavGraph", "Found spell: $spell")
             spell?.let {
@@ -110,7 +110,7 @@ fun NavGraph(navController: NavHostController) {
                     viewModel = spellListViewModel
                 )
             } ?: run {
-                Log.e("NavGraph", "Spell '$spellName' not found, popping back to SPELL_LIST")
+                Log.e("NavGraph", "Spell '$spellName' not found, popping back to ${Destinations.SPELL_LIST}")
                 navController.popBackStack(Destinations.SPELL_LIST, inclusive = false)
             }
         }

@@ -31,6 +31,7 @@ import androidx.navigation.NavHostController
 import com.javier.mappster.model.*
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.utils.conditionDescriptions
+import com.javier.mappster.utils.normalizeSpellName
 import com.javier.mappster.utils.sourceMap
 import java.net.URLEncoder
 import kotlin.random.Random
@@ -475,22 +476,26 @@ fun SpellDetailScreen(
                                                 val spellName = annotation.item.trim()
                                                 Log.d("SpellDetailScreen", "Clicked spell: '$spellName', isTwoPaneMode: $isTwoPaneMode")
                                                 val targetSpell = viewModel.getSpellByName(spellName)
-                                                Log.d("SpellDetailScreen", "Target spell: $targetSpell")
+                                                Log.d("SpellDetailScreen", "Target spell: ${targetSpell?.name ?: "null"}")
                                                 if (targetSpell != null) {
                                                     if (isTwoPaneMode) {
                                                         Log.d("SpellDetailScreen", "Selecting spell in two-pane mode: ${targetSpell.name}")
                                                         onSpellSelected(targetSpell)
+                                                        Log.d("SpellDetailScreen", "onSpellSelected invoked for: ${targetSpell.name}, spell object: $targetSpell")
                                                     } else {
-                                                        val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                        val normalizedSpellName = normalizeSpellName(targetSpell.name)
+                                                        val encodedName = URLEncoder.encode(normalizedSpellName, "UTF-8").replace("+", "%20")
                                                         Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
-                                                        navController.navigate("spell_detail/$encodedName")
+                                                        try {
+                                                            navController.navigate("spell_detail/$encodedName")
+                                                        } catch (e: IllegalArgumentException) {
+                                                            Log.e("SpellDetailScreen", "Navigation failed for spell_detail/$encodedName: ${e.message}", e)
+                                                            Toast.makeText(context, "Error al navegar a '${targetSpell.name}'.", Toast.LENGTH_LONG).show()
+                                                        }
                                                     }
                                                 } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Hechizo '$spellName' no encontrado.",
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
+                                                    Log.w("SpellDetailScreen", "Spell '$spellName' not found")
+                                                    Toast.makeText(context, "Hechizo '$spellName' no encontrado.", Toast.LENGTH_LONG).show()
                                                 }
                                             }
                                         annotatedText.getStringAnnotations(tag = "chance", start = offset, end = offset)
