@@ -75,118 +75,148 @@ val quickRefDescriptions = mapOf(
     "total cover" to "A target with total cover can't be targeted directly by an attack or a spell, although some spells can reach such a target by including it in an area of effect. A target has total cover if it is completely concealed by an obstacle."
 )
 
+private val PATTERN = Regex(
+    "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" +
+            "\\{@dice\\s*(\\d*d\\d+)\\}|" +
+            "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
+            "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
+            "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" +
+            "\\{@spell\\s*([^\\}]+)\\}|" +
+            "\\{@chance\\s*(\\d+)\\s*\\|\\|\\|\\s*([^\\|]+)\\|([^\\}]+)\\}|" +
+            "\\{@quickref\\s+(Cover\\|\\|3\\|\\|(half cover|three-quarters cover|total cover))\\}|" +
+            "\\{@quickref\\s+(Vision and Light\\|PHB\\|2\\|\\|heavily obscured)\\}|" +
+            "\\{@quickref\\s+(difficult terrain\\|\\|3)\\}|" +
+            "\\{@quickref\\s*([^\\|\\}]+?)(?:\\|\\|(\\d+)?(?:\\|\\|([^\\}]+))?)?\\s*\\}|" +
+            "\\{@quickref\\s*[^\\}]+\\|PHB\\|\\d+\\|\\d*\\|([^\\}]+)\\}|" +
+            "\\{@skill\\s*([^\\}]+)\\}|" +  // Simplificado - grupo 23
+            "\\{@d20\\s*(-?\\d+)\\}"
+)
+
 fun buildDamageAnnotatedString(
     text: String,
     diceDataList: MutableList<DiceRollData>,
     chanceDataList: MutableList<ChanceData>,
-    schoolColor: Color
+    schoolColor: Color,
+    highlightColor: Color = Color.LightGray.copy(alpha = 0.2f)
 ): AnnotatedString {
     Log.d("SpellDetailScreen", "Parsing text: '$text'")
-    val pattern = Regex(
-        "\\{@damage\\s*(\\d+d\\d+\\s*\\+\\s*\\d+|\\d+d\\d+)\\}|" +
-                "\\{@dice\\s*(\\d*d\\d+)\\}|" +
-                "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
-                "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
-                "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" +
-                "\\{@spell\\s*([^\\}]+)\\}|" +
-                "\\{@chance\\s*(\\d+)\\s*\\|\\|\\|\\s*([^\\|]+)\\|([^\\}]+)\\}|" +
-                "\\{@quickref\\s*([^\\|]+)\\|\\|(\\d+)?\\s*\\|\\|([^\\s*\\}]+)\\s*\\}|" +
-                "\\{@quickref\\s*[^\\}]+\\|PHB\\|\\d+\\|\\d*\\|([^\\}]+)\\}"
-    )
-    val matches = pattern.findAll(text).toList()
+
+    val matches = PATTERN.findAll(text).toList()
     diceDataList.clear()
     chanceDataList.clear()
+
     return buildAnnotatedString {
         var lastIndex = 0
         matches.forEachIndexed { index, match ->
-            Log.d("SpellDetailScreen", "Match found: ${match.value}, groups: ${match.groupValues}")
+            val startTime = System.nanoTime()
+            Log.d("SpellDetailScreen", "Match: ${match.value}, groups: ${match.groupValues}")
             val start = match.range.first
             val end = match.range.last + 1
-            val (displayText, isClickable) = when {
+
+            val result = when {
                 match.value.startsWith("{@damage") -> {
-                    val damage = match.groupValues[1].replace("\\s+".toRegex(), "")
+                    val damage = match.groupValues.getOrNull(1)?.replace("\\s+".toRegex(), "") ?: ""
                     val parts = damage.split("+")
-                    if (parts.size == 1) {
-                        val (numDice, dieSides) = parts[0].split("d").map { it.toInt() }
+                    if (parts.size == 1 && damage.isNotEmpty()) {
+                        val (numDice, dieSides) = parts[0].split("d").map { it.toIntOrNull() ?: 0 }
                         diceDataList.add(DiceRollData(numDice, dieSides, type = "damage"))
-                    } else {
+                    } else if (parts.size == 2) {
                         val (dicePart, bonusPart) = parts
-                        val (numDice, dieSides) = dicePart.split("d").map { it.toInt() }
-                        val bonus = bonusPart.toInt()
-                        diceDataList.add(DiceRollData(numDice, dieSides, bonus, "damage"))
+                        val (numDice, dieSides) = dicePart.split("d").map { it.toIntOrNull() ?: 0 }
+                        val bonus = bonusPart.toIntOrNull() ?: 0
+                        diceDataList.add(DiceRollData(numDice, dieSides, bonus, type = "damage"))
                     }
-                    damage to true
+                    Pair(damage, true)
                 }
                 match.value.startsWith("{@dice") -> {
-                    val dice = match.groupValues[2].replace("\\s+".toRegex(), "")
+                    val dice = match.groupValues.getOrNull(2)?.replace("\\s+".toRegex(), "") ?: ""
                     val parts = dice.split("d")
-                    val numDice = if (parts[0].isEmpty()) 1 else parts[0].toInt()
-                    val dieSides = parts[1].toInt()
+                    val numDice = if (parts[0].isEmpty()) 1 else parts[0].toIntOrNull() ?: 1
+                    val dieSides = parts.getOrNull(1)?.toIntOrNull() ?: 0
                     diceDataList.add(DiceRollData(numDice, dieSides, type = "dice"))
-                    dice to true
+                    Pair(dice, true)
                 }
                 match.value.startsWith("{@scaledice") -> {
-                    val initialDice = match.groupValues[3].replace("\\s+".toRegex(), "")
-                    val levelRange = match.groupValues[4]
-                    val scaledDie = match.groupValues[5].replace("\\s+".toRegex(), "")
-                    val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toInt() }
+                    val initialDice = match.groupValues.getOrNull(3)?.replace("\\s+".toRegex(), "") ?: ""
+                    val levelRange = match.groupValues.getOrNull(4) ?: ""
+                    val scaledDie = match.groupValues.getOrNull(5)?.replace("\\s+".toRegex(), "") ?: ""
+                    val (scaledNumDice, scaledDieSides) = scaledDie.split("d").map { it.toIntOrNull() ?: 0 }
                     diceDataList.add(DiceRollData(scaledNumDice, scaledDieSides, type = "scaledice", scaledDie = scaledDie, levelRange = levelRange))
-                    scaledDie to true
+                    Pair(scaledDie, true)
                 }
                 match.value.startsWith("{@scaledamage") -> {
-                    val initialDice = match.groupValues[6].replace("\\s+".toRegex(), "")
-                    val levelRange = match.groupValues[7]
-                    val scaledDie = match.groupValues[8].replace("\\s+".toRegex(), "")
-                    val (numDice, dieSides) = scaledDie.split("d").map { it.toInt() }
+                    val initialDice = match.groupValues.getOrNull(6)?.replace("\\s+".toRegex(), "") ?: ""
+                    val levelRange = match.groupValues.getOrNull(7) ?: ""
+                    val scaledDie = match.groupValues.getOrNull(8)?.replace("\\s+".toRegex(), "") ?: ""
+                    val (numDice, dieSides) = scaledDie.split("d").map { it.toIntOrNull() ?: 0 }
                     diceDataList.add(DiceRollData(numDice, dieSides, type = "scaledamage", scaledDie = scaledDie, levelRange = levelRange))
-                    scaledDie to true
+                    Pair(scaledDie, true)
                 }
                 match.value.startsWith("{@condition") -> {
-                    val condition = match.groupValues[9]
-                    when {
+                    val condition = match.groupValues.getOrNull(9) ?: ""
+                    val displayCondition = when {
                         condition == "deafened||deaf" -> "deafened"
                         condition == "blinded||blind" -> "blinded"
                         else -> condition
-                    } to true
+                    }
+                    Pair(displayCondition, true)
                 }
                 match.value.startsWith("{@spell") -> {
-                    val spellName = match.groupValues[10].trim()
+                    val spellName = match.groupValues.getOrNull(10)?.trim() ?: ""
                     Log.d("SpellDetailScreen", "Parsed spell: '$spellName' from ${match.value}")
-                    spellName to true
+                    Pair(spellName, true)
                 }
                 match.value.startsWith("{@chance") -> {
-                    val percentage = match.groupValues[11].toInt()
-                    val failMessage = match.groupValues[12].trim()
-                    val successMessage = match.groupValues[13].trim()
+                    val percentage = match.groupValues.getOrNull(11)?.toIntOrNull() ?: 0
+                    val failMessage = match.groupValues.getOrNull(12)?.trim() ?: ""
+                    val successMessage = match.groupValues.getOrNull(13)?.trim() ?: ""
                     chanceDataList.add(ChanceData(percentage, failMessage, successMessage))
                     Log.d("SpellDetailScreen", "Parsed chance: $percentage%, fail='$failMessage', success='$successMessage'")
-                    "$percentage%" to true
+                    Pair("$percentage%", true)
+                }
+                match.value.contains("Cover||3||half cover") -> Pair("half cover", true)
+                match.value.contains("Cover||3||three-quarters cover") -> Pair("three-quarters cover", true)
+                match.value.contains("Cover||3||total cover") -> Pair("total cover", true)
+                match.value.contains("Vision and Light|PHB|2||heavily obscured") -> Pair("heavily obscured", true)
+                match.value.contains("difficult terrain||3") -> Pair("difficult terrain", true)
+                match.value.startsWith("{@skill") -> {
+                    val skillName =
+                        match.groupValues.getOrNull(23)?.trim() ?: ""  // Ahora grupo 23 es correcto
+                    Log.d("SpellDetailScreen", "Parsed skill: '$skillName' from ${match.value}")
+                    Pair("($skillName)", false)
+                }
+                match.value.startsWith("{@d20") -> {
+                    val modifier = match.groupValues.last { it.isNotEmpty() && it != match.value }.toInt()
+                    diceDataList.add(DiceRollData(numDice = 1, dieSides = 20, bonus = modifier, type = "d20"))
+                    Log.d("SpellDetailScreen", "Parsed d20: modifier=$modifier from ${match.value}")
+                    val display = if (modifier >= 0) "+$modifier" else "$modifier"
+                    Pair(display, true)
                 }
                 match.value.startsWith("{@quickref") -> {
-                    if (match.groupValues.size > 13 && match.groupValues[14].isNotEmpty()) {
-                        val text = match.groupValues[14].trim()
-                        Log.d("SpellDetailScreen", "Quickref clickable: '$text'")
-                        text to true
-                    } else if (match.groupValues.size > 15 && match.groupValues[15].isNotEmpty()) {
-                        val text = match.groupValues[15].trim()
-                        Log.d("SpellDetailScreen", "Quickref non-clickable: '$text'")
-                        text to false
-                    } else {
-                        Log.d("SpellDetailScreen", "Invalid quickref format: ${match.value}")
-                        "" to false
+                    val displayText = when {
+                        match.groupValues.getOrNull(18)?.isNotEmpty() == true -> match.groupValues[18].trim()
+                        match.groupValues.getOrNull(19)?.isNotEmpty() == true -> match.groupValues[19].trim()
+                        match.groupValues.getOrNull(16)?.isNotEmpty() == true -> match.groupValues[16].trim()
+                        else -> ""
                     }
+                    val isClickable = displayText.isNotEmpty() &&
+                            quickRefDescriptions.keys.any { it.equals(displayText, ignoreCase = true) }
+                    Log.d("SpellDetailScreen", "Quickref parsed: '${match.value}' -> '$displayText' (clickable: $isClickable)")
+                    Pair(displayText, isClickable)
                 }
-                else -> {
-                    Log.d("SpellDetailScreen", "Unknown match: ${match.value}")
-                    "" to false
-                }
+                else -> Pair("", false)
             }
+            val displayText = result.first
+            val isClickable = result.second
+            val endTime = System.nanoTime()
+            Log.d("SpellDetailScreen", "Processed match ${match.value} in ${(endTime - startTime) / 1_000_000}ms")
+
             Log.d("SpellDetailScreen", "Appending from $lastIndex to $start: '${text.substring(lastIndex, start)}'")
             append(text.substring(lastIndex, start))
+
             when {
                 match.value.startsWith("{@condition") && isClickable -> {
-                    Log.d("SpellDetailScreen", "Annotating condition: '$displayText'")
-                    pushStringAnnotation(tag = "condition", annotation = match.groupValues[9])
+                    pushStringAnnotation(tag = "condition", annotation = match.groupValues.getOrNull(9) ?: "")
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
                     }
@@ -194,7 +224,6 @@ fun buildDamageAnnotatedString(
                 }
                 (match.value.startsWith("{@damage") || match.value.startsWith("{@dice") ||
                         match.value.startsWith("{@scaledice") || match.value.startsWith("{@scaledamage")) && isClickable -> {
-                    Log.d("SpellDetailScreen", "Annotating damage: '$displayText'")
                     pushStringAnnotation(tag = "damage", annotation = index.toString())
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
@@ -202,7 +231,6 @@ fun buildDamageAnnotatedString(
                     pop()
                 }
                 match.value.startsWith("{@spell") && isClickable -> {
-                    Log.d("SpellDetailScreen", "Annotating spell: '$displayText'")
                     pushStringAnnotation(tag = "spell", annotation = displayText)
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
@@ -210,7 +238,6 @@ fun buildDamageAnnotatedString(
                     pop()
                 }
                 match.value.startsWith("{@chance") && isClickable -> {
-                    Log.d("SpellDetailScreen", "Annotating chance: '$displayText'")
                     pushStringAnnotation(tag = "chance", annotation = index.toString())
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
@@ -218,17 +245,23 @@ fun buildDamageAnnotatedString(
                     pop()
                 }
                 match.value.startsWith("{@quickref") && isClickable -> {
-                    Log.d("SpellDetailScreen", "Annotating quickref: '$displayText' as clickable")
                     pushStringAnnotation(tag = "quickref", annotation = displayText)
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
                         append(displayText)
                     }
                     pop()
                 }
-                else -> {
-                    Log.d("SpellDetailScreen", "Appending plain text: '$displayText'")
+                match.value.startsWith("{@d20") && isClickable -> {
+                    pushStringAnnotation(tag = "d20", annotation = index.toString())
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = schoolColor)) {
+                        append(displayText)
+                    }
+                    pop()
+                }
+                match.value.startsWith("{@skill") -> {
                     append(displayText)
                 }
+                else -> append(displayText)
             }
             lastIndex = end
         }
@@ -457,6 +490,16 @@ fun SpellDetailScreen(
                                     text = annotatedText,
                                     onClick = { offset ->
                                         annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                            .firstOrNull()?.let { annotation ->
+                                                val index = annotation.item.toInt()
+                                                val diceData = diceDataList[index]
+                                                val (rolls, total) = rollDice(diceData, spell.level)
+                                                currentDiceData = diceData
+                                                diceRollDetails = rolls
+                                                diceRollTotal = total
+                                                showDiceRollDialog = true
+                                            }
+                                        annotatedText.getStringAnnotations(tag = "d20", start = offset, end = offset)
                                             .firstOrNull()?.let { annotation ->
                                                 val index = annotation.item.toInt()
                                                 val diceData = diceDataList[index]
