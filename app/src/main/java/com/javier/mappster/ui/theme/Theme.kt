@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.javier.mappster.R
 
 // Define la familia de fuentes usando el XML font-family
-private val CinzelDecorative = FontFamily(
+val CinzelDecorative = FontFamily(
     Font(R.font.cinzel_decorative) // referencia al XML cinzel_decorative.xml en res/font
 )
 
@@ -27,7 +27,7 @@ private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF1E40AF), // Sapphire blue, vibrant and mystical
     secondary = Color(0xFFF3E8C2), // Light golden beige, like illuminated parchment
     tertiary = Color(0xFFD4A017), // Bright gold for ornate details
-    primaryContainer = Color(0xFF93C5FD), // Lighter sapphire blue
+    primaryContainer = Color(0xFF4A90E2), // Darker sapphire blue
     secondaryContainer = Color(0xFFF8F0D5), // Lighter golden beige
     tertiaryContainer = Color(0xFFFFE082), // Soft golden tone
     surfaceVariant = Color(0xFFE6E8F0), // Light blue-gray for subtle contrast

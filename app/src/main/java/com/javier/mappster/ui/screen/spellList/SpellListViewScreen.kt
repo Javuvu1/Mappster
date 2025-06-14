@@ -10,29 +10,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.filled.CallMerge
-import androidx.compose.material.icons.filled.Coronavirus
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Masks
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,8 +34,11 @@ import com.javier.mappster.data.FirestoreManager
 import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SpellList
 import com.javier.mappster.navigation.Destinations
+import com.javier.mappster.ui.screen.BottomNavigationBar
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
+import com.javier.mappster.ui.theme.CinzelDecorative
 import com.javier.mappster.utils.normalizeSpellName
+import com.javier.mappster.utils.sourceMap
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
@@ -56,7 +50,14 @@ private fun EmptySpellsMessage() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text("Esta lista está vacía")
+        Text(
+            "Esta lista está vacía",
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = FontStyle.Italic,
+                fontFamily = CinzelDecorative
+            )
+        )
     }
 }
 
@@ -68,7 +69,11 @@ private fun LoadingIndicator() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(
+            modifier = Modifier.size(36.dp),
+            color = MaterialTheme.colorScheme.tertiary,
+            strokeWidth = 3.dp
+        )
     }
 }
 
@@ -76,13 +81,40 @@ private fun LoadingIndicator() {
 private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Error") },
-        text = { Text(message) },
+        title = {
+            Text(
+                "Error",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = MaterialTheme.colorScheme.error,
+                    fontFamily = CinzelDecorative
+                )
+            )
+        },
+        text = {
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.tertiary
+                )
+            ) {
+                Text(
+                    "OK",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontFamily = CinzelDecorative
+                    )
+                )
             }
-        }
+        },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
     )
 }
 
@@ -127,43 +159,80 @@ fun SpellListViewScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(spellList?.name ?: "Cargando...") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        spellList?.name ?: "Cargando...",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = CinzelDecorative,
+                            letterSpacing = 0.5.sp,
+                            color = MaterialTheme.colorScheme.tertiary
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.tertiary
+                ),
+                modifier = Modifier.shadow(elevation = 4.dp)
             )
         },
         bottomBar = {
-            com.javier.mappster.ui.screen.BottomNavigationBar(navController = navController)
+            BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
-        when {
-            isLoading -> LoadingIndicator()
-            error != null -> ErrorMessage(error!!, onDismiss = { error = null })
-            spellList == null -> EmptySpellsMessage()
-            spellList!!.spellIds.isEmpty() -> EmptySpellsMessage()
-            else -> {
-                val listSpells = spells.filter { spell ->
-                    spellList!!.spellIds.contains(normalizeSpellName(spell.name))
-                }.sortedBy { it.level }
-                Log.d("SpellListViewScreen", "Sorted spells: ${listSpells.map { "${it.name} (Level ${it.level})" }}")
-                if (listSpells.isEmpty()) {
-                    EmptySpellsMessage()
-                } else {
-                    SpellListContent(
-                        spells = listSpells,
-                        paddingValues = paddingValues,
-                        onSpellClick = { spell ->
-                            val encodedName = URLEncoder.encode(spell.name, "UTF-8")
-                            navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
-                        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                     )
+                )
+        ) {
+            when {
+                isLoading -> LoadingIndicator()
+                error != null -> ErrorMessage(error!!, onDismiss = { error = null })
+                spellList == null -> EmptySpellsMessage()
+                spellList!!.spellIds.isEmpty() -> EmptySpellsMessage()
+                else -> {
+                    val listSpells = spells.filter { spell ->
+                        spellList!!.spellIds.contains(normalizeSpellName(spell.name))
+                    }.sortedBy { it.level }
+                    Log.d("SpellListViewScreen", "Sorted spells: ${listSpells.map { "${it.name} (Level ${it.level})" }}")
+                    if (listSpells.isEmpty()) {
+                        EmptySpellsMessage()
+                    } else {
+                        SpellListContent(
+                            spells = listSpells,
+                            paddingValues = paddingValues,
+                            onSpellClick = { spell ->
+                                val encodedName = URLEncoder.encode(spell.name, "UTF-8")
+                                navController.navigate("${Destinations.SPELL_DETAIL}/$encodedName")
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -178,11 +247,12 @@ private fun SpellListContent(
 ) {
     LazyColumn(
         contentPadding = PaddingValues(
-            start = 8.dp,
-            end = 8.dp,
-            top = paddingValues.calculateTopPadding(),
-            bottom = paddingValues.calculateBottomPadding() + 16.dp
+            top = paddingValues.calculateTopPadding() + 8.dp,
+            bottom = paddingValues.calculateBottomPadding() + 16.dp,
+            start = 12.dp,
+            end = 12.dp
         ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         items(spells) { spell ->
@@ -199,41 +269,7 @@ private fun SpellListItem(
     spell: Spell,
     onClick: () -> Unit
 ) {
-    val provider = GoogleFont.Provider(
-        providerAuthority = "com.google.android.gms.fonts",
-        providerPackage = "com.google.android.gms",
-        certificates = R.array.com_google_android_gms_fonts_certs
-    )
-
-    val medievalSharpFontFamily = FontFamily(
-        Font(
-            googleFont = GoogleFont("MedievalSharp"),
-            fontProvider = provider
-        )
-    )
-
-    val defaultColor = MaterialTheme.colorScheme.primary
-
-    val sourceMap = mapOf(
-        "AAG" to "Astral Adventurer's Guide",
-        "AI" to "Aquisitions Incorporated",
-        "AITFR-AVT" to "A Verdant Tomb",
-        "BMT" to "The Book of Many Things",
-        "DODK" to "Dungeons of Drakkenheim",
-        "EGW" to "Explorer's Guide to Wildemount",
-        "FTD" to "Fizban's Treasury of Dragons",
-        "GGR" to "Guildmasters' Guide to Ravnica",
-        "GHLOE" to "Grim Hollow",
-        "IDROTF" to "Icewind Dale: Rime of the Frostmaiden",
-        "LLK" to "Lost Laboratory of Kwalish",
-        "PHB" to "Player's Handbook",
-        "SATO" to "Sigil and the Outlands",
-        "SCC" to "Strixhaven: Curriculum of Chaos",
-        "SCAG" to "Sword Coast Adventurer's Guide",
-        "TCE" to "Tasha's Cauldron of Everything",
-        "TDCSR" to "Tal'Dorei Campaign Setting",
-        "XGE" to "Xanathar's Guide to Everything"
-    )
+    val colorScheme = MaterialTheme.colorScheme
 
     val schoolData = remember(spell.school) {
         when (spell.school.uppercase()) {
@@ -245,109 +281,130 @@ private fun SpellListItem(
             "I" -> SchoolData("Ilusión", Color(0xFF7C4DFF), Icons.Default.Masks)
             "N" -> SchoolData("Nigromancia", Color(0xFF607D8B), Icons.Default.Coronavirus)
             "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
-            else -> SchoolData(spell.school, defaultColor, Icons.Default.AutoFixHigh)
+            else -> SchoolData(spell.school, colorScheme.primary, Icons.Default.AutoFixHigh)
         }
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clickable { onClick() }
             .border(
                 width = 2.dp,
                 color = schoolData.color.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .shadow(
                 elevation = 2.dp,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 spotColor = schoolData.color.copy(alpha = 0.1f)
-            ),
+            )
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        shape = RoundedCornerShape(12.dp)
+        )
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = spell.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.1.sp,
-                        fontFamily = medievalSharpFontFamily
-                    ),
-                    modifier = Modifier.weight(1f)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = schoolData.color.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = schoolData.icon,
-                        contentDescription = schoolData.name,
-                        modifier = Modifier.size(16.dp),
-                        tint = schoolData.color
+                    Text(
+                        text = spell.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontFamily = CinzelDecorative,
+                            fontSize = 18.sp
+                        ),
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = if (spell.level == 0) "Truco" else "Nvl. ${spell.level}",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = schoolData.color
-                    ),
-                    modifier = Modifier
-                        .background(
-                            color = schoolData.color.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(20.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = schoolData.color.copy(alpha = 0.2f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = schoolData.icon,
+                            contentDescription = schoolData.name,
+                            modifier = Modifier.size(20.dp),
+                            tint = schoolData.color
                         )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                )
+                    }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                Text(
-                    text = schoolData.name.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = schoolData.color.copy(alpha = 0.9f),
-                        letterSpacing = 1.sp
+                    Text(
+                        text = if (spell.level == 0) "Truco" else "Nvl. ${spell.level}",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = schoolData.color,
+                            fontSize = 14.sp
+                        ),
+                        modifier = Modifier
+                            .background(
+                                color = schoolData.color.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     )
-                )
 
-                Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                Text(
-                    text = sourceMap[spell.source.uppercase()] ?: spell.source,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        fontStyle = FontStyle.Italic
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    Text(
+                        text = schoolData.name.uppercase(),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = schoolData.color.copy(alpha = 0.9f),
+                            letterSpacing = 1.sp,
+                            fontSize = 14.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Text(
+                        text = sourceMap[spell.source.uppercase()] ?: spell.source,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontStyle = FontStyle.Italic,
+                            fontSize = 18.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
             }
         }
     }

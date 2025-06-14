@@ -22,8 +22,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -42,45 +45,8 @@ import com.javier.mappster.model.Spell
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
 import com.javier.mappster.ui.screen.spells.provideSpellListViewModel
+import com.javier.mappster.ui.theme.CinzelDecorative
 import com.javier.mappster.utils.normalizeSpellName
-
-@Composable
-private fun EmptySpellsMessage() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("No se encontraron hechizos")
-    }
-}
-
-@Composable
-private fun LoadingIndicator() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Error") },
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
-            }
-        }
-    )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,16 +71,36 @@ fun CreateSpellListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (listId == null) "Crear Lista de Hechizos" else "Editar Lista de Hechizos") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        if (listId == null) "Crear Lista" else "Editar Lista",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = CinzelDecorative,
+                            letterSpacing = 0.5.sp,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.tertiary
+                ),
+                modifier = Modifier.shadow(elevation = 4.dp)
             )
         },
         bottomBar = {
@@ -130,31 +116,65 @@ fun CreateSpellListScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = selectedSpells.isNotEmpty() && !isLoading
+                    .padding(16.dp)
+                    .height(56.dp),
+                enabled = selectedSpells.isNotEmpty() && !isLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(if (listId == null) "Guardar Lista" else "Actualizar Lista")
+                Text(
+                    if (listId == null) "GUARDAR LISTA" else "ACTUALIZAR LISTA",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontFamily = CinzelDecorative,
+                        letterSpacing = 1.sp
+                    )
+                )
             }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
                 .padding(paddingValues)
         ) {
             OutlinedTextField(
                 value = listNameState,
                 onValueChange = { listNameState = it },
-                label = { Text("Nombre de la lista") },
+                label = {
+                    Text(
+                        "Nombre de la lista",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 com.javier.mappster.ui.screen.spells.SearchBar(
                     query = searchQuery,
@@ -162,6 +182,7 @@ fun CreateSpellListScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
             when {
                 isLoading -> LoadingIndicator()
                 error != null -> ErrorMessage(error!!, onDismiss = { viewModel.clearError() })
@@ -187,7 +208,13 @@ private fun SpellListContent(
     onSpellSelected: (Spell, Boolean) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(
+            top = 8.dp,
+            bottom = 8.dp,
+            start = 12.dp,
+            end = 12.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         items(spells) { spell ->
@@ -206,41 +233,7 @@ private fun SpellListItem(
     isSelected: Boolean,
     onSelectedChange: (Boolean) -> Unit
 ) {
-    val provider = GoogleFont.Provider(
-        providerAuthority = "com.google.android.gms.fonts",
-        providerPackage = "com.google.android.gms",
-        certificates = R.array.com_google_android_gms_fonts_certs
-    )
-
-    val medievalSharpFontFamily = FontFamily(
-        Font(
-            googleFont = GoogleFont("MedievalSharp"),
-            fontProvider = provider
-        )
-    )
-
-    val defaultColor = MaterialTheme.colorScheme.primary
-
-    val sourceMap = mapOf(
-        "AAG" to "Astral Adventurer's Guide",
-        "AI" to "Aquisitions Incorporated",
-        "AITFR-AVT" to "A Verdant Tomb",
-        "BMT" to "The Book of Many Things",
-        "DODK" to "Dungeons of Drakkenheim",
-        "EGW" to "Explorer's Guide to Wildemount",
-        "FTD" to "Fizban's Treasury of Dragons",
-        "GGR" to "Guildmasters' Guide to Ravnica",
-        "GHLOE" to "Grim Hollow",
-        "IDROTF" to "Icewind Dale: Rime of the Frostmaiden",
-        "LLK" to "Lost Laboratory of Kwalish",
-        "PHB" to "Player's Handbook",
-        "SATO" to "Sigil and the Outlands",
-        "SCC" to "Strixhaven: Curriculum of Chaos",
-        "SCAG" to "Sword Coast Adventurer's Guide",
-        "TCE" to "Tasha's Cauldron of Everything",
-        "TDCSR" to "Tal'Dorei Campaign Setting",
-        "XGE" to "Xanathar's Guide to Everything"
-    )
+    val colorScheme = MaterialTheme.colorScheme
 
     val schoolData = remember(spell.school) {
         when (spell.school.uppercase()) {
@@ -252,118 +245,200 @@ private fun SpellListItem(
             "I" -> SchoolData("Ilusión", Color(0xFF7C4DFF), Icons.Default.Masks)
             "N" -> SchoolData("Nigromancia", Color(0xFF607D8B), Icons.Default.Coronavirus)
             "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
-            else -> SchoolData(spell.school, defaultColor, Icons.Default.AutoFixHigh)
+            else -> SchoolData(spell.school, colorScheme.primary, Icons.Default.AutoFixHigh)
         }
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
             .border(
                 width = 2.dp,
                 color = schoolData.color.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(12.dp),
+                elevation = 3.dp,
+                shape = RoundedCornerShape(16.dp),
                 spotColor = schoolData.color.copy(alpha = 0.1f)
             ),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        shape = RoundedCornerShape(12.dp)
+        )
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = spell.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.1.sp,
-                        fontFamily = medievalSharpFontFamily
-                    ),
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = spell.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontFamily = CinzelDecorative,
+                            fontSize = 18.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(
+                                    color = schoolData.color.copy(alpha = 0.2f),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = schoolData.icon,
+                                contentDescription = schoolData.name,
+                                modifier = Modifier.size(16.dp),
+                                tint = schoolData.color
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = if (spell.level == 0) "Truco" else "Nvl. ${spell.level}",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = schoolData.color
+                            ),
+                            modifier = Modifier
+                                .background(
+                                    color = schoolData.color.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = schoolData.name.uppercase(),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = schoolData.color.copy(alpha = 0.9f),
+                                letterSpacing = 1.sp
+                            )
+                        )
+                    }
+                }
+
                 Checkbox(
                     checked = isSelected,
                     onCheckedChange = onSelectedChange,
-                    modifier = Modifier.scale(0.8f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = schoolData.color.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = schoolData.icon,
-                        contentDescription = schoolData.name,
-                        modifier = Modifier.size(16.dp),
-                        tint = schoolData.color
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = if (spell.level == 0) "Truco" else "Nvl. ${spell.level}",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = schoolData.color
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.tertiary,
+                        checkmarkColor = MaterialTheme.colorScheme.onTertiary
                     ),
-                    modifier = Modifier
-                        .background(
-                            color = schoolData.color.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = schoolData.name.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = schoolData.color.copy(alpha = 0.9f),
-                        letterSpacing = 1.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = sourceMap[spell.source.uppercase()] ?: spell.source,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        fontStyle = FontStyle.Italic
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
     }
+}
+
+@Composable
+private fun EmptySpellsMessage() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            "No se encontraron hechizos",
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = FontStyle.Italic,
+                fontFamily = CinzelDecorative
+            )
+        )
+    }
+}
+
+@Composable
+private fun LoadingIndicator() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(36.dp),
+            color = MaterialTheme.colorScheme.tertiary,
+            strokeWidth = 3.dp
+        )
+    }
+}
+
+@Composable
+private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Error",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = MaterialTheme.colorScheme.error,
+                    fontFamily = CinzelDecorative
+                )
+            )
+        },
+        text = {
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.tertiary
+                )
+            ) {
+                Text(
+                    "OK",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontFamily = CinzelDecorative
+                    )
+                )
+            }
+        },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
+    )
 }
