@@ -194,7 +194,8 @@ fun SearchBar(
             Text(
                 "Buscar monstruos...",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontSize = 20.sp
                 )
             )
         },
@@ -510,9 +511,10 @@ fun MonsterItem(
                         }
                         Text(
                             text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
-                            style = MaterialTheme.typography.labelSmall.copy(
+                            style = MaterialTheme.typography.labelMedium.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                fontStyle = FontStyle.Italic
+                                fontStyle = FontStyle.Normal,
+                                fontSize = 13.sp
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

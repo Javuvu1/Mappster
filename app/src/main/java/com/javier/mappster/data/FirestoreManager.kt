@@ -299,12 +299,18 @@ class FirestoreManager {
 
     suspend fun getSpellById(spellId: String): Spell? {
         return try {
-            val doc = spellsCollection.document(spellId).get().await()
+            val normalizedId = normalizeSpellName(spellId)
+            Log.d("FirestoreManager", "Fetching spell with id: $normalizedId")
+            val doc = spellsCollection.document(normalizedId).get().await()
             doc.toObject(Spell::class.java)?.also {
-                Log.d("FirestoreManager", "Fetched spell: ${it.name}, id=$spellId")
+                Log.d("FirestoreManager", "Fetched spell: ${it.name}, id=$normalizedId")
             } ?: run {
-                Log.d("FirestoreManager", "Spell with id $spellId not found")
-                null
+                // Fallback al ID original si no se encuentra el normalizado
+                Log.d("FirestoreManager", "Spell with normalized id $normalizedId not found, trying original id $spellId")
+                val docOriginal = spellsCollection.document(spellId).get().await()
+                docOriginal.toObject(Spell::class.java)?.also {
+                    Log.d("FirestoreManager", "Fetched spell with original id: ${it.name}, id=$spellId")
+                }
             }
         } catch (e: Exception) {
             Log.e("FirestoreManager", "Error fetching spell $spellId: ${e.message}", e)

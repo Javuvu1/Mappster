@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -291,131 +293,146 @@ fun SpellListItem(
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = spell.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.1.sp,
-                        fontFamily = medievalSharpFontFamily
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-                if (spell.custom && !canModify) {
-                    Icon(
-                        imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
-                        contentDescription = if (spell.public) "Público" else "Privado",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
-                if (canModify) {
-                    IconButton(
-                        onClick = {
-                            pendingVisibility = !spell.public
-                            showVisibilityDialog = true
-                        },
-                        modifier = Modifier.size(24.dp)
-                    ) {
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = spell.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.1.sp,
+                            fontFamily = medievalSharpFontFamily
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (spell.custom && !canModify) {
                         Icon(
                             imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
-                            contentDescription = if (spell.public) "Hacer privado" else "Hacer público",
+                            contentDescription = if (spell.public) "Público" else "Privado",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
-                    IconButton(
-                        onClick = { onEditClick(spell) },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar hechizo",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    IconButton(
-                        onClick = { showDeleteDialog = true },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Borrar hechizo",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    if (canModify) {
+                        IconButton(
+                            onClick = {
+                                pendingVisibility = !spell.public
+                                showVisibilityDialog = true
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (spell.public) Icons.Default.Public else Icons.Default.Lock,
+                                contentDescription = if (spell.public) "Hacer privado" else "Hacer público",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { onEditClick(spell) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar hechizo",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { showDeleteDialog = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Borrar hechizo",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = schoolData.color.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = schoolData.icon,
-                        contentDescription = schoolData.name,
-                        modifier = Modifier.size(16.dp),
-                        tint = schoolData.color
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(
+                                color = schoolData.color.copy(alpha = 0.2f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = schoolData.icon,
+                            contentDescription = schoolData.name,
+                            modifier = Modifier.size(16.dp),
+                            tint = schoolData.color
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = if (spell.level == 0) "Truco" else "Nvl. ${spell.level}",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = schoolData.color
+                        ),
+                        modifier = Modifier
+                            .background(
+                                color = schoolData.color.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = schoolData.name.uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = schoolData.color.copy(alpha = 0.9f),
+                            letterSpacing = 1.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Text(
+                        text = sourceMap[spell.source.uppercase()] ?: spell.source,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontStyle = FontStyle.Italic
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = if (spell.level == 0) "Truco" else "Nvl. ${spell.level}",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = schoolData.color
-                    ),
-                    modifier = Modifier
-                        .background(
-                            color = schoolData.color.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = schoolData.name.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = schoolData.color.copy(alpha = 0.9f),
-                        letterSpacing = 1.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = sourceMap[spell.source.uppercase()] ?: spell.source,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        fontStyle = FontStyle.Italic
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
     }

@@ -341,8 +341,21 @@ fun SpellDetailScreen(
                             color = schoolData.color
                         )
                     },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = schoolData.color,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface ,
+                        containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = schoolData.color
                     )
                 )

@@ -85,9 +85,9 @@ class SpellListViewModel(
     }
 
     fun getSpellByName(name: String): Spell? {
-        val normalizedName = name.trim()
-        Log.d("SpellListViewModel", "Searching for spell: '$normalizedName' in allSpells: ${allSpells.map { it.name }}")
-        return allSpells.find { it.name.equals(normalizedName, ignoreCase = true) }
+        val normalizedName = normalizeSpellName(name)
+        Log.d("SpellListViewModel", "Searching for spell with normalized name: '$normalizedName' in allSpells: ${allSpells.map { it.name }}")
+        return allSpells.find { normalizeSpellName(it.name) == normalizedName }
     }
 
     fun refreshSpellsPublic() {

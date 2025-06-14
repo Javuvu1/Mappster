@@ -92,9 +92,14 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("spellName") { type = NavType.StringType })
         ) { backStackEntry ->
             val spellName = backStackEntry.arguments?.getString("spellName")?.let {
-                URLDecoder.decode(it, "UTF-8")
+                try {
+                    URLDecoder.decode(it, "UTF-8")
+                } catch (e: Exception) {
+                    Log.e("NavGraph", "Error decoding spellName: $it, ${e.message}")
+                    it
+                }
             }
-            Log.d("NavGraph", "Navigating to spell_detail, spellName: '$spellName'")
+            Log.d("NavGraph", "Registering route: ${Destinations.SPELL_DETAIL}, spellName: '$spellName'")
             val spell = spellName?.let { spellListViewModel.getSpellByName(it) }
             Log.d("NavGraph", "Found spell: $spell")
             spell?.let {
