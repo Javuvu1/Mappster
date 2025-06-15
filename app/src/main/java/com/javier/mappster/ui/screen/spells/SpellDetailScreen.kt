@@ -575,10 +575,15 @@ fun SpellDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         SectionTitle("Acceso", Icons.Default.Group, schoolData.color)
-                        val classList = spell.classes?.fromClassList?.joinToString { it.name } ?: "Ninguna"
-                        val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: ""
+                        val accessText = if (spell.customAccess.isNotBlank()) {
+                            spell.customAccess
+                        } else {
+                            val classList = spell.classes?.fromClassList?.joinToString { it.name } ?: "Ninguna"
+                            val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: ""
+                            "$classList" + if (subclassList.isNotEmpty()) ", $subclassList" else ""
+                        }
                         Text(
-                            text = "Clases: $classList" + if (subclassList.isNotEmpty()) ", $subclassList" else "",
+                            text = accessText,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )

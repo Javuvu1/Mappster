@@ -23,7 +23,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.data.LocalDataManager
-import com.javier.mappster.ui.CustomMonsterListsScreen
 import com.javier.mappster.ui.LoginScreen
 import com.javier.mappster.ui.SpellDetailScreen
 import com.javier.mappster.ui.screen.CreateMonsterScreen
@@ -217,10 +216,6 @@ fun NavGraph(navController: NavHostController) {
                     authManager = authManager // Añadir este parámetro
                 )
             }
-        }
-        composable(Destinations.CUSTOM_MONSTER_LISTS) {
-            Log.d("NavGraph", "Navigating to custom_monster_lists")
-            CustomMonsterListsScreen(navController = navController)
         }
         composable(
             route = "${Destinations.MONSTER_DETAIL}/{name}/{source}",

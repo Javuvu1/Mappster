@@ -89,18 +89,8 @@ fun CreateSpellScreen(
     var rangeAmountError by remember { mutableStateOf<String?>(null) }
     var rangeAreaType by remember { mutableStateOf("") }
     var rangeAreaTypeError by remember { mutableStateOf<String?>(null) }
-    var classList by remember { mutableStateOf("") }
-    var classListError by remember { mutableStateOf<String?>(null) }
-    var subclassList by remember { mutableStateOf("") }
-    var subclassListError by remember { mutableStateOf<String?>(null) }
-    var feats by remember { mutableStateOf("") }
-    var featsError by remember { mutableStateOf<String?>(null) }
-    var backgrounds by remember { mutableStateOf("") }
-    var backgroundsError by remember { mutableStateOf<String?>(null) }
-    var races by remember { mutableStateOf("") }
-    var racesError by remember { mutableStateOf<String?>(null) }
-    var optionalFeatures by remember { mutableStateOf("") }
-    var optionalFeaturesError by remember { mutableStateOf<String?>(null) }
+    var customAccess by remember { mutableStateOf("") }
+    var customAccessError by remember { mutableStateOf<String?>(null) }
 
     val schoolOptions = listOf(
         "A" to "Abjuración",
@@ -145,28 +135,8 @@ fun CreateSpellScreen(
             rangeType == "ranged" && rangeAreaType.length > 15 -> "Máximo 15 caracteres"
             else -> null
         }
-        classListError = when {
-            classList.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        subclassListError = when {
-            subclassList.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        featsError = when {
-            feats.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        backgroundsError = when {
-            backgrounds.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        racesError = when {
-            races.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        optionalFeaturesError = when {
-            optionalFeatures.length > 50 -> "Máximo 50 caracteres"
+        customAccessError = when {
+            customAccess.length > 100 -> "Máximo 100 caracteres"
             else -> null
         }
     }
@@ -174,9 +144,7 @@ fun CreateSpellScreen(
     // Estado del botón con remember
     val isFormValid by remember(
         nameError, sourceError, descriptionError, materialError,
-        rangeAmountError, rangeAreaTypeError, classListError,
-        subclassListError, featsError, backgroundsError,
-        racesError, optionalFeaturesError
+        rangeAmountError, rangeAreaTypeError, customAccessError
     ) {
         derivedStateOf {
             nameError == null &&
@@ -185,16 +153,11 @@ fun CreateSpellScreen(
                     materialError == null &&
                     rangeAmountError == null &&
                     rangeAreaTypeError == null &&
-                    classListError == null &&
-                    subclassListError == null &&
-                    featsError == null &&
-                    backgroundsError == null &&
-                    racesError == null &&
-                    optionalFeaturesError == null
+                    customAccessError == null
         }
     }
 
-    LaunchedEffect(name, source, description, materialText, rangeAmount, rangeAreaType, classList, subclassList, feats, backgrounds, races, optionalFeatures) {
+    LaunchedEffect(name, source, description, materialText, rangeAmount, rangeAreaType, customAccess) {
         validateFields()
     }
 
@@ -246,36 +209,6 @@ fun CreateSpellScreen(
                             snackbarHostState.showSnackbar("El nombre del hechizo no es válido")
                         }
                         return@Button
-                    }
-
-                    // Parse classList
-                    val classEntries = classList.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        ClassEntry(name = it, source = "Custom")
-                    }
-
-                    // Parse subclassList
-                    val subclassEntries = subclassList.split(",").map { it.trim() }.filter { it.isNotBlank() }.mapNotNull {
-                        val parts = it.split(":")
-                        if (parts.size == 2) {
-                            SubclassEntry(
-                                classEntry = ClassEntry(name = parts[0], source = "Custom"),
-                                subclass = SubclassDetail(name = parts[1], source = "Custom")
-                            )
-                        } else null
-                    }
-
-                    // Parse feats, backgrounds, races, optionalFeatures
-                    val featList = feats.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        Feat(name = it, source = "Custom")
-                    }
-                    val backgroundList = backgrounds.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        Background(name = it, source = "Custom")
-                    }
-                    val raceList = races.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        Race(name = it, source = "Custom")
-                    }
-                    val optionalFeatureList = optionalFeatures.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        OptionalFeature(name = it, source = "Custom", featureType = listOf("Custom"))
                     }
 
                     // Parse rangeAreaType
@@ -336,11 +269,12 @@ fun CreateSpellScreen(
                         reprintedAs = emptyList(),
                         additionalSources = emptyList(),
                         otherSources = emptyList(),
-                        classes = Classes(fromClassList = classEntries, fromSubclass = subclassEntries),
-                        feats = featList,
-                        backgrounds = backgroundList,
-                        races = raceList,
-                        optionalFeatures = optionalFeatureList,
+                        classes = Classes(),
+                        feats = emptyList(),
+                        backgrounds = emptyList(),
+                        races = emptyList(),
+                        optionalFeatures = emptyList(),
+                        customAccess = customAccess.trim(),
                         userId = userId,
                         _custom = true,
                         _public = false
@@ -764,116 +698,21 @@ fun CreateSpellScreen(
                         SectionTitle("Acceso", Icons.Default.Group)
 
                         OutlinedTextField(
-                            value = classList,
-                            onValueChange = { if (it.length <= 50) classList = it },
-                            label = { Text("Clases (opcional, separadas por comas)") },
+                            value = customAccess,
+                            onValueChange = { if (it.length <= 100) customAccess = it },
+                            label = { Text("Acceso (opcional)") },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Sorcerer,Wizard") },
-                            isError = classListError != null,
+                            placeholder = { Text("Ej: Sorcerer, Wizard, Cleric:Arcana Domain, Magic Initiate, Elf (High)") },
+                            isError = customAccessError != null,
                             trailingIcon = {
                                 Text(
-                                    text = "${classList.length}/50",
+                                    text = "${customAccess.length}/100",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         )
-                        classListError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = subclassList,
-                            onValueChange = { if (it.length <= 50) subclassList = it },
-                            label = { Text("Subclases (opcional, formato Clase:Subclase)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Cleric:Arcana Domain,Fighter:Eldritch Knight") },
-                            isError = subclassListError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${subclassList.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        subclassListError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = feats,
-                            onValueChange = { if (it.length <= 50) feats = it },
-                            label = { Text("Hazañas (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Magic Initiate,Artificer Initiate") },
-                            isError = featsError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${feats.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        featsError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = backgrounds,
-                            onValueChange = { if (it.length <= 50) backgrounds = it },
-                            label = { Text("Trasfondos (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Simic Scientist,Sage") },
-                            isError = backgroundsError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${backgrounds.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        backgroundsError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = races,
-                            onValueChange = { if (it.length <= 50) races = it },
-                            label = { Text("Razas (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Elf (High),Genasi (Water)") },
-                            isError = racesError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${races.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        racesError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = optionalFeatures,
-                            onValueChange = { if (it.length <= 50) optionalFeatures = it },
-                            label = { Text("Características Opcionales (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Pact of the Tome") },
-                            isError = optionalFeaturesError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${optionalFeatures.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        optionalFeaturesError?.let {
+                        customAccessError?.let {
                             Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
                         }
                     }
