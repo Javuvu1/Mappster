@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -36,6 +37,7 @@ import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SchoolData
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.BottomNavigationBar
+import com.javier.mappster.ui.theme.magicColors
 import com.javier.mappster.utils.sourceMap
 
 @Composable
@@ -248,19 +250,29 @@ fun SpellListItem(
     )
 
     val defaultColor = MaterialTheme.colorScheme.primary
+    val magicColors = MaterialTheme.magicColors // Access composable property here
+
+    // Define school mapping
+    data class SchoolInfo(val name: String, val colorKey: String, val icon: ImageVector)
+
+    val schoolMap = mapOf(
+        "A" to SchoolInfo("Abjuración", "Abjuration", Icons.Default.Shield),
+        "C" to SchoolInfo("Conjuración", "Conjuration", Icons.Default.CallMerge),
+        "D" to SchoolInfo("Adivinación", "Divination", Icons.Default.Visibility),
+        "E" to SchoolInfo("Encantamiento", "Enchantment", Icons.Default.Favorite),
+        "V" to SchoolInfo("Evocación", "Evocation", Icons.Default.Whatshot),
+        "I" to SchoolInfo("Ilusión", "Ilussion", Icons.Default.Masks),
+        "N" to SchoolInfo("Nigromancia", "Necromancy", Icons.Default.Coronavirus),
+        "T" to SchoolInfo("Transmutación", "Transmutation", Icons.Default.AutoAwesome)
+    )
 
     val schoolData = remember(spell.school) {
-        when (spell.school.uppercase()) {
-            "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
-            "C" -> SchoolData("Conjuración", Color(0xFF9C27B0), Icons.Default.CallMerge)
-            "D" -> SchoolData("Adivinación", Color(0xFF00ACC1), Icons.Default.Visibility)
-            "E" -> SchoolData("Encantamiento", Color(0xFFE91E63), Icons.Default.Favorite)
-            "V" -> SchoolData("Evocación", Color(0xFFFF5722), Icons.Default.Whatshot)
-            "I" -> SchoolData("Ilusión", Color(0xFF7C4DFF), Icons.Default.Masks)
-            "N" -> SchoolData("Nigromancia", Color(0xFF607D8B), Icons.Default.Coronavirus)
-            "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
-            else -> SchoolData(spell.school, defaultColor, Icons.Default.AutoFixHigh)
-        }
+        val schoolInfo = schoolMap[spell.school.uppercase()]
+        SchoolData(
+            name = schoolInfo?.name ?: spell.school,
+            color = schoolInfo?.let { magicColors[it.colorKey] } ?: defaultColor,
+            icon = schoolInfo?.icon ?: Icons.Default.AutoFixHigh
+        )
     }
 
     Card(
@@ -424,7 +436,7 @@ fun SpellListItem(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Text(
-                        text = sourceMap[spell.source.uppercase()] ?: spell.source,
+                        text = sourceMap[spell.source] ?: spell.source,
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = MaterialTheme.colorScheme.tertiary,
                             fontStyle = FontStyle.Italic,

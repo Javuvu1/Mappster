@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.javier.mappster.model.*
 import com.javier.mappster.ui.screen.spells.SpellListViewModel
+import com.javier.mappster.ui.theme.magicColors
 import com.javier.mappster.utils.conditionDescriptions
 import com.javier.mappster.utils.normalizeSpellName
 import com.javier.mappster.utils.sourceMap
@@ -78,7 +79,7 @@ private val PATTERN = Regex(
             "\\{@dice\\s*(\\d*d\\d+)\\}|" +
             "\\{@scaledice\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
             "\\{@scaledamage\\s*(\\d+d\\d+)\\|(\\d+-\\d+)\\|(\\d+d\\d+)\\}|" +
-            "\\{@condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" +
+            "\\{\\condition\\s*(charmed|unconscious|frightened|restrained|petrified|blinded|deafened|poisoned|paralyzed|stunned|incapacitated|invisible|prone|grappled|exhaustion|deafened\\|\\|deaf|blinded\\|\\|blind)\\}|" +
             "\\{@spell\\s*([^\\}]+)\\}|" +
             "\\{@chance\\s*(\\d+)\\s*\\|\\|\\|\\s*([^\\|]+)\\|([^\\}]+)\\}|" +
             "\\{@quickref\\s+(Cover\\|\\|3\\|\\|(half cover|three-quarters cover|total cover))\\}|" +
@@ -127,7 +128,7 @@ fun buildDamageAnnotatedString(
                     Pair(damage, true)
                 }
                 match.value.startsWith("{@dice") -> {
-                    val dice = match.groupValues.getOrNull(2)?.replace("\\s+".toRegex(), "") ?: ""
+                    val dice = match.groupValues.getOrNull(2)?.replace("\\s*".toRegex(), "") ?: ""
                     val parts = dice.split("d")
                     val numDice = if (parts[0].isEmpty()) 1 else parts[0].toIntOrNull() ?: 1
                     val dieSides = parts.getOrNull(1)?.toIntOrNull() ?: 0
@@ -275,7 +276,7 @@ fun rollDice(dice: DiceRollData, slotLevel: Int = 1): Pair<List<Int>, Int> {
         val maxLevel = levelRange[1]
         if (slotLevel in minLevel..maxLevel) {
             val levelAdjustment = slotLevel - minLevel + 1
-            baseNumDice * levelAdjustment
+            baseNumDice + levelAdjustment
         } else {
             baseNumDice
         }
@@ -327,24 +328,48 @@ fun buildDiceRollBreakdown(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpellDetailScreen(
-    spell: Spell,
+    spell: Spell?,
     isTwoPaneMode: Boolean = false,
     navController: NavHostController,
     viewModel: SpellListViewModel,
     modifier: Modifier = Modifier,
     onSpellSelected: (Spell) -> Unit = {}
 ) {
+    if (spell == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("No se encontró el hechizo")
+        }
+        return
+    }
+
     val context = LocalContext.current
-    val schoolData = when (spell.school.uppercase()) {
-        "A" -> SchoolData("Abjuración", Color(0xFF4CAF50), Icons.Default.Shield)
-        "C" -> SchoolData("Conjuración", Color(0xFF9C27B0), Icons.Default.CallMerge)
-        "D" -> SchoolData("Adivinación", Color(0xFF00ACC1), Icons.Default.Visibility)
-        "E" -> SchoolData("Encantamiento", Color(0xFFE91E63), Icons.Default.Favorite)
-        "V" -> SchoolData("Evocación", Color(0xFFFF5722), Icons.Default.Whatshot)
-        "I" -> SchoolData("Ilusión", Color(0xFF7C4DFF), Icons.Default.Masks)
-        "N" -> SchoolData("Nigromancia", Color(0xFF607D8B), Icons.Default.Coronavirus)
-        "T" -> SchoolData("Transmutación", Color(0xFFFFC107), Icons.Default.AutoAwesome)
-        else -> SchoolData(spell.school, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.AutoFixHigh)
+    val defaultColor = MaterialTheme.colorScheme.primary
+    val magicColors = MaterialTheme.magicColors
+
+    // Define school mapping
+    data class SchoolInfo(val name: String, val colorKey: String, val icon: ImageVector)
+
+    val schoolMap = mapOf(
+        "A" to SchoolInfo("Abjuración", "Abjuration", Icons.Default.Shield),
+        "C" to SchoolInfo("Conjuración", "Conjuration", Icons.Default.CallMerge),
+        "D" to SchoolInfo("Adivinación", "Divination", Icons.Default.Visibility),
+        "E" to SchoolInfo("Encantamiento", "Enchantment", Icons.Default.Favorite),
+        "V" to SchoolInfo("Evocación", "Evocation", Icons.Default.Whatshot),
+        "I" to SchoolInfo("Ilusión", "Ilussion", Icons.Default.Masks),
+        "N" to SchoolInfo("Nigromancia", "Necromancy", Icons.Default.Coronavirus),
+        "T" to SchoolInfo("Transmutación", "Transmutation", Icons.Default.AutoAwesome)
+    )
+
+    val schoolData = remember(spell.school) {
+        val schoolInfo = schoolMap[spell.school.uppercase()]
+        SchoolData(
+            name = schoolInfo?.name ?: spell.school,
+            color = schoolInfo?.let { magicColors[it.colorKey] } ?: defaultColor,
+            icon = schoolInfo?.icon ?: Icons.Default.AutoFixHigh
+        )
     }
 
     var showDiceRollDialog by remember { mutableStateOf(false) }
@@ -651,7 +676,7 @@ fun SpellDetailScreen(
                                                                     onSpellSelected(targetSpell)
                                                                 } else {
                                                                     val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
-                                                                    Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                                    Log.d("SpellDetailScreen", "Navigating to: ${encodedName}")
                                                                     navController.navigate("spell_detail/$encodedName")
                                                                 }
                                                             } else {

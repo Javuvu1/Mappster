@@ -301,13 +301,7 @@ private fun SpellListItem(
                         onClick = onEditClick,
                         modifier = Modifier
                             .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f))
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
+
                     ) {
                         Icon(
                             Icons.Default.Edit,
@@ -324,18 +318,12 @@ private fun SpellListItem(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier
                             .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
+
                     ) {
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = "Borrar",
-                            tint = MaterialTheme.colorScheme.error,
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(22.dp)
                         )
                     }

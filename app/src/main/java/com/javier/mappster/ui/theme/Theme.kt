@@ -51,6 +51,34 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = Color(0xFF475599) // Dark slate blue for accents
 )
 
+// Define magical school colors for light mode
+private val LightMagicColors = mapOf(
+    "Abjuration" to Color(0xFF449D47),
+    "Conjuration" to Color(0xFF9C27B0),
+    "Divination" to Color(0xFF008B9F),
+    "Enchantment" to Color(0xFFBE0F4B),
+    "Evocation" to Color(0xFFD24719),
+    "Ilussion" to Color(0xFF5736B6),
+    "Necromancy" to Color(0xFF455F6C),
+    "Transmutation" to Color(0xFFC99600)
+)
+
+// Define magical school colors for dark mode
+private val DarkMagicColors = mapOf(
+    "Abjuration" to Color(0xFF4CAF50),
+    "Conjuration" to Color(0xFFD900FF),
+    "Divination" to Color(0xFF00CEE8),
+    "Enchantment" to Color(0xFFE12D6B),
+    "Evocation" to Color(0xFFFF5722),
+    "Ilussion" to Color(0xFF6553FC),
+    "Necromancy" to Color(0xFF809DA9),
+    "Transmutation" to Color(0xFFFFC107)
+)
+
+val MaterialTheme.magicColors: Map<String, Color>
+    @Composable
+    get() = if (isSystemInDarkTheme()) DarkMagicColors else LightMagicColors
+
 private val MappsterTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = CinzelDecorative,
