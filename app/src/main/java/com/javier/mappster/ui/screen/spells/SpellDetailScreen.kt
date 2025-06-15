@@ -360,6 +360,11 @@ fun SpellDetailScreen(
     var showQuickRefDialog by remember { mutableStateOf(false) }
     var currentQuickRef by remember { mutableStateOf("") }
 
+    // Log para depurar el objeto range
+    LaunchedEffect(spell) {
+        Log.d("SpellDetailScreen", "Spell range: type=${spell.range?.type}, distance=${spell.range?.distance?.amount} ${spell.range?.distance?.type}, areaTags=${spell.areaTags}")
+    }
+
     Scaffold(
         topBar = {
             if (!isTwoPaneMode) {
@@ -422,7 +427,7 @@ fun SpellDetailScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Fuente: ${sourceMap[spell.source] ?: spell.source}, ${spell.page}",
+                            text = "Fuente: ${sourceMap[spell.source] ?: spell.source}${if (spell.page != 0) ", ${spell.page}" else ""}",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -432,7 +437,7 @@ fun SpellDetailScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Rango: ${spell.range?.type ?: "Unknown"}${spell.range?.distance?.amount?.let { " ($it ${spell.range.distance.type ?: "unknown"})" } ?: ""}",
+                            text = "Rango: ${spell.range?.type ?: "Unknown"}${spell.range?.distance?.amount?.let { " ($it feet${spell.areaTags.firstOrNull()?.let { area -> ", $area" } ?: ""})" } ?: ""}",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -563,7 +568,7 @@ fun SpellDetailScreen(
                 }
             }
 
-            if (spell.customAccess.isNotBlank() || spell.classes?.fromClassList?.isNotEmpty() == true || spell.classes?.fromSubclass?.isNotEmpty() == true) {
+            if (spell.customAccess.isNotBlank()) {
                 item {
                     Card(
                         modifier = Modifier
@@ -573,15 +578,8 @@ fun SpellDetailScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             SectionTitle("Acceso", Icons.Default.Group, schoolData.color)
-                            val accessText = if (spell.customAccess.isNotBlank()) {
-                                spell.customAccess
-                            } else {
-                                val classList = spell.classes?.fromClassList?.joinToString { it.name } ?: ""
-                                val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: ""
-                                "$classList" + if (subclassList.isNotEmpty()) ", $subclassList" else ""
-                            }
                             Text(
-                                text = accessText,
+                                text = spell.customAccess,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
