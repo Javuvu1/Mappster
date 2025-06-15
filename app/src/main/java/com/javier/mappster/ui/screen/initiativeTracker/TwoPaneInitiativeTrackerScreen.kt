@@ -16,6 +16,7 @@ import com.javier.mappster.model.UnifiedMonster
 import com.javier.mappster.ui.screen.BottomNavigationBar
 import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
+import com.javier.mappster.ui.theme.CinzelDecorative
 import com.javier.mappster.viewmodel.MonsterListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,74 +55,96 @@ fun TwoPaneInitiativeTrackerScreen(
                 }
 
                 // Right Pane: Monster Details
-                Surface(
+                Column(
                     modifier = Modifier
                         .weight(2f)
-                        .fillMaxHeight(),
-                    color = MaterialTheme.colorScheme.surface
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.surface)
                 ) {
+                    // Título del monstruo seleccionado
                     selectedMonster?.let { monster ->
-                        if (monster.isCustom) {
-                            CustomMonsterDetailScreen(
-                                navController = navController,
-                                monsterId = monster.id ?: "",
-                                isTwoPaneMode = true
-                            )
-                        } else {
-                            val dataManager = LocalDataManager(context)
-                            var loadedMonster by remember { mutableStateOf<Monster?>(null) }
-                            var isLoading by remember { mutableStateOf(true) }
-                            var error by remember { mutableStateOf<String?>(null) }
+                        Text(
+                            text = monster.name,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontFamily = CinzelDecorative,
+                                color = MaterialTheme.colorScheme.tertiary
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        )
+                    }
 
-                            LaunchedEffect(monster) {
-                                try {
-                                    val result = dataManager.getMonsterByNameAndSource(
-                                        monster.name,
-                                        monster.source ?: ""
-                                    )
-                                    loadedMonster = result
-                                } catch (e: Exception) {
-                                    error = "Error al cargar el monstruo: ${e.message}"
-                                } finally {
-                                    isLoading = false
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surface)
-                            ) {
-                                when {
-                                    isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                                    error != null -> Text(
-                                        text = error ?: "Error desconocido",
-                                        modifier = Modifier.align(Alignment.Center),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    loadedMonster != null -> MonsterDetailScreen(
-                                        monster = loadedMonster!!,
-                                        navController = navController,
-                                        isTwoPaneMode = true
-                                    )
-                                    else -> Text(
-                                        text = "Monstruo no encontrado",
-                                        modifier = Modifier.align(Alignment.Center),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                        }
-                    } ?: Box(
-                        contentAlignment = Alignment.Center,
+                    // Contenido del detalle del monstruo
+                    Surface(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface)
+                            .weight(1f),
+                        color = MaterialTheme.colorScheme.surface
                     ) {
-                        Text(
-                            "Selecciona un monstruo para ver los detalles",
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        selectedMonster?.let { monster ->
+                            if (monster.isCustom) {
+                                CustomMonsterDetailScreen(
+                                    navController = navController,
+                                    monsterId = monster.id ?: "",
+                                    isTwoPaneMode = true
+                                )
+                            } else {
+                                val dataManager = LocalDataManager(context)
+                                var loadedMonster by remember { mutableStateOf<Monster?>(null) }
+                                var isLoading by remember { mutableStateOf(true) }
+                                var error by remember { mutableStateOf<String?>(null) }
+
+                                LaunchedEffect(monster) {
+                                    try {
+                                        val result = dataManager.getMonsterByNameAndSource(
+                                            monster.name,
+                                            monster.source ?: ""
+                                        )
+                                        loadedMonster = result
+                                    } catch (e: Exception) {
+                                        error = "Error al cargar el monstruo: ${e.message}"
+                                    } finally {
+                                        isLoading = false
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.surface)
+                                ) {
+                                    when {
+                                        isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                                        error != null -> Text(
+                                            text = error ?: "Error desconocido",
+                                            modifier = Modifier.align(Alignment.Center),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        loadedMonster != null -> MonsterDetailScreen(
+                                            monster = loadedMonster!!,
+                                            navController = navController,
+                                            isTwoPaneMode = true
+                                        )
+                                        else -> Text(
+                                            text = "Monstruo no encontrado",
+                                            modifier = Modifier.align(Alignment.Center),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        } ?: Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            Text(
+                                "Selecciona un monstruo para ver los detalles",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }

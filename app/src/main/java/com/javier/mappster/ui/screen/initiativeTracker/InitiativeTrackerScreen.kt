@@ -59,23 +59,39 @@ fun InitiativeTrackerScreen(
     MappsterTheme {
         Scaffold(
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            "Rastreador de Iniciativa",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontFamily = CinzelDecorative,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                letterSpacing = 0.5.sp
+                Column {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text(
+                                "Rastreador de Iniciativa",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = CinzelDecorative,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    letterSpacing = 0.5.sp
+                                )
                             )
-                        )
-                    },
-                    actions = {
-                        TextButton(
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.tertiary
+                        ),
+                        modifier = Modifier.shadow(elevation = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
                             onClick = { trackerViewModel.rollMonsterInitiatives() },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.tertiary
-                            )
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Text(
                                 "Lanzar Iniciativa",
@@ -84,11 +100,15 @@ fun InitiativeTrackerScreen(
                                 )
                             )
                         }
-                        TextButton(
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
                             onClick = { trackerViewModel.sortEntries() },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.tertiary
-                            )
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Text(
                                 "Ordenar",
@@ -97,13 +117,8 @@ fun InitiativeTrackerScreen(
                                 )
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.tertiary
-                    ),
-                    modifier = Modifier.shadow(elevation = 4.dp)
-                )
+                    }
+                }
             },
             bottomBar = { if (!isTwoPaneMode) BottomNavigationBar(navController) }
         ) { paddingValues ->
@@ -188,10 +203,6 @@ fun InitiativeTrackerScreen(
                                         navController = navController,
                                         isTwoPaneMode = isTwoPaneMode,
                                         onItemClick = onItemClick
-                                    )
-                                    Divider(
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                                        thickness = 0.5.dp
                                     )
                                 }
                             }

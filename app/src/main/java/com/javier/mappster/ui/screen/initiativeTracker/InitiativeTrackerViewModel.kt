@@ -148,11 +148,9 @@ class InitiativeTrackerViewModel : ViewModel() {
 
     fun sortEntries() {
         viewModelScope.launch {
-            _uiState.update {
-                InitiativeTrackerUiState.Success(
-                    entries = _entries.value.sortedByDescending { it.initiative ?: 0 }
-                )
-            }
+            _entries.value = _entries.value.sortedByDescending { it.initiative ?: 0 }
+            InitiativeTrackerStore.setEntries(_entries.value)
+            updateUiState()
         }
     }
 
@@ -196,6 +194,9 @@ class InitiativeTrackerViewModel : ViewModel() {
     fun confirmHpChange() {
         _hpDialogState.value?.let { dialogState ->
             viewModelScope.launch {
+                // Guardar el orden actual antes de hacer cambios
+                val currentOrder = _entries.value.map { it.id }
+
                 // Parsear hpChange: sin signo = negativo, + = positivo, - = negativo
                 val change = when {
                     dialogState.hpChange.startsWith("+") -> dialogState.hpChange.removePrefix("+").toIntOrNull() ?: 0
@@ -203,7 +204,9 @@ class InitiativeTrackerViewModel : ViewModel() {
                     dialogState.hpChange.isNotBlank() -> -(dialogState.hpChange.toIntOrNull() ?: 0)
                     else -> 0
                 }
-                _entries.value = _entries.value.map { entry ->
+
+                // Actualizar los HP
+                val updatedEntries = _entries.value.map { entry ->
                     if (entry.id == dialogState.entryId && entry is InitiativeEntry.MonsterEntry) {
                         val currentHp = entry.hp ?: 0
                         val maxHp = dialogState.maxHp ?: Int.MAX_VALUE
@@ -214,6 +217,13 @@ class InitiativeTrackerViewModel : ViewModel() {
                         entry
                     }
                 }
+
+                // Mantener el orden original
+                val orderedEntries = currentOrder.mapNotNull { id ->
+                    updatedEntries.find { it.id == id }
+                }
+
+                _entries.value = orderedEntries
                 InitiativeTrackerStore.setEntries(_entries.value)
                 updateUiState()
                 closeHpDialog()
