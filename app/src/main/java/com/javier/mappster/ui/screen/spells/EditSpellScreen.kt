@@ -86,18 +86,10 @@ fun EditSpellScreen(
     var rangeAmountError by remember { mutableStateOf<String?>(null) }
     var rangeAreaType by remember { mutableStateOf(spell.areaTags.firstOrNull() ?: "") }
     var rangeAreaTypeError by remember { mutableStateOf<String?>(null) }
-    var classList by remember { mutableStateOf(spell.classes.fromClassList.joinToString(", ") { it.name }) }
-    var classListError by remember { mutableStateOf<String?>(null) }
-    var subclassList by remember { mutableStateOf(spell.classes.fromSubclass.joinToString(", ") { "${it.classEntry.name}:${it.subclass.name}" }) }
-    var subclassListError by remember { mutableStateOf<String?>(null) }
-    var feats by remember { mutableStateOf(spell.feats.joinToString(", ") { it.name }) }
-    var featsError by remember { mutableStateOf<String?>(null) }
-    var backgrounds by remember { mutableStateOf(spell.backgrounds.joinToString(", ") { it.name }) }
-    var backgroundsError by remember { mutableStateOf<String?>(null) }
-    var races by remember { mutableStateOf(spell.races.joinToString(", ") { it.name }) }
-    var racesError by remember { mutableStateOf<String?>(null) }
-    var optionalFeatures by remember { mutableStateOf(spell.optionalFeatures.joinToString(", ") { it.name }) }
-    var optionalFeaturesError by remember { mutableStateOf<String?>(null) }
+    var customAccess by remember { mutableStateOf(spell.customAccess) }
+    var customAccessError by remember { mutableStateOf<String?>(null) }
+    var customHigherLevel by remember { mutableStateOf(spell.customHigherLevel) }
+    var customHigherLevelError by remember { mutableStateOf<String?>(null) }
     var isPublic by remember { mutableStateOf(spell.public ?: false) }
 
     val schoolOptions = listOf(
@@ -112,8 +104,8 @@ fun EditSpellScreen(
     )
     val levelOptions = (0..9).map { if (it == 0) "Truco" else "Nivel $it" }
     val timeUnitOptions = listOf("action", "bonus action", "reaction", "minute", "hour")
-    val durationTypeOptions = listOf("instantaneous", "timed")
-    val rangeTypeOptions = listOf("self", "touch", "ranged")
+    var durationTypeOptions = listOf("instantaneous", "timed")
+    var rangeTypeOptions = listOf("self", "touch", "ranged")
 
     // Validaciones
     fun validateFields() {
@@ -143,28 +135,12 @@ fun EditSpellScreen(
             rangeType == "ranged" && rangeAreaType.length > 15 -> "Máximo 15 caracteres"
             else -> null
         }
-        classListError = when {
-            classList.length > 50 -> "Máximo 50 caracteres"
+        customAccessError = when {
+            customAccess.length > 100 -> "Máximo 100 caracteres"
             else -> null
         }
-        subclassListError = when {
-            subclassList.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        featsError = when {
-            feats.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        backgroundsError = when {
-            backgrounds.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        racesError = when {
-            races.length > 50 -> "Máximo 50 caracteres"
-            else -> null
-        }
-        optionalFeaturesError = when {
-            optionalFeatures.length > 50 -> "Máximo 50 caracteres"
+        customHigherLevelError = when {
+            customHigherLevel.length > 300 -> "Máximo 300 caracteres"
             else -> null
         }
     }
@@ -172,9 +148,8 @@ fun EditSpellScreen(
     // Estado del botón con remember
     val isFormValid by remember(
         nameError, sourceError, descriptionError, materialError,
-        rangeAmountError, rangeAreaTypeError, classListError,
-        subclassListError, featsError, backgroundsError,
-        racesError, optionalFeaturesError
+        rangeAmountError, rangeAreaTypeError, customAccessError,
+        customHigherLevelError
     ) {
         derivedStateOf {
             nameError == null &&
@@ -183,16 +158,15 @@ fun EditSpellScreen(
                     materialError == null &&
                     rangeAmountError == null &&
                     rangeAreaTypeError == null &&
-                    classListError == null &&
-                    subclassListError == null &&
-                    featsError == null &&
-                    backgroundsError == null &&
-                    racesError == null &&
-                    optionalFeaturesError == null
+                    customAccessError == null &&
+                    customHigherLevelError == null
         }
     }
 
-    LaunchedEffect(name, source, description, materialText, rangeAmount, rangeAreaType, classList, subclassList, feats, backgrounds, races, optionalFeatures) {
+    LaunchedEffect(
+        name, source, description, materialText, rangeAmount, rangeAreaType,
+        customAccess, customHigherLevel
+    ) {
         validateFields()
     }
 
@@ -236,36 +210,6 @@ fun EditSpellScreen(
                             snackbarHostState.showSnackbar("El nombre del hechizo no es válido")
                         }
                         return@Button
-                    }
-
-                    // Parse classList
-                    val classEntries = classList.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        ClassEntry(name = it, source = "Custom")
-                    }
-
-                    // Parse subclassList
-                    val subclassEntries = subclassList.split(",").map { it.trim() }.filter { it.isNotBlank() }.mapNotNull {
-                        val parts = it.split(":")
-                        if (parts.size == 2) {
-                            SubclassEntry(
-                                classEntry = ClassEntry(name = parts[0], source = "Custom"),
-                                subclass = SubclassDetail(name = parts[1], source = "Custom")
-                            )
-                        } else null
-                    }
-
-                    // Parse feats, backgrounds, races, optionalFeatures
-                    val featList = feats.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        Feat(name = it, source = "Custom")
-                    }
-                    val backgroundList = backgrounds.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        Background(name = it, source = "Custom")
-                    }
-                    val raceList = races.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        Race(name = it, source = "Custom")
-                    }
-                    val optionalFeatureList = optionalFeatures.split(",").map { it.trim() }.filter { it.isNotBlank() }.map {
-                        OptionalFeature(name = it, source = "Custom", featureType = listOf("Custom"))
                     }
 
                     // Parse rangeAreaType
@@ -312,6 +256,8 @@ fun EditSpellScreen(
                         hasFluffImages = spell.hasFluffImages,
                         entries = description.split("\n").map { it.trim() }.filter { it.isNotEmpty() },
                         entriesHigherLevel = spell.entriesHigherLevel,
+                        customAccess = customAccess,
+                        customHigherLevel = customHigherLevel,
                         savingThrow = spell.savingThrow,
                         spellAttack = spell.spellAttack,
                         abilityCheck = spell.abilityCheck,
@@ -326,11 +272,11 @@ fun EditSpellScreen(
                         reprintedAs = spell.reprintedAs,
                         additionalSources = spell.additionalSources,
                         otherSources = spell.otherSources,
-                        classes = Classes(fromClassList = classEntries, fromSubclass = subclassEntries),
-                        feats = featList,
-                        backgrounds = backgroundList,
-                        races = raceList,
-                        optionalFeatures = optionalFeatureList,
+                        classes = Classes(fromClassList = emptyList(), fromSubclass = emptyList()),
+                        feats = emptyList(),
+                        backgrounds = emptyList(),
+                        races = emptyList(),
+                        optionalFeatures = emptyList(),
                         userId = spell.userId,
                         _custom = spell.custom,
                         _public = isPublic
@@ -754,118 +700,29 @@ fun EditSpellScreen(
                         SectionTitle("Acceso", Icons.Default.Group)
 
                         OutlinedTextField(
-                            value = classList,
-                            onValueChange = { if (it.length <= 50) classList = it },
-                            label = { Text("Clases (opcional, separadas por comas)") },
+                            value = customAccess,
+                            onValueChange = { if (it.length <= 100) customAccess = it },
+                            label = { Text("Acceso (opcional)") },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Sorcerer,Wizard") },
-                            isError = classListError != null,
+                            placeholder = { Text("Ej: Sorcerer, Wizard, Cleric:Arcana Domain, Magic Initiate") },
+                            isError = customAccessError != null,
                             trailingIcon = {
                                 Text(
-                                    text = "${classList.length}/50",
+                                    text = "${customAccess.length}/100",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         )
-                        classListError?.let {
+                        customAccessError?.let {
                             Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
                         }
-
-                        OutlinedTextField(
-                            value = subclassList,
-                            onValueChange = { if (it.length <= 50) subclassList = it },
-                            label = { Text("Subclases (opcional, formato Clase:Subclase)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Cleric:Arcana Domain,Fighter:Eldritch Knight") },
-                            isError = subclassListError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${subclassList.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                        Text(
+                            text = "Especifica clases, subclases, hazañas, trasfondos, razas o características que permiten usar este hechizo.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
-                        subclassListError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = feats,
-                            onValueChange = { if (it.length <= 50) feats = it },
-                            label = { Text("Hazañas (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Magic Initiate,Artificer Initiate") },
-                            isError = featsError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${feats.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        featsError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = backgrounds,
-                            onValueChange = { if (it.length <= 50) backgrounds = it },
-                            label = { Text("Trasfondos (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Simic Scientist,Sage") },
-                            isError = backgroundsError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${backgrounds.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        backgroundsError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = races,
-                            onValueChange = { if (it.length <= 50) races = it },
-                            label = { Text("Razas (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Elf (High),Genasi (Water)") },
-                            isError = racesError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${races.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        racesError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        OutlinedTextField(
-                            value = optionalFeatures,
-                            onValueChange = { if (it.length <= 50) optionalFeatures = it },
-                            label = { Text("Características Opcionales (opcional, separadas por comas)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Ej: Pact of the Tome") },
-                            isError = optionalFeaturesError != null,
-                            trailingIcon = {
-                                Text(
-                                    text = "${optionalFeatures.length}/50",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                        optionalFeaturesError?.let {
-                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -877,6 +734,44 @@ fun EditSpellScreen(
                             )
                             Text("Público")
                         }
+                    }
+                }
+
+                // A nivel superior
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("A nivel superior", Icons.Default.Upgrade)
+
+                        OutlinedTextField(
+                            value = customHigherLevel,
+                            onValueChange = { if (it.length <= 300) customHigherLevel = it },
+                            label = { Text("A nivel superior (opcional)") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            maxLines = 4,
+                            isError = customHigherLevelError != null,
+                            placeholder = { Text("Ej: El daño aumenta en {@damage 1d6} por cada nivel superior.") },
+                            trailingIcon = {
+                                Text(
+                                    text = "${customHigherLevel.length}/300",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        )
+                        customHigherLevelError?.let {
+                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(
+                            text = "Usa {@damage NdM} para dados interactivos, {@condition nombre} para condiciones, etc.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
             }

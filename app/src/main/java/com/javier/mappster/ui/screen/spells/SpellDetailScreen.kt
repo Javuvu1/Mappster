@@ -4,7 +4,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -88,7 +86,7 @@ private val PATTERN = Regex(
             "\\{@quickref\\s+(difficult terrain\\|\\|3)\\}|" +
             "\\{@quickref\\s*([^\\|\\}]+?)(?:\\|\\|(\\d+)?(?:\\|\\|([^\\}]+))?)?\\s*\\}|" +
             "\\{@quickref\\s*[^\\}]+\\|PHB\\|\\d+\\|\\d*\\|([^\\}]+)\\}|" +
-            "\\{@skill\\s*([^\\}]+)\\}|" +  // Simplificado - grupo 23
+            "\\{@skill\\s*([^\\}]+)\\}|" +
             "\\{@d20\\s*(-?\\d+)\\}"
 )
 
@@ -180,8 +178,7 @@ fun buildDamageAnnotatedString(
                 match.value.contains("Vision and Light|PHB|2||heavily obscured") -> Pair("heavily obscured", true)
                 match.value.contains("difficult terrain||3") -> Pair("difficult terrain", true)
                 match.value.startsWith("{@skill") -> {
-                    val skillName =
-                        match.groupValues.getOrNull(23)?.trim() ?: ""  // Ahora grupo 23 es correcto
+                    val skillName = match.groupValues.getOrNull(23)?.trim() ?: ""
                     Log.d("SpellDetailScreen", "Parsed skill: '$skillName' from ${match.value}")
                     Pair("($skillName)", false)
                 }
@@ -308,8 +305,8 @@ fun buildDiceRollBreakdown(
     return buildAnnotatedString {
         rolls.forEachIndexed { index, roll ->
             val color = when {
-                roll == dieSides -> MaterialTheme.colorScheme.tertiary // Success (max roll)
-                roll == 1 -> MaterialTheme.colorScheme.tertiary // Failure (min roll)
+                roll == dieSides -> MaterialTheme.colorScheme.tertiary
+                roll == 1 -> MaterialTheme.colorScheme.tertiary
                 else -> defaultColor
             }
             withStyle(style = SpanStyle(color = color)) {
@@ -566,32 +563,34 @@ fun SpellDetailScreen(
                 }
             }
 
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        SectionTitle("Acceso", Icons.Default.Group, schoolData.color)
-                        val accessText = if (spell.customAccess.isNotBlank()) {
-                            spell.customAccess
-                        } else {
-                            val classList = spell.classes?.fromClassList?.joinToString { it.name } ?: "Ninguna"
-                            val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: ""
-                            "$classList" + if (subclassList.isNotEmpty()) ", $subclassList" else ""
+            if (spell.customAccess.isNotBlank() || spell.classes?.fromClassList?.isNotEmpty() == true || spell.classes?.fromSubclass?.isNotEmpty() == true) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            SectionTitle("Acceso", Icons.Default.Group, schoolData.color)
+                            val accessText = if (spell.customAccess.isNotBlank()) {
+                                spell.customAccess
+                            } else {
+                                val classList = spell.classes?.fromClassList?.joinToString { it.name } ?: ""
+                                val subclassList = spell.classes?.fromSubclass?.joinToString { "${it.classEntry.name}: ${it.subclass.name}" } ?: ""
+                                "$classList" + if (subclassList.isNotEmpty()) ", $subclassList" else ""
+                            }
+                            Text(
+                                text = accessText,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
-                        Text(
-                            text = accessText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
                     }
                 }
             }
 
-            if (spell.entriesHigherLevel.isNotEmpty()) {
+            if (spell.entriesHigherLevel.isNotEmpty() || spell.customHigherLevel.isNotBlank()) {
                 item {
                     Card(
                         modifier = Modifier
@@ -601,81 +600,175 @@ fun SpellDetailScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             SectionTitle("A nivel superior", Icons.Default.Upgrade, schoolData.color)
-                            spell.entriesHigherLevel.forEach { entryHigherLevel ->
-                                entryHigherLevel.entries.forEach { entry ->
-                                    val diceDataList = remember { mutableListOf<DiceRollData>() }
-                                    val chanceDataList = remember { mutableListOf<ChanceData>() }
-                                    val annotatedText = remember(entry) {
-                                        buildDamageAnnotatedString(entry, diceDataList, chanceDataList, schoolData.color)
-                                    }
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(vertical = 2.dp)
-                                    ) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        ClickableText(
-                                            text = annotatedText,
-                                            onClick = { offset ->
-                                                annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
-                                                    .firstOrNull()?.let { annotation ->
-                                                        val index = annotation.item.toInt()
-                                                        val diceData = diceDataList[index]
-                                                        val (rolls, total) = rollDice(diceData, spell.level)
-                                                        currentDiceData = diceData
-                                                        diceRollDetails = rolls
-                                                        diceRollTotal = total
-                                                        showDiceRollDialog = true
-                                                    }
-                                                annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
-                                                    .firstOrNull()?.let { annotation ->
-                                                        currentCondition = annotation.item
-                                                        showConditionDialog = true
-                                                    }
-                                                annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
-                                                    .firstOrNull()?.let { annotation ->
-                                                        val spellName = annotation.item.trim()
-                                                        Log.d("SpellDetailScreen", "Clicked spell (higher level): '$spellName', isTwoPaneMode: $isTwoPaneMode")
-                                                        val targetSpell = viewModel.getSpellByName(spellName)
-                                                        Log.d("SpellDetailScreen", "Target spell: $targetSpell")
-                                                        if (targetSpell != null) {
-                                                            if (isTwoPaneMode) {
-                                                                Log.d("SpellDetailScreen", "Selecting spell in two-pane mode: ${targetSpell.name}")
-                                                                onSpellSelected(targetSpell)
-                                                            } else {
-                                                                val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
-                                                                Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
-                                                                navController.navigate("spell_detail/$encodedName")
-                                                            }
-                                                        } else {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Hechizo '$spellName' no encontrado.",
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
+                            if (spell.entriesHigherLevel.isNotEmpty()) {
+                                spell.entriesHigherLevel.forEach { entryHigherLevel ->
+                                    entryHigherLevel.entries.forEach { entry ->
+                                        val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                        val chanceDataList = remember { mutableListOf<ChanceData>() }
+                                        val annotatedText = remember(entry) {
+                                            buildDamageAnnotatedString(entry, diceDataList, chanceDataList, schoolData.color)
+                                        }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(vertical = 2.dp)
+                                        ) {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            ClickableText(
+                                                text = annotatedText,
+                                                onClick = { offset ->
+                                                    annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                        .firstOrNull()?.let { annotation ->
+                                                            val index = annotation.item.toInt()
+                                                            val diceData = diceDataList[index]
+                                                            val (rolls, total) = rollDice(diceData, spell.level)
+                                                            currentDiceData = diceData
+                                                            diceRollDetails = rolls
+                                                            diceRollTotal = total
+                                                            showDiceRollDialog = true
                                                         }
-                                                    }
-                                                annotatedText.getStringAnnotations(tag = "chance", start = offset, end = offset)
-                                                    .firstOrNull()?.let { annotation ->
-                                                        val index = annotation.item.toInt()
-                                                        val chanceData = chanceDataList[index]
-                                                        val (roll, isSuccess) = rollChance(chanceData.percentage)
-                                                        currentChanceData = chanceData
-                                                        chanceRollResult = roll
-                                                        chanceIsSuccess = isSuccess
-                                                        showChanceDialog = true
-                                                    }
-                                                annotatedText.getStringAnnotations(tag = "quickref", start = offset, end = offset)
-                                                    .firstOrNull()?.let { annotation ->
-                                                        Log.d("SpellDetailScreen", "Quickref clicked: '${annotation.item}'")
-                                                        currentQuickRef = annotation.item
-                                                        showQuickRefDialog = true
-                                                    }
-                                            },
-                                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
-                                        )
+                                                    annotatedText.getStringAnnotations(tag = "d20", start = offset, end = offset)
+                                                        .firstOrNull()?.let { annotation ->
+                                                            val index = annotation.item.toInt()
+                                                            val diceData = diceDataList[index]
+                                                            val (rolls, total) = rollDice(diceData, spell.level)
+                                                            currentDiceData = diceData
+                                                            diceRollDetails = rolls
+                                                            diceRollTotal = total
+                                                            showDiceRollDialog = true
+                                                        }
+                                                    annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                        .firstOrNull()?.let { annotation ->
+                                                            currentCondition = annotation.item
+                                                            showConditionDialog = true
+                                                        }
+                                                    annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
+                                                        .firstOrNull()?.let { annotation ->
+                                                            val spellName = annotation.item.trim()
+                                                            Log.d("SpellDetailScreen", "Clicked spell (higher level): '$spellName', isTwoPaneMode: $isTwoPaneMode")
+                                                            val targetSpell = viewModel.getSpellByName(spellName)
+                                                            Log.d("SpellDetailScreen", "Target spell: $targetSpell")
+                                                            if (targetSpell != null) {
+                                                                if (isTwoPaneMode) {
+                                                                    Log.d("SpellDetailScreen", "Selecting spell in two-pane mode: ${targetSpell.name}")
+                                                                    onSpellSelected(targetSpell)
+                                                                } else {
+                                                                    val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                                    Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                                    navController.navigate("spell_detail/$encodedName")
+                                                                }
+                                                            } else {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Hechizo '$spellName' no encontrado.",
+                                                                    Toast.LENGTH_LONG
+                                                                ).show()
+                                                            }
+                                                        }
+                                                    annotatedText.getStringAnnotations(tag = "chance", start = offset, end = offset)
+                                                        .firstOrNull()?.let { annotation ->
+                                                            val index = annotation.item.toInt()
+                                                            val chanceData = chanceDataList[index]
+                                                            val (roll, isSuccess) = rollChance(chanceData.percentage)
+                                                            currentChanceData = chanceData
+                                                            chanceRollResult = roll
+                                                            chanceIsSuccess = isSuccess
+                                                            showChanceDialog = true
+                                                        }
+                                                    annotatedText.getStringAnnotations(tag = "quickref", start = offset, end = offset)
+                                                        .firstOrNull()?.let { annotation ->
+                                                            Log.d("SpellDetailScreen", "Quickref clicked: '${annotation.item}'")
+                                                            currentQuickRef = annotation.item
+                                                            showQuickRefDialog = true
+                                                        }
+                                                },
+                                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
+                                            )
+                                        }
                                     }
+                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                            } else if (spell.customHigherLevel.isNotBlank()) {
+                                val diceDataList = remember { mutableListOf<DiceRollData>() }
+                                val chanceDataList = remember { mutableListOf<ChanceData>() }
+                                val annotatedText = remember(spell.customHigherLevel) {
+                                    buildDamageAnnotatedString(spell.customHigherLevel, diceDataList, chanceDataList, schoolData.color)
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(vertical = 2.dp)
+                                ) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    ClickableText(
+                                        text = annotatedText,
+                                        onClick = { offset ->
+                                            annotatedText.getStringAnnotations(tag = "damage", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    val index = annotation.item.toInt()
+                                                    val diceData = diceDataList[index]
+                                                    val (rolls, total) = rollDice(diceData, spell.level)
+                                                    currentDiceData = diceData
+                                                    diceRollDetails = rolls
+                                                    diceRollTotal = total
+                                                    showDiceRollDialog = true
+                                                }
+                                            annotatedText.getStringAnnotations(tag = "d20", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    val index = annotation.item.toInt()
+                                                    val diceData = diceDataList[index]
+                                                    val (rolls, total) = rollDice(diceData, spell.level)
+                                                    currentDiceData = diceData
+                                                    diceRollDetails = rolls
+                                                    diceRollTotal = total
+                                                    showDiceRollDialog = true
+                                                }
+                                            annotatedText.getStringAnnotations(tag = "condition", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    currentCondition = annotation.item
+                                                    showConditionDialog = true
+                                                }
+                                            annotatedText.getStringAnnotations(tag = "spell", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    val spellName = annotation.item.trim()
+                                                    Log.d("SpellDetailScreen", "Clicked spell (higher level): '$spellName', isTwoPaneMode: $isTwoPaneMode")
+                                                    val targetSpell = viewModel.getSpellByName(spellName)
+                                                    Log.d("SpellDetailScreen", "Target spell: $targetSpell")
+                                                    if (targetSpell != null) {
+                                                        if (isTwoPaneMode) {
+                                                            Log.d("SpellDetailScreen", "Selecting spell in two-pane mode: ${targetSpell.name}")
+                                                            onSpellSelected(targetSpell)
+                                                        } else {
+                                                            val encodedName = URLEncoder.encode(targetSpell.name, "UTF-8")
+                                                            Log.d("SpellDetailScreen", "Navigating to: spell_detail/$encodedName")
+                                                            navController.navigate("spell_detail/$encodedName")
+                                                        }
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Hechizo '$spellName' no encontrado.",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                                }
+                                            annotatedText.getStringAnnotations(tag = "chance", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    val index = annotation.item.toInt()
+                                                    val chanceData = chanceDataList[index]
+                                                    val (roll, isSuccess) = rollChance(chanceData.percentage)
+                                                    currentChanceData = chanceData
+                                                    chanceRollResult = roll
+                                                    chanceIsSuccess = isSuccess
+                                                    showChanceDialog = true
+                                                }
+                                            annotatedText.getStringAnnotations(tag = "quickref", start = offset, end = offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    Log.d("SpellDetailScreen", "Quickref clicked: '${annotation.item}'")
+                                                    currentQuickRef = annotation.item
+                                                    showQuickRefDialog = true
+                                                }
+                                        },
+                                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
+                                    )
+                                }
                             }
                         }
                     }
@@ -683,7 +776,6 @@ fun SpellDetailScreen(
             }
         }
 
-        // Diálogo para tirada de dados
         if (showDiceRollDialog && currentDiceData != null) {
             AlertDialog(
                 onDismissRequest = { showDiceRollDialog = false },
@@ -753,7 +845,6 @@ fun SpellDetailScreen(
             )
         }
 
-        // Diálogo para condición
         if (showConditionDialog) {
             AlertDialog(
                 onDismissRequest = { showConditionDialog = false },
@@ -812,7 +903,6 @@ fun SpellDetailScreen(
             )
         }
 
-        // Diálogo para quickref
         if (showQuickRefDialog) {
             Log.d("SpellDetailScreen", "Showing quickref dialog for: '$currentQuickRef'")
             AlertDialog(
@@ -874,7 +964,6 @@ fun SpellDetailScreen(
             )
         }
 
-        // Diálogo para chance
         if (showChanceDialog && currentChanceData != null && chanceRollResult != null && chanceIsSuccess != null) {
             AlertDialog(
                 onDismissRequest = { showChanceDialog = false },

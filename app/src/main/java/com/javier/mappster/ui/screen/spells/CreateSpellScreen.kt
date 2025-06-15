@@ -91,6 +91,8 @@ fun CreateSpellScreen(
     var rangeAreaTypeError by remember { mutableStateOf<String?>(null) }
     var customAccess by remember { mutableStateOf("") }
     var customAccessError by remember { mutableStateOf<String?>(null) }
+    var customHigherLevel by remember { mutableStateOf("") }
+    var customHigherLevelError by remember { mutableStateOf<String?>(null) }
 
     val schoolOptions = listOf(
         "A" to "Abjuración",
@@ -139,12 +141,16 @@ fun CreateSpellScreen(
             customAccess.length > 100 -> "Máximo 100 caracteres"
             else -> null
         }
+        customHigherLevelError = when {
+            customHigherLevel.length > 600 -> "Máximo 600 caracteres"
+            else -> null
+        }
     }
 
     // Estado del botón con remember
     val isFormValid by remember(
         nameError, sourceError, descriptionError, materialError,
-        rangeAmountError, rangeAreaTypeError, customAccessError
+        rangeAmountError, rangeAreaTypeError, customAccessError, customHigherLevelError
     ) {
         derivedStateOf {
             nameError == null &&
@@ -153,11 +159,12 @@ fun CreateSpellScreen(
                     materialError == null &&
                     rangeAmountError == null &&
                     rangeAreaTypeError == null &&
-                    customAccessError == null
+                    customAccessError == null &&
+                    customHigherLevelError == null
         }
     }
 
-    LaunchedEffect(name, source, description, materialText, rangeAmount, rangeAreaType, customAccess) {
+    LaunchedEffect(name, source, description, materialText, rangeAmount, rangeAreaType, customAccess, customHigherLevel) {
         validateFields()
     }
 
@@ -275,6 +282,7 @@ fun CreateSpellScreen(
                         races = emptyList(),
                         optionalFeatures = emptyList(),
                         customAccess = customAccess.trim(),
+                        customHigherLevel = customHigherLevel.trim(),
                         userId = userId,
                         _custom = true,
                         _public = false
@@ -713,6 +721,38 @@ fun CreateSpellScreen(
                             }
                         )
                         customAccessError?.let {
+                            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+
+                // A nivel superior
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionTitle("A nivel superior", Icons.Default.Upgrade)
+
+                        OutlinedTextField(
+                            value = customHigherLevel,
+                            onValueChange = { if (it.length <= 600) customHigherLevel = it },
+                            label = { Text("A nivel superior (opcional)") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            maxLines = 5,
+                            isError = customHigherLevelError != null,
+                            placeholder = { Text("Ej: Cuando lances este hechizo usando un espacio de nivel 2 o superior, el daño aumenta en 1d6 por cada nivel adicional.") },
+                            trailingIcon = {
+                                Text(
+                                    text = "${customHigherLevel.length}/600",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        )
+                        customHigherLevelError?.let {
                             Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
                         }
                     }

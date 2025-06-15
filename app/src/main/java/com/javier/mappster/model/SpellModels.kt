@@ -64,6 +64,7 @@ data class Spell(
     val races: List<Race> = emptyList(),
     val optionalFeatures: List<OptionalFeature> = emptyList(),
     val customAccess: String = "",
+    val customHigherLevel: String = "",
 
     // Custom field added by script
     @PropertyName("custom")
