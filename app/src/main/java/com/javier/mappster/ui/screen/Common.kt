@@ -71,7 +71,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             NavigationBarItem(
                 icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Hechizos") },
                 label = {
-                    Text("Spells", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Hechizos", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 selected = currentRoute == Destinations.SPELL_LIST,
                 onClick = {
@@ -94,7 +94,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             NavigationBarItem(
                 icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Listas Hechizos") },
                 label = {
-                    Text("Spell Lists", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Listas", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 selected = currentRoute == Destinations.CUSTOM_SPELL_LISTS,
                 onClick = {
@@ -117,7 +117,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             NavigationBarItem(
                 icon = { Icon(Icons.Default.Pets, contentDescription = "Monstruos") },
                 label = {
-                    Text("Monsters", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Monstruos", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 selected = currentRoute == Destinations.MONSTER_LIST,
                 onClick = {
@@ -140,7 +140,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             NavigationBarItem(
                 icon = { Icon(Icons.Default.Timer, contentDescription = "Initiative Tracker") },
                 label = {
-                    Text("Initiative", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Iniciativa", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 selected = currentRoute == Destinations.INITIATIVE_TRACKER,
                 onClick = {

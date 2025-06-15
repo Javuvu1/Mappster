@@ -111,25 +111,6 @@ fun MonsterListScreen(
                 },
                 bottomBar = {
                     BottomNavigationBar(navController = navController)
-                },
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = {
-                            Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                            navController.navigate(Destinations.CREATE_MONSTER)
-                        },
-                        containerColor = MaterialTheme.colorScheme.tertiary,
-                        contentColor = MaterialTheme.colorScheme.onTertiary,
-                        modifier = Modifier
-                            .padding(bottom = 16.dp)
-                            .shadow(elevation = 6.dp, shape = CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Crear Monstruo",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
                 }
             ) { paddingValues ->
                 Box(
@@ -151,17 +132,40 @@ fun MonsterListScreen(
                             .fillMaxSize()
                             .padding(paddingValues)
                     ) {
-                        // Barra de búsqueda
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            SearchBar(
-                                query = searchQuery,
-                                onQueryChanged = viewModel::onSearchQueryChanged,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
-                            )
+                            ) {
+                                SearchBar(
+                                    query = searchQuery,
+                                    onQueryChanged = viewModel::onSearchQueryChanged,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                IconButton(
+                                    onClick = {
+                                        Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
+                                        navController.navigate(Destinations.CREATE_MONSTER)
+                                    },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                                            shape = CircleShape
+                                        )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Crear Monstruo",
+                                        tint = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                            }
                         }
 
                         if (state.isLoading) {
@@ -290,7 +294,7 @@ fun SearchBar(
             Text(
                 "Buscar monstruos...",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.tertiary
                 )
             )
         },
@@ -648,10 +652,9 @@ fun MonsterItem(
                             }
                         } ?: "Unknown"
 
-                        // Modified typeText to remove quotes and capitalize
                         val typeText = monster.type
-                            ?.removeSurrounding("\"") // Remove surrounding quotes
-                            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } // Capitalize first letter
+                            ?.removeSurrounding("\"")
+                            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                             ?: "Unknown"
 
                         Text(
@@ -665,7 +668,7 @@ fun MonsterItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = sourceMap[monster.source] ?: monster.source ?: "Unknown", // Remove .uppercase()
+                            text = sourceMap[monster.source] ?: monster.source ?: "Unknown",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = MaterialTheme.colorScheme.tertiary,
                                 fontStyle = FontStyle.Normal
