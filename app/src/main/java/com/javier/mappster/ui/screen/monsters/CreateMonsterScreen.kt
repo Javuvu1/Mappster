@@ -502,6 +502,7 @@ fun CreateMonsterScreen(navController: NavHostController,
     }
 
     fun validateFields() {
+        Log.d("CreateMonsterScreen", "Validating fields...")
         nameError = when {
             name.isBlank() -> "Name is required"
             name.length > 35 -> "Maximum 35 characters"
@@ -621,22 +622,39 @@ fun CreateMonsterScreen(navController: NavHostController,
             else -> null
         }
 
-        traitNameErrors.clear()
-        traitEntryErrors.clear()
-        traits.forEach { (name, entry) ->
-            traitNameErrors.add(when {
+        traits.forEachIndexed { index, (name, entry) ->
+            if (traitNameErrors.size <= index) {
+                traitNameErrors.add(null)
+            }
+            if (traitEntryErrors.size <= index) {
+                traitEntryErrors.add(null)
+            }
+
+            traitNameErrors[index] = when {
                 name.isBlank() -> "El nombre no puede estar vacío"
                 name.length > 50 -> "Máximo 50 caracteres"
                 else -> null
-            })
-            traitEntryErrors.add(when {
+            }
+            traitEntryErrors[index] = when {
                 entry.isBlank() -> "La descripción no puede estar vacía"
                 entry.length > 500 -> "Máximo 500 caracteres"
                 else -> null
-            })
+            }
         }
 
-        // Validación de actions
+        traits.forEachIndexed { index, (name, entry) ->
+            traitNameErrors[index] = when {
+                name.isBlank() -> "El nombre no puede estar vacío"
+                name.length > 50 -> "Máximo 50 caracteres"
+                else -> null
+            }
+            traitEntryErrors[index] = when {
+                entry.isBlank() -> "La descripción no puede estar vacía"
+                entry.length > 500 -> "Máximo 500 caracteres"
+                else -> null
+            }
+        }
+
         actionNameErrors.clear()
         actionEntryErrors.clear()
         actions.forEach { (name, entry) ->
@@ -652,7 +670,6 @@ fun CreateMonsterScreen(navController: NavHostController,
             })
         }
 
-        // Validación de bonus actions
         bonusActionNameErrors.clear()
         bonusActionEntryErrors.clear()
         bonusActions.forEach { (name, entry) ->
@@ -668,7 +685,6 @@ fun CreateMonsterScreen(navController: NavHostController,
             })
         }
 
-        // Validación de reactions
         reactionNameErrors.clear()
         reactionEntryErrors.clear()
         reactions.forEach { (name, entry) ->
@@ -684,7 +700,6 @@ fun CreateMonsterScreen(navController: NavHostController,
             })
         }
 
-        // Validación de legendary actions
         legendaryActionNameErrors.clear()
         legendaryActionEntryErrors.clear()
         legendaryActions.forEach { (name, entry) ->
@@ -806,7 +821,10 @@ fun CreateMonsterScreen(navController: NavHostController,
     }
 
     LaunchedEffect(
-        name, type2, hp, ac, str, dex, con, int, wis, cha, proficiencyBonus, source, initiative
+        name, type2, hp, ac, str, dex, con, int, wis, cha, proficiencyBonus, source, initiative,
+        walkSpeed, flySpeed, swimSpeed, climbSpeed, burrowSpeed,
+        customResistance, customImmunity, customSense, customLanguage,
+        traits, actions, bonusActions, reactions, legendaryActions
     ) {
         validateFields()
     }
@@ -1928,7 +1946,17 @@ fun CreateMonsterScreen(navController: NavHostController,
                             Column(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = name,
-                                    onValueChange = { if (it.length <= 50) traits[index] = it to entry },
+                                    onValueChange = {
+                                        if (it.length <= 50) {
+                                            traits[index] = it to entry
+                                            // Validación inmediata cuando cambia el nombre
+                                            traitNameErrors[index] = when {
+                                                it.isBlank() -> "El nombre no puede estar vacío"
+                                                it.length > 50 -> "Máximo 50 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Trait Name") },
                                     isError = traitNameErrors.getOrNull(index) != null,
                                     supportingText = { traitNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -1943,7 +1971,17 @@ fun CreateMonsterScreen(navController: NavHostController,
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = entry,
-                                    onValueChange = { if (it.length <= 500) traits[index] = name to it },
+                                    onValueChange = {
+                                        if (it.length <= 500) {
+                                            traits[index] = name to it
+                                            // Validación inmediata cuando cambia la descripción
+                                            traitEntryErrors[index] = when {
+                                                it.isBlank() -> "La descripción no puede estar vacía"
+                                                it.length > 500 -> "Máximo 500 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Trait Description") },
                                     isError = traitEntryErrors.getOrNull(index) != null,
                                     supportingText = { traitEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -1958,14 +1996,22 @@ fun CreateMonsterScreen(navController: NavHostController,
                                     }
                                 )
                             }
-                            IconButton(onClick = { traits.removeAt(index) }) {
+                            IconButton(onClick = {
+                                traits.removeAt(index)
+                                traitNameErrors.removeAt(index)
+                                traitEntryErrors.removeAt(index)
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar rasgo")
                             }
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Button(
-                        onClick = { traits.add("" to ""); traitNameErrors.add(null); traitEntryErrors.add(null) },
+                        onClick = {
+                            traits.add("" to "")
+                            traitNameErrors.add("El nombre no puede estar vacío")
+                            traitEntryErrors.add("La descripción no puede estar vacía")
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -1990,7 +2036,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                             Column(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = name,
-                                    onValueChange = { if (it.length <= 50) actions[index] = it to entry },
+                                    onValueChange = {
+                                        if (it.length <= 50) {
+                                            actions[index] = it to entry
+                                            actionNameErrors[index] = when {
+                                                it.isBlank() -> "El nombre no puede estar vacío"
+                                                it.length > 50 -> "Máximo 50 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Action Name") },
                                     isError = actionNameErrors.getOrNull(index) != null,
                                     supportingText = { actionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2005,7 +2060,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = entry,
-                                    onValueChange = { if (it.length <= 500) actions[index] = name to it },
+                                    onValueChange = {
+                                        if (it.length <= 500) {
+                                            actions[index] = name to it
+                                            actionEntryErrors[index] = when {
+                                                it.isBlank() -> "La descripción no puede estar vacía"
+                                                it.length > 500 -> "Máximo 500 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Action Description") },
                                     isError = actionEntryErrors.getOrNull(index) != null,
                                     supportingText = { actionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2020,14 +2084,22 @@ fun CreateMonsterScreen(navController: NavHostController,
                                     }
                                 )
                             }
-                            IconButton(onClick = { actions.removeAt(index) }) {
+                            IconButton(onClick = {
+                                actions.removeAt(index)
+                                actionNameErrors.removeAt(index)
+                                actionEntryErrors.removeAt(index)
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar acción")
                             }
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Button(
-                        onClick = { actions.add("" to ""); actionNameErrors.add(null); actionEntryErrors.add(null) },
+                        onClick = {
+                            actions.add("" to "")
+                            actionNameErrors.add("El nombre no puede estar vacío")
+                            actionEntryErrors.add("La descripción no puede estar vacía")
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -2052,7 +2124,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                             Column(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = name,
-                                    onValueChange = { if (it.length <= 50) bonusActions[index] = it to entry },
+                                    onValueChange = {
+                                        if (it.length <= 50) {
+                                            bonusActions[index] = it to entry
+                                            bonusActionNameErrors[index] = when {
+                                                it.isBlank() -> "El nombre no puede estar vacío"
+                                                it.length > 50 -> "Máximo 50 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Bonus Action Name") },
                                     isError = bonusActionNameErrors.getOrNull(index) != null,
                                     supportingText = { bonusActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2067,7 +2148,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = entry,
-                                    onValueChange = { if (it.length <= 500) bonusActions[index] = name to it },
+                                    onValueChange = {
+                                        if (it.length <= 500) {
+                                            bonusActions[index] = name to it
+                                            bonusActionEntryErrors[index] = when {
+                                                it.isBlank() -> "La descripción no puede estar vacía"
+                                                it.length > 500 -> "Máximo 500 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Bonus Action Description") },
                                     isError = bonusActionEntryErrors.getOrNull(index) != null,
                                     supportingText = { bonusActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2082,14 +2172,22 @@ fun CreateMonsterScreen(navController: NavHostController,
                                     }
                                 )
                             }
-                            IconButton(onClick = { bonusActions.removeAt(index) }) {
+                            IconButton(onClick = {
+                                bonusActions.removeAt(index)
+                                bonusActionNameErrors.removeAt(index)
+                                bonusActionEntryErrors.removeAt(index)
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar acción bonus")
                             }
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Button(
-                        onClick = { bonusActions.add("" to ""); bonusActionNameErrors.add(null); bonusActionEntryErrors.add(null) },
+                        onClick = {
+                            bonusActions.add("" to "")
+                            bonusActionNameErrors.add("El nombre no puede estar vacío")
+                            bonusActionEntryErrors.add("La descripción no puede estar vacía")
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -2114,7 +2212,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                             Column(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = name,
-                                    onValueChange = { if (it.length <= 50) reactions[index] = it to entry },
+                                    onValueChange = {
+                                        if (it.length <= 50) {
+                                            reactions[index] = it to entry
+                                            reactionNameErrors[index] = when {
+                                                it.isBlank() -> "El nombre no puede estar vacío"
+                                                it.length > 50 -> "Máximo 50 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Reaction Name") },
                                     isError = reactionNameErrors.getOrNull(index) != null,
                                     supportingText = { reactionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2129,7 +2236,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = entry,
-                                    onValueChange = { if (it.length <= 500) reactions[index] = name to it },
+                                    onValueChange = {
+                                        if (it.length <= 500) {
+                                            reactions[index] = name to it
+                                            reactionEntryErrors[index] = when {
+                                                it.isBlank() -> "La descripción no puede estar vacía"
+                                                it.length > 500 -> "Máximo 500 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Reaction Description") },
                                     isError = reactionEntryErrors.getOrNull(index) != null,
                                     supportingText = { reactionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2144,14 +2260,22 @@ fun CreateMonsterScreen(navController: NavHostController,
                                     }
                                 )
                             }
-                            IconButton(onClick = { reactions.removeAt(index) }) {
+                            IconButton(onClick = {
+                                reactions.removeAt(index)
+                                reactionNameErrors.removeAt(index)
+                                reactionEntryErrors.removeAt(index)
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar reacción")
                             }
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Button(
-                        onClick = { reactions.add("" to ""); reactionNameErrors.add(null); reactionEntryErrors.add(null) },
+                        onClick = {
+                            reactions.add("" to "")
+                            reactionNameErrors.add("El nombre no puede estar vacío")
+                            reactionEntryErrors.add("La descripción no puede estar vacía")
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -2176,7 +2300,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                             Column(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = name,
-                                    onValueChange = { if (it.length <= 50) legendaryActions[index] = it to entry },
+                                    onValueChange = {
+                                        if (it.length <= 50) {
+                                            legendaryActions[index] = it to entry
+                                            legendaryActionNameErrors[index] = when {
+                                                it.isBlank() -> "El nombre no puede estar vacío"
+                                                it.length > 50 -> "Máximo 50 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Legendary Action Name") },
                                     isError = legendaryActionNameErrors.getOrNull(index) != null,
                                     supportingText = { legendaryActionNameErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2191,7 +2324,16 @@ fun CreateMonsterScreen(navController: NavHostController,
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = entry,
-                                    onValueChange = { if (it.length <= 500) legendaryActions[index] = name to it },
+                                    onValueChange = {
+                                        if (it.length <= 500) {
+                                            legendaryActions[index] = name to it
+                                            legendaryActionEntryErrors[index] = when {
+                                                it.isBlank() -> "La descripción no puede estar vacía"
+                                                it.length > 500 -> "Máximo 500 caracteres"
+                                                else -> null
+                                            }
+                                        }
+                                    },
                                     label = { Text("Legendary Action Description") },
                                     isError = legendaryActionEntryErrors.getOrNull(index) != null,
                                     supportingText = { legendaryActionEntryErrors.getOrNull(index)?.let { Text(it, color = Color.Red) } },
@@ -2206,14 +2348,22 @@ fun CreateMonsterScreen(navController: NavHostController,
                                     }
                                 )
                             }
-                            IconButton(onClick = { legendaryActions.removeAt(index) }) {
+                            IconButton(onClick = {
+                                legendaryActions.removeAt(index)
+                                legendaryActionNameErrors.removeAt(index)
+                                legendaryActionEntryErrors.removeAt(index)
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar acción legendaria")
                             }
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Button(
-                        onClick = { legendaryActions.add("" to ""); legendaryActionNameErrors.add(null); legendaryActionEntryErrors.add(null) },
+                        onClick = {
+                            legendaryActions.add("" to "")
+                            legendaryActionNameErrors.add("El nombre no puede estar vacío")
+                            legendaryActionEntryErrors.add("La descripción no puede estar vacía")
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -2222,7 +2372,7 @@ fun CreateMonsterScreen(navController: NavHostController,
                     }
                 }
 
-// Spellcasting
+                // Spellcasting
                 CreateMonsterCard(
                     title = "Spellcasting",
                     icon = Icons.Default.Star
