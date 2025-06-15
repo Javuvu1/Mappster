@@ -461,6 +461,7 @@ fun SpellListItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SinglePaneSpellListScreen(
     viewModel: SpellListViewModel,
@@ -480,11 +481,38 @@ private fun SinglePaneSpellListScreen(
 
     Scaffold(
         topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Lista de Hechizos",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = CinzelDecorative,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            letterSpacing = 0.5.sp
+                        )
+                    )
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.tertiary
+                ),
+                modifier = Modifier.shadow(elevation = 4.dp)
+            )
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Search Bar and Create Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -513,27 +541,23 @@ private fun SinglePaneSpellListScreen(
                     }
                 }
             }
-        },
-        bottomBar = {
-            BottomNavigationBar(navController = navController)
-        }
-    ) { paddingValues ->
-        when {
-            isLoading -> LoadingIndicator()
-            error != null -> ErrorMessage(error!!, onDismiss = { viewModel.clearError() })
-            spells.isEmpty() -> EmptySpellsMessage()
-            else -> SpellListContent(
-                spells = spells,
-                paddingValues = paddingValues,
-                onSpellClick = onSpellClick,
-                onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) },
-                onToggleVisibilityClick = { spell, isPublic ->
-                    viewModel.updateSpellVisibility(spell, isPublic)
-                },
-                onEditSpellClick = onEditSpellClick,
-                isTwoPaneMode = false,
-                navController = navController
-            )
+            when {
+                isLoading -> LoadingIndicator()
+                error != null -> ErrorMessage(error!!, onDismiss = { viewModel.clearError() })
+                spells.isEmpty() -> EmptySpellsMessage()
+                else -> SpellListContent(
+                    spells = spells,
+                    paddingValues = PaddingValues(0.dp), // Reset padding to avoid double padding
+                    onSpellClick = onSpellClick,
+                    onDeleteSpellClick = { spell -> viewModel.deleteSpell(spell) },
+                    onToggleVisibilityClick = { spell, isPublic ->
+                        viewModel.updateSpellVisibility(spell, isPublic)
+                    },
+                    onEditSpellClick = onEditSpellClick,
+                    isTwoPaneMode = false,
+                    navController = navController
+                )
+            }
         }
     }
 }
