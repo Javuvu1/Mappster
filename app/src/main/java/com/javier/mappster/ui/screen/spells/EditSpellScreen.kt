@@ -78,8 +78,8 @@ fun EditSpellScreen(
     var materialText by remember { mutableStateOf(spell.components.m ?: "") }
     var materialError by remember { mutableStateOf<String?>(null) }
     var timeNumber by remember { mutableStateOf(spell.time.firstOrNull()?.number?.toString() ?: "1") }
-    var timeUnit by remember { mutableStateOf(spell.time.firstOrNull()?.unit ?: "action") }
-    var durationType by remember { mutableStateOf(spell.duration.firstOrNull()?.type ?: "instantaneous") }
+    var timeUnit by remember { mutableStateOf(spell.time.firstOrNull()?.unit ?: "Action") }
+    var durationType by remember { mutableStateOf(spell.duration.firstOrNull()?.type ?: "Instantaneous") }
     var durationAmount by remember { mutableStateOf(spell.duration.firstOrNull()?.duration?.amount?.toString() ?: "") }
     var rangeType by remember { mutableStateOf(spell.range.type) }
     var rangeAmount by remember { mutableStateOf(spell.range.distance.amount?.toString() ?: "") }
@@ -103,9 +103,9 @@ fun EditSpellScreen(
         "T" to "Transmutación"
     )
     val levelOptions = (0..9).map { if (it == 0) "Truco" else "Nivel $it" }
-    val timeUnitOptions = listOf("action", "bonus action", "reaction", "minute", "hour")
-    var durationTypeOptions = listOf("instantaneous", "timed")
-    var rangeTypeOptions = listOf("self", "touch", "ranged")
+    val timeUnitOptions = listOf("Action", "Bonus action", "Reaction", "Minute", "Hour")
+    var durationTypeOptions = listOf("Instantaneous", "Timed")
+    var rangeTypeOptions = listOf("Self", "Touch", "Ranged")
 
     // Validaciones
     fun validateFields() {
@@ -128,11 +128,11 @@ fun EditSpellScreen(
             else -> null
         }
         rangeAmountError = when {
-            rangeType == "ranged" && rangeAmount.isNotBlank() && !rangeAmount.matches(Regex("\\d{1,6}")) -> "Solo números, máximo 6 dígitos"
+            rangeType == "Ranged" && rangeAmount.isNotBlank() && !rangeAmount.matches(Regex("\\d{1,6}")) -> "Solo números, máximo 6 dígitos"
             else -> null
         }
         rangeAreaTypeError = when {
-            rangeType == "ranged" && rangeAreaType.length > 15 -> "Máximo 15 caracteres"
+            rangeType == "Ranged" && rangeAreaType.length > 15 -> "Máximo 15 caracteres"
             else -> null
         }
         customAccessError = when {
@@ -213,7 +213,7 @@ fun EditSpellScreen(
                     }
 
                     // Parse rangeAreaType
-                    val areaTags = if (rangeType == "ranged" && rangeAreaType.isNotBlank()) {
+                    val areaTags = if (rangeType == "Ranged" && rangeAreaType.isNotBlank()) {
                         listOf(rangeAreaType.trim())
                     } else {
                         emptyList()
@@ -237,8 +237,8 @@ fun EditSpellScreen(
                         )),
                         duration = listOf(Duration(
                             type = durationType,
-                            duration = if (durationType == "timed") DurationX(
-                                type = "minute",
+                            duration = if (durationType == "Timed") DurationX(
+                                type = "Minute",
                                 amount = durationAmount.toIntOrNull() ?: 1
                             ) else null
                         )),
@@ -607,7 +607,7 @@ fun EditSpellScreen(
                             }
                         }
 
-                        if (durationType == "timed") {
+                        if (durationType == "Timed") {
                             OutlinedTextField(
                                 value = durationAmount,
                                 onValueChange = { durationAmount = it.filter { it.isDigit() } },
@@ -649,7 +649,7 @@ fun EditSpellScreen(
                             }
                         }
 
-                        if (rangeType == "ranged") {
+                        if (rangeType == "Ranged") {
                             OutlinedTextField(
                                 value = rangeAmount,
                                 onValueChange = { if (it.length <= 6) rangeAmount = it.filter { it.isDigit() } },

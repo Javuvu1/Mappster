@@ -81,10 +81,10 @@ fun CreateSpellScreen(
     var materialText by remember { mutableStateOf("") }
     var materialError by remember { mutableStateOf<String?>(null) }
     var timeNumber by remember { mutableStateOf("1") }
-    var timeUnit by remember { mutableStateOf("action") }
-    var durationType by remember { mutableStateOf("instantaneous") }
+    var timeUnit by remember { mutableStateOf("Action") }
+    var durationType by remember { mutableStateOf("Instantaneous") }
     var durationAmount by remember { mutableStateOf("") }
-    var rangeType by remember { mutableStateOf("self") }
+    var rangeType by remember { mutableStateOf("Self") }
     var rangeAmount by remember { mutableStateOf("") }
     var rangeAmountError by remember { mutableStateOf<String?>(null) }
     var rangeAreaType by remember { mutableStateOf("") }
@@ -105,9 +105,9 @@ fun CreateSpellScreen(
         "T" to "Transmutación"
     )
     val levelOptions = (0..9).map { if (it == 0) "Truco" else "Nivel $it" }
-    val timeUnitOptions = listOf("action", "bonus action", "reaction", "minute", "hour")
-    val durationTypeOptions = listOf("instantaneous", "timed")
-    val rangeTypeOptions = listOf("self", "touch", "ranged")
+    val timeUnitOptions = listOf("Action", "Bonus action", "Reaction", "Minute", "Hour")
+    val durationTypeOptions = listOf("Instantaneous", "Timed")
+    val rangeTypeOptions = listOf("Self", "Touch", "Ranged")
 
     // Validaciones
     fun validateFields() {
@@ -219,7 +219,7 @@ fun CreateSpellScreen(
                     }
 
                     // Parse rangeAreaType
-                    val areaTags = if (rangeType == "ranged" && rangeAreaType.isNotBlank()) {
+                    val areaTags = if (rangeType == "Ranged" && rangeAreaType.isNotBlank()) {
                         listOf(rangeAreaType.trim())
                     } else {
                         emptyList()
@@ -243,8 +243,8 @@ fun CreateSpellScreen(
                         )),
                         duration = listOf(Duration(
                             type = durationType,
-                            duration = if (durationType == "timed") DurationX(
-                                type = "minute",
+                            duration = if (durationType == "Timed") DurationX(
+                                type = "Minute",
                                 amount = durationAmount.toIntOrNull() ?: 1
                             ) else null
                         )),
@@ -613,7 +613,7 @@ fun CreateSpellScreen(
                             }
                         }
 
-                        if (durationType == "timed") {
+                        if (durationType == "Timed") {
                             OutlinedTextField(
                                 value = durationAmount,
                                 onValueChange = { durationAmount = it.filter { it.isDigit() } },
@@ -655,7 +655,7 @@ fun CreateSpellScreen(
                             }
                         }
 
-                        if (rangeType == "ranged") {
+                        if (rangeType == "Ranged") {
                             OutlinedTextField(
                                 value = rangeAmount,
                                 onValueChange = { if (it.length <= 6) rangeAmount = it.filter { it.isDigit() } },
@@ -681,7 +681,7 @@ fun CreateSpellScreen(
                                 label = { Text("Tipo de Área (opcional)") },
                                 modifier = Modifier.fillMaxWidth(),
                                 isError = rangeAreaTypeError != null,
-                                placeholder = { Text("Ej: cono, línea, radio, etc.") },
+                                placeholder = { Text("Ej: Cono, Línea, Radio, etc.") },
                                 trailingIcon = {
                                     Text(
                                         text = "${rangeAreaType.length}/15",

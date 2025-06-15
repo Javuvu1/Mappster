@@ -48,7 +48,7 @@ private val DarkColorScheme = darkColorScheme(
     background = Color(0xFF0F172A), // Deep slate blue background
     surface = Color(0xFF1A2233), // Dark sapphire surface
     onSurface = Color(0xFFE2E8F0), // Light blue-gray for text
-    onSurfaceVariant = Color(0xFF475599) // Dark slate blue for accents
+    onSurfaceVariant = Color(0xFF828ED9) // Dark slate blue for accents
 )
 
 // Define magical school colors for light mode
