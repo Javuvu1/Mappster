@@ -37,6 +37,7 @@ import com.javier.mappster.model.Spell
 import com.javier.mappster.model.SchoolData
 import com.javier.mappster.navigation.Destinations
 import com.javier.mappster.ui.screen.BottomNavigationBar
+import com.javier.mappster.ui.theme.CinzelDecorative
 import com.javier.mappster.ui.theme.magicColors
 import com.javier.mappster.utils.sourceMap
 
@@ -152,10 +153,16 @@ public fun SearchBar(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Buscar",
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.tertiary
             )
         },
-        placeholder = { Text("Buscar hechizos...") },
+        placeholder = {
+            Text(
+                "Buscar hechizos...",
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        },
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp),
@@ -331,7 +338,8 @@ fun SpellListItem(
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 0.1.sp,
-                            fontFamily = medievalSharpFontFamily
+                            fontFamily = CinzelDecorative,
+                            color = MaterialTheme.colorScheme.tertiary
                         ),
                         modifier = Modifier.weight(1f)
                     )
@@ -429,7 +437,8 @@ fun SpellListItem(
                         text = schoolData.name.uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = schoolData.color.copy(alpha = 0.9f),
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     )
 
@@ -486,10 +495,20 @@ private fun SinglePaneSpellListScreen(
                         onQueryChanged = viewModel::onSearchQueryChanged,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = onCreateSpellClick) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onCreateSpellClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                                shape = CircleShape
+                            )
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Crear hechizo"
+                            contentDescription = "Crear hechizo",
+                            tint = MaterialTheme.colorScheme.tertiary
                         )
                     }
                 }

@@ -407,7 +407,7 @@ private fun SpellListItem(
                     Text(
                         text = sourceMap[spell.source.uppercase()] ?: spell.source,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.tertiary,
                             fontStyle = FontStyle.Italic,
                             fontSize = 18.sp
                         ),
