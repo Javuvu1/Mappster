@@ -648,7 +648,12 @@ fun MonsterItem(
                             }
                         } ?: "Unknown"
 
-                        val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+                        // Modified typeText to remove quotes and capitalize
+                        val typeText = monster.type
+                            ?.removeSurrounding("\"") // Remove surrounding quotes
+                            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } // Capitalize first letter
+                            ?: "Unknown"
+
                         Text(
                             text = "$sizeText $typeText",
                             style = MaterialTheme.typography.labelMedium,
@@ -660,7 +665,7 @@ fun MonsterItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
+                            text = sourceMap[monster.source] ?: monster.source ?: "Unknown", // Remove .uppercase()
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = MaterialTheme.colorScheme.tertiary,
                                 fontStyle = FontStyle.Normal
