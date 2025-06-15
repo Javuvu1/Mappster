@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -34,11 +35,13 @@ import com.javier.mappster.R
 import com.javier.mappster.data.AuthManager
 import com.javier.mappster.model.UnifiedMonster
 import com.javier.mappster.navigation.Destinations
+import com.javier.mappster.ui.theme.CinzelDecorative
 import com.javier.mappster.ui.theme.MappsterTheme
 import com.javier.mappster.utils.sourceMap
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import java.net.URLEncoder
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonsterListScreen(
     navController: NavHostController,
@@ -74,102 +77,195 @@ fun MonsterListScreen(
 
     MappsterTheme {
         if (isCheckingAuth) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.tertiary,
+                    strokeWidth = 3.dp
+                )
             }
         } else if (userId != null) {
             Scaffold(
                 topBar = {
-                    Box(
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text(
+                                "Lista de Monstruos",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = CinzelDecorative,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    letterSpacing = 0.5.sp
+                                )
+                            )
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.tertiary
+                        ),
+                        modifier = Modifier.shadow(elevation = 4.dp)
+                    )
+                },
+                bottomBar = {
+                    BottomNavigationBar(navController = navController)
+                },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = {
+                            Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
+                            navController.navigate(Destinations.CREATE_MONSTER)
+                        },
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp)
+                            .padding(bottom = 16.dp)
+                            .shadow(elevation = 6.dp, shape = CircleShape)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Crear Monstruo",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                ),
+                                start = Offset(0f, 0f),
+                                end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                            )
+                        )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                    ) {
+                        // Barra de búsqueda
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             SearchBar(
                                 query = searchQuery,
                                 onQueryChanged = viewModel::onSearchQueryChanged,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            IconButton(
-                                onClick = {
-                                    Log.d("MonsterListScreen", "Navigating to create_monster for new monster")
-                                    navController.navigate(Destinations.CREATE_MONSTER)
+                        }
+
+                        if (state.isLoading) {
+                            LoadingIndicator()
+                        } else if (state.error != null) {
+                            ErrorMessage(
+                                message = "Error loading monsters: ${state.error}",
+                                onDismiss = { }
+                            )
+                        } else if (state.monsters.isEmpty()) {
+                            EmptyMonstersMessage(searchQuery)
+                        } else {
+                            MonsterListContent(
+                                monsters = state.monsters,
+                                navController = navController,
+                                onDeleteClick = { viewModel.deleteCustomMonster(it) },
+                                onToggleVisibilityClick = { monster, isPublic ->
+                                    viewModel.updateMonsterVisibility(monster, isPublic)
                                 },
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Create Monster",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    }
-                },
-                bottomBar = {
-                    BottomNavigationBar(navController = navController)
-                }
-            ) { paddingValues ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    if (state.isLoading) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        }
-                    } else if (state.error != null) {
-                        Text(
-                            text = "Error loading monsters: ${state.error}",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    } else if (state.monsters.isEmpty()) {
-                        Text(
-                            text = if (searchQuery.isEmpty()) "No monsters available." else "No monsters found for \"$searchQuery\"",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(
-                                start = 8.dp,
-                                end = 8.dp,
-                                top = 8.dp,
-                                bottom = 16.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(state.monsters) { monster ->
-                                MonsterItem(
-                                    monster = monster,
-                                    navController = navController,
-                                    onDeleteClick = { viewModel.deleteCustomMonster(monster) },
-                                    onToggleVisibilityClick = { monster, isPublic ->
-                                        viewModel.updateMonsterVisibility(monster, isPublic)
-                                    },
-                                    authManager = authManager
-                                )
-                            }
+                                authManager = authManager
+                            )
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun EmptyMonstersMessage(searchQuery: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = if (searchQuery.isEmpty()) "No hay monstruos disponibles"
+            else "No se encontraron monstruos para \"$searchQuery\"",
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = FontStyle.Italic,
+                fontFamily = CinzelDecorative
+            )
+        )
+    }
+}
+
+@Composable
+private fun LoadingIndicator() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(36.dp),
+            color = MaterialTheme.colorScheme.tertiary,
+            strokeWidth = 3.dp
+        )
+    }
+}
+
+@Composable
+private fun ErrorMessage(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Error",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = MaterialTheme.colorScheme.error,
+                    fontFamily = CinzelDecorative
+                )
+            )
+        },
+        text = {
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.tertiary
+                )
+            ) {
+                Text(
+                    "OK",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontFamily = CinzelDecorative
+                    )
+                )
+            }
+        },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,7 +282,7 @@ fun SearchBar(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Buscar",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(20.dp)
             )
         },
@@ -194,19 +290,18 @@ fun SearchBar(
             Text(
                 "Buscar monstruos...",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    fontSize = 20.sp
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             )
         },
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(56.dp),
         colors = TextFieldDefaults.textFieldColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
-            cursorColor = MaterialTheme.colorScheme.primary,
+            cursorColor = MaterialTheme.colorScheme.tertiary,
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
             focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -216,6 +311,34 @@ fun SearchBar(
         singleLine = true,
         shape = RoundedCornerShape(12.dp)
     )
+}
+
+@Composable
+private fun MonsterListContent(
+    monsters: List<UnifiedMonster>,
+    navController: NavHostController,
+    onDeleteClick: (UnifiedMonster) -> Unit,
+    onToggleVisibilityClick: (UnifiedMonster, Boolean) -> Unit,
+    authManager: AuthManager
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(
+            horizontal = 12.dp,
+            vertical = 8.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(monsters) { monster ->
+            MonsterItem(
+                monster = monster,
+                navController = navController,
+                onDeleteClick = onDeleteClick,
+                onToggleVisibilityClick = onToggleVisibilityClick,
+                authManager = authManager
+            )
+        }
+    }
 }
 
 @Composable
@@ -242,16 +365,19 @@ fun MonsterItem(
             onDismissRequest = { showDeleteDialog = false },
             title = {
                 Text(
-                    "Confirm deletion",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    "Confirmar eliminación",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = CinzelDecorative,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             },
             text = {
                 Text(
-                    "Are you sure you want to delete the monster \"${monster.name}\"?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "¿Estás seguro de que quieres borrar el monstruo \"${monster.name}\"?",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             },
             confirmButton = {
@@ -261,10 +387,15 @@ fun MonsterItem(
                         showDeleteDialog = false
                     },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
+                        contentColor = MaterialTheme.colorScheme.tertiary
                     )
                 ) {
-                    Text("Confirm")
+                    Text(
+                        "Confirmar",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontFamily = CinzelDecorative
+                        )
+                    )
                 }
             },
             dismissButton = {
@@ -274,10 +405,15 @@ fun MonsterItem(
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 ) {
-                    Text("Cancel")
+                    Text(
+                        "Cancelar",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontFamily = CinzelDecorative
+                        )
+                    )
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(16.dp)
         )
     }
@@ -287,17 +423,20 @@ fun MonsterItem(
             onDismissRequest = { showVisibilityDialog = false },
             title = {
                 Text(
-                    "Confirm visibility change",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    "Confirmar cambio de visibilidad",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = CinzelDecorative,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             },
             text = {
                 Text(
-                    "Are you sure you want to make the monster \"${monster.name}\" " +
-                            "${if (pendingVisibility) "public" else "private"}?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "¿Estás seguro de que quieres hacer el monstruo \"${monster.name}\" " +
+                            "${if (pendingVisibility) "público" else "privado"}?",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             },
             confirmButton = {
@@ -307,10 +446,15 @@ fun MonsterItem(
                         showVisibilityDialog = false
                     },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
+                        contentColor = MaterialTheme.colorScheme.tertiary
                     )
                 ) {
-                    Text("Confirm")
+                    Text(
+                        "Confirmar",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontFamily = CinzelDecorative
+                        )
+                    )
                 }
             },
             dismissButton = {
@@ -320,10 +464,15 @@ fun MonsterItem(
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 ) {
-                    Text("Cancel")
+                    Text(
+                        "Cancelar",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontFamily = CinzelDecorative
+                        )
+                    )
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(16.dp)
         )
     }
@@ -331,7 +480,16 @@ fun MonsterItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            )
             .clickable {
                 if (isTwoPaneMode) {
                     onItemClick(monster)
@@ -346,19 +504,11 @@ fun MonsterItem(
                         }
                     }
                 }
-            }
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            ),
+            },
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Box(
@@ -367,8 +517,8 @@ fun MonsterItem(
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                         ),
                         start = Offset(0f, 0f),
                         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
@@ -387,20 +537,91 @@ fun MonsterItem(
                         text = monster.name,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.1.sp
+                            letterSpacing = 0.1.sp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontFamily = CinzelDecorative
                         ),
-                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
-                    monster.cr?.let { cr ->
-                        Text(
-                            text = "CR: $cr",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (monster.isCustom && monster.id != null) {
+                            // Botón de visibilidad sin fondo
+                            IconButton(
+                                onClick = {
+                                    pendingVisibility = !monster.public
+                                    showVisibilityDialog = true
+                                },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (monster.public) Icons.Default.Public else Icons.Default.Lock,
+                                    contentDescription = if (monster.public) "Make private" else "Make public",
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            // Botón de edición sin fondo
+                            if (isOwner) {
+                                IconButton(
+                                    onClick = {
+                                        if (currentUserId == null) {
+                                            navController?.navigate(Destinations.LOGIN) {
+                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        } else if (!isTwoPaneMode) {
+                                            val encodedMonsterId = URLEncoder.encode(monster.id, "UTF-8")
+                                            val route = "create_monster?monsterId=$encodedMonsterId"
+                                            navController?.navigate(route) {
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit monster",
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            // Botón de eliminación sin fondo
+                            if (isOwner) {
+                                IconButton(
+                                    onClick = { showDeleteDialog = true },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete monster",
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                        monster.cr?.let { cr ->
+                            Text(
+                                text = "CR: $cr",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
-                        )
+                        }
                     }
                 }
 
@@ -428,97 +649,24 @@ fun MonsterItem(
                         } ?: "Unknown"
 
                         val typeText = monster.type?.replaceFirstChar { it.uppercase() } ?: "Unknown"
-                        val alignmentText = monster.alignment?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""
-
                         Text(
-                            text = "$sizeText $typeText$alignmentText",
+                            text = "$sizeText $typeText",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.tertiary
                         )
                     }
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 8.dp)
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (monster.isCustom && monster.id != null) {
-                            Log.d("MonsterItem", "Custom monster block entered: id=${monster.id}, isCustom=${monster.isCustom}")
-                            // Visibility toggle for all users
-                            IconButton(
-                                onClick = {
-                                    pendingVisibility = !monster.public
-                                    showVisibilityDialog = true
-                                    Log.d("MonsterItem", "Visibility toggle clicked for ${monster.name}, new pendingVisibility=$pendingVisibility")
-                                },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (monster.public) Icons.Default.Public else Icons.Default.Lock,
-                                    contentDescription = if (monster.public) "Make private" else "Make public",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            // Edit button only for owner
-                            if (isOwner) {
-                                IconButton(
-                                    onClick = {
-                                        if (currentUserId == null) {
-                                            Log.e("MonsterItem", "User not authenticated, redirecting to login")
-                                            navController?.navigate(Destinations.LOGIN) {
-                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                                launchSingleTop = true
-                                            }
-                                        } else if (!isTwoPaneMode) {
-                                            val encodedMonsterId = URLEncoder.encode(monster.id, "UTF-8")
-                                            val route = "create_monster?monsterId=$encodedMonsterId"
-                                            Log.d("MonsterItem", "Attempting navigation to: $route, navController available: ${navController != null}, current destination: ${navController?.currentDestination?.route}")
-                                            try {
-                                                navController?.navigate(route) {
-                                                    launchSingleTop = true
-                                                } ?: Log.e("MonsterItem", "NavController is null")
-                                            } catch (e: IllegalArgumentException) {
-                                                Log.e("MonsterItem", "Navigation failed for route $route: ${e.message}, current graph routes: ${navController?.graph?.mapNotNull { it.route }?.joinToString(", ")}", e)
-                                            }
-                                        } else {
-                                            Log.d("MonsterItem", "Edit button clicked in two-pane mode, no navigation")
-                                        }
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Edit monster",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                            // Delete button only for owner
-                            if (isOwner) {
-                                IconButton(
-                                    onClick = { showDeleteDialog = true },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete monster",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                        }
                         Text(
                             text = sourceMap[monster.source?.uppercase()] ?: monster.source ?: "Unknown",
                             style = MaterialTheme.typography.labelMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                fontStyle = FontStyle.Normal,
-                                fontSize = 13.sp
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontStyle = FontStyle.Normal
                             ),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = if (monster.isCustom) 4.dp else 0.dp)
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
