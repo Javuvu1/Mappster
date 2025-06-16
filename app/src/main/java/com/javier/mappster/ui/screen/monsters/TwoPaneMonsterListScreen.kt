@@ -1,9 +1,11 @@
 package com.javier.mappster.ui.screen.monsters
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -12,8 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -27,6 +31,7 @@ import com.javier.mappster.ui.screen.BottomNavigationBar
 import com.javier.mappster.ui.screen.CustomMonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterDetailScreen
 import com.javier.mappster.ui.screen.MonsterItem
+import com.javier.mappster.ui.theme.CinzelDecorative
 import com.javier.mappster.viewmodel.MonsterListViewModel
 import com.javier.mappster.viewmodel.MonsterListViewModelFactory
 
@@ -76,12 +81,18 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 IconButton(
-                                    onClick = { navController.navigate(Destinations.CREATE_MONSTER) }
+                                    onClick = { navController.navigate(Destinations.CREATE_MONSTER) },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                                            shape = CircleShape
+                                        )
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = "Create Monster",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = MaterialTheme.colorScheme.tertiary
                                     )
                                 }
                             }
@@ -91,22 +102,32 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                         when {
                             state.isLoading -> {
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator()
+                                    CircularProgressIndicator(
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        strokeWidth = 3.dp
+                                    )
                                 }
                             }
                             state.error != null -> {
                                 Text(
                                     text = "Error: ${state.error}",
                                     modifier = Modifier.padding(16.dp),
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontFamily = CinzelDecorative,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
                                 )
                             }
                             state.monsters.isEmpty() -> {
                                 Text(
-                                    text = if (searchQuery.isEmpty()) "No monsters"
-                                    else "No results found",
+                                    text = if (searchQuery.isEmpty()) "No monsters" else "No results found",
                                     modifier = Modifier.padding(16.dp),
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontFamily = CinzelDecorative,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
                                 )
                             }
                             else -> {
@@ -146,54 +167,86 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     selectedMonster?.let { monster ->
-                        if (monster.isCustom) {
-                            CustomMonsterDetailScreen(
-                                navController = navController,
-                                monsterId = monster.id ?: "",
-                                isTwoPaneMode = true
-                            )
-                        } else {
-                            val dataManager = LocalDataManager(LocalContext.current)
-                            var loadedMonster by remember { mutableStateOf<Monster?>(null) }
-                            var isLoading by remember { mutableStateOf(true) }
-                            var error by remember { mutableStateOf<String?>(null) }
-
-                            LaunchedEffect(monster) {
-                                try {
-                                    val result = dataManager.getMonsterByNameAndSource(
-                                        monster.name,
-                                        monster.source ?: ""
-                                    )
-                                    loadedMonster = result
-                                } catch (e: Exception) {
-                                    error = "Error loading monster: ${e.message}"
-                                } finally {
-                                    isLoading = false
-                                }
-                            }
-
-                            Box(
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            // Nombre del monstruo en la parte superior
+                            Text(
+                                text = monster.name ?: "Unknown Monster",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = CinzelDecorative,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 24.sp,
+                                    letterSpacing = 0.5.sp,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                ),
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surface)
-                            ) {
-                                when {
-                                    isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                                    error != null -> Text(
-                                        text = error ?: "Unknown error",
-                                        modifier = Modifier.align(Alignment.Center),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    loadedMonster != null -> MonsterDetailScreen(
-                                        monster = loadedMonster!!,
-                                        navController = navController,
-                                        isTwoPaneMode = true
-                                    )
-                                    else -> Text(
-                                        text = "Monster not found",
-                                        modifier = Modifier.align(Alignment.Center),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                            )
+
+                            if (monster.isCustom) {
+                                CustomMonsterDetailScreen(
+                                    navController = navController,
+                                    monsterId = monster.id ?: "",
+                                    isTwoPaneMode = true
+                                )
+                            } else {
+                                val dataManager = LocalDataManager(LocalContext.current)
+                                var loadedMonster by remember { mutableStateOf<Monster?>(null) }
+                                var isLoading by remember { mutableStateOf(true) }
+                                var error by remember { mutableStateOf<String?>(null) }
+
+                                LaunchedEffect(monster) {
+                                    try {
+                                        val result = dataManager.getMonsterByNameAndSource(
+                                            monster.name,
+                                            monster.source ?: ""
+                                        )
+                                        loadedMonster = result
+                                    } catch (e: Exception) {
+                                        error = "Error loading monster: ${e.message}"
+                                    } finally {
+                                        isLoading = false
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.surface)
+                                ) {
+                                    when {
+                                        isLoading -> CircularProgressIndicator(
+                                            modifier = Modifier.align(Alignment.Center),
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                            strokeWidth = 3.dp
+                                        )
+                                        error != null -> Text(
+                                            text = error ?: "Unknown error",
+                                            modifier = Modifier.align(Alignment.Center),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontFamily = CinzelDecorative,
+                                                color = MaterialTheme.colorScheme.tertiary
+                                            )
+                                        )
+                                        loadedMonster != null -> MonsterDetailScreen(
+                                            monster = loadedMonster!!,
+                                            navController = navController,
+                                            isTwoPaneMode = true
+                                        )
+                                        else -> Text(
+                                            text = "Monster not found",
+                                            modifier = Modifier.align(Alignment.Center),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontFamily = CinzelDecorative,
+                                                color = MaterialTheme.colorScheme.tertiary
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -204,8 +257,12 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
                             .background(MaterialTheme.colorScheme.surface)
                     ) {
                         Text(
-                            "Select a monster to see details",
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "Select a monster to see details",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = CinzelDecorative,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
                         )
                     }
                 }
@@ -214,6 +271,7 @@ fun TwoPaneMonsterListScreen(navController: NavHostController) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBar(
     query: String,
@@ -226,11 +284,34 @@ fun SearchBar(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search"
+                contentDescription = "Search",
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(20.dp)
             )
         },
-        placeholder = { Text("Search monsters...") },
-        modifier = modifier,
-        singleLine = true
+        placeholder = {
+            Text(
+                "Search monsters...",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        colors = TextFieldDefaults.textFieldColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.tertiary,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        ),
+        textStyle = MaterialTheme.typography.bodyMedium,
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp)
     )
 }
