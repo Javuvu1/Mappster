@@ -374,7 +374,6 @@ fun MonsterStats(monster: CustomMonster) {
                 .padding(12.dp)
         ) {
             Column {
-                // First row: STR, DEX, CON
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -400,7 +399,6 @@ fun MonsterStats(monster: CustomMonster) {
                         modifier = calculateModifier(monster.con)
                     )
                 }
-                // Second row: INT, WIS, CHA
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

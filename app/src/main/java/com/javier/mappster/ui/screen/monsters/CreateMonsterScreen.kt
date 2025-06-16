@@ -312,10 +312,8 @@ fun CreateMonsterScreen(navController: NavHostController,
     var spellSearchQuery by remember { mutableStateOf("") }
     val selectedSpells = remember { mutableStateListOf<Spell>() }
     val spellcastingEntries = remember { mutableStateListOf<SpellcastingEntry>() }
-    // En los estados de CreateMonsterScreen, añade:
     var spellcastingAbility by remember { mutableStateOf("cha") }
 
-    // Cargar datos del monstruo si monsterId no es nulo
     LaunchedEffect(monsterId) {
         if (monsterId != null) {
             try {
@@ -1213,7 +1211,7 @@ fun CreateMonsterScreen(navController: NavHostController,
                     initiativeError?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
                 }
 
-// Statistics
+                // Statistics
                 CreateMonsterCard(
                     title = "Estadísticas",
                     icon = Icons.Default.Settings

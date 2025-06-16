@@ -58,7 +58,7 @@ fun Monster.toUnifiedMonster(): UnifiedMonster {
         ac = ac?.firstOrNull()?.ac?.toString(),
         hp = hp?.average,
         initiative = null, // Monster no usa initiative
-        dex = dex, // Pasamos DEX para calcular iniciativa
+        dex = dex,
         public = false, // Monstruos no personalizados no tienen visibilidad configurable
         userId = null // No aplica a Monster
     )

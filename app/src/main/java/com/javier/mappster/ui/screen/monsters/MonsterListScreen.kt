@@ -551,7 +551,6 @@ fun MonsterItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (monster.isCustom && monster.id != null) {
-                            // Botón de visibilidad sin fondo
                             IconButton(
                                 onClick = {
                                     pendingVisibility = !monster.public
@@ -569,7 +568,6 @@ fun MonsterItem(
                                 )
                             }
 
-                            // Botón de edición sin fondo
                             if (isOwner) {
                                 IconButton(
                                     onClick = {
@@ -599,7 +597,6 @@ fun MonsterItem(
                                 }
                             }
 
-                            // Botón de eliminación sin fondo
                             if (isOwner) {
                                 IconButton(
                                     onClick = { showDeleteDialog = true },

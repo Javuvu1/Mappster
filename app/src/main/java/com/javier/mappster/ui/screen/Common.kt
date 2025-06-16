@@ -60,7 +60,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             )
     ) {
         NavigationBar(
-            containerColor = Color.Transparent, // Hacemos transparente el fondo del NavigationBar
+            containerColor = Color.Transparent,
             contentColor = colorScheme.onPrimaryContainer,
             modifier = Modifier
                 .fillMaxWidth()

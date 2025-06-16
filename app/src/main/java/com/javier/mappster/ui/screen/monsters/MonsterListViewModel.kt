@@ -133,10 +133,8 @@ class MonsterListViewModel(
                     emptyList()
                 }
 
-                // Mantener los monstruos locales existentes (no los recargamos cada vez)
                 val localMonsters = allMonsters.filter { !it.isCustom }
 
-                // Combinar manteniendo el orden
                 allMonsters = (localMonsters + customMonsters)
                     .distinctBy { it.name.lowercase() }
                     .sortedBy { it.name.trim().lowercase() }

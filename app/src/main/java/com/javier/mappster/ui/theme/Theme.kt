@@ -14,9 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.javier.mappster.R
 
-// Define la familia de fuentes usando el XML font-family
 val CinzelDecorative = FontFamily(
-    Font(R.font.cinzel_decorative) // referencia al XML cinzel_decorative.xml en res/font
+    Font(R.font.cinzel_decorative)
 )
 
 private val DefaultFontFamily = FontFamily(
@@ -24,31 +23,31 @@ private val DefaultFontFamily = FontFamily(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF1E40AF), // Sapphire blue, vibrant and mystical
-    secondary = Color(0xFFF3E8C2), // Light golden beige, like illuminated parchment
-    tertiary = Color(0xFFD4A017), // Bright gold for ornate details
-    primaryContainer = Color(0xFF4A90E2), // Darker sapphire blue
-    secondaryContainer = Color(0xFFF8F0D5), // Lighter golden beige
-    tertiaryContainer = Color(0xFFFFE082), // Soft golden tone
-    surfaceVariant = Color(0xFFE6E8F0), // Light blue-gray for subtle contrast
-    background = Color(0xFFF5F7FA), // Soft white-blue background
-    surface = Color(0xFFFCFDFF), // Near-white surface for clarity
-    onSurface = Color(0xFF1C2526), // Dark blue-gray for text
-    onSurfaceVariant = Color(0xFF334155) // Slate blue for accents
+    primary = Color(0xFF1E40AF),
+    secondary = Color(0xFFF3E8C2),
+    tertiary = Color(0xFFD4A017),
+    primaryContainer = Color(0xFF4A90E2),
+    secondaryContainer = Color(0xFFF8F0D5),
+    tertiaryContainer = Color(0xFFFFE082),
+    surfaceVariant = Color(0xFFE6E8F0),
+    background = Color(0xFFF5F7FA),
+    surface = Color(0xFFFCFDFF),
+    onSurface = Color(0xFF1C2526),
+    onSurfaceVariant = Color(0xFF334155)
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF1E3A8A), // Midnight blue, deep and starry
-    secondary = Color(0xFFA68B4C), // Tarnished gold, like ancient ornaments
-    tertiary = Color(0xFFCBA135), // Warm gold for glowing highlights
-    primaryContainer = Color(0xFF2D4E9F), // Darker midnight blue
-    secondaryContainer = Color(0xFF856D3A), // Darker tarnished gold
-    tertiaryContainer = Color(0xFF9C7A26), // Darker gold
-    surfaceVariant = Color(0xFF2C3442), // Dark blue-gray for depth
-    background = Color(0xFF0F172A), // Deep slate blue background
-    surface = Color(0xFF1A2233), // Dark sapphire surface
-    onSurface = Color(0xFFE2E8F0), // Light blue-gray for text
-    onSurfaceVariant = Color(0xFF828ED9) // Dark slate blue for accents
+    primary = Color(0xFF1E3A8A),
+    secondary = Color(0xFFA68B4C),
+    tertiary = Color(0xFFCBA135),
+    primaryContainer = Color(0xFF2D4E9F),
+    secondaryContainer = Color(0xFF856D3A),
+    tertiaryContainer = Color(0xFF9C7A26),
+    surfaceVariant = Color(0xFF2C3442),
+    background = Color(0xFF0F172A),
+    surface = Color(0xFF1A2233),
+    onSurface = Color(0xFFE2E8F0),
+    onSurfaceVariant = Color(0xFF828ED9)
 )
 
 // Define magical school colors for light mode

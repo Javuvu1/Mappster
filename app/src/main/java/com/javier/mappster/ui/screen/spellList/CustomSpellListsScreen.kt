@@ -296,7 +296,6 @@ private fun SpellListItem(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier.width(IntrinsicSize.Min)
                 ) {
-                    // Icono de Editar con mayor realce
                     IconButton(
                         onClick = onEditClick,
                         modifier = Modifier
@@ -313,7 +312,6 @@ private fun SpellListItem(
 
                     Spacer(modifier = Modifier.width(20.dp))
 
-                    // Icono de Borrar con mayor realce
                     IconButton(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier

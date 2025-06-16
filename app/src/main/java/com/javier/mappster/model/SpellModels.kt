@@ -9,7 +9,6 @@ data class Spells(
 
 @Serializable
 data class Spell(
-    // Basic Information
     val name: String = "",
     val level: Int = 0,
     val school: String = "",
@@ -18,31 +17,25 @@ data class Spell(
 
     val basicRules: Boolean = false,
 
-    // Components
     val components: Components = Components(),
 
-    // Time & Duration
     val time: List<Time> = emptyList(),
     val duration: List<Duration> = emptyList(),
 
-    // Range & Area
     val range: Range = Range(),
     val areaTags: List<String> = emptyList(),
 
-    // Metadata
     val meta: Meta = Meta(),
     val miscTags: List<String> = emptyList(),
     val hasFluff: Boolean = false,
     val hasFluffImages: Boolean = false,
 
-    // Game Mechanics
     val entries: List<String> = emptyList(),
     val entriesHigherLevel: List<EntriesHigherLevel> = emptyList(),
     val savingThrow: List<String> = emptyList(),
     val spellAttack: List<String> = emptyList(),
     val abilityCheck: List<String> = emptyList(),
 
-    // Damage & Conditions
     val damageInflict: List<String> = emptyList(),
     val damageResist: List<String> = emptyList(),
     val damageVulnerable: List<String> = emptyList(),
@@ -51,13 +44,11 @@ data class Spell(
     val conditionImmune: List<String> = emptyList(),
     val affectsCreatureType: List<String> = emptyList(),
 
-    // Additional Content
     val subschools: List<String> = emptyList(),
     val reprintedAs: List<String> = emptyList(),
     val additionalSources: List<AdditionalSource> = emptyList(),
     val otherSources: List<OtherSource> = emptyList(),
 
-    // New Fields
     val classes: Classes = Classes(),
     val feats: List<Feat> = emptyList(),
     val backgrounds: List<Background> = emptyList(),
@@ -66,7 +57,6 @@ data class Spell(
     val customAccess: String = "",
     val customHigherLevel: String = "",
 
-    // Custom field added by script
     @PropertyName("custom")
     private val _custom: Boolean? = null,
     val userId: String? = null,
@@ -147,7 +137,6 @@ data class Meta(
     val ritual: Boolean = false
 )
 
-/* ===== New Submodels for Classes, Feats, Backgrounds, Races, Optional Features ===== */
 @Serializable
 data class Classes(
     val fromClassList: List<ClassEntry> = emptyList(),

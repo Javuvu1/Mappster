@@ -39,7 +39,7 @@ class LocalDataManager(private val context: Context) {
     suspend fun getMonsterByNameAndSource(name: String, source: String): Monster? = withContext(Dispatchers.IO) {
         try {
             if (cachedMonsters == null) {
-                loadMonsters() // Asegurarnos de que los monstruos estén cargados
+                loadMonsters()
             }
             val monster = cachedMonsters?.find {
                 it.name == name && (it.source == source || (it.source.isNullOrEmpty() && source.isEmpty()))

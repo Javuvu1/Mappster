@@ -184,10 +184,10 @@ class FirestoreManager {
     suspend fun saveCustomMonster(customMonster: CustomMonster) {
         try {
             val monsterId = customMonster.id ?: monstersCollection.document().id // Genera un nuevo id si es null
-            val monsterToSave = customMonster.copy(id = monsterId) // Asegura que el id se asigne al objeto
+            val monsterToSave = customMonster.copy(id = monsterId)
             monstersCollection
                 .document(monsterId)
-                .set(monsterToSave, SetOptions.merge()) // Usa merge para no sobrescribir campos no proporcionados
+                .set(monsterToSave, SetOptions.merge())
                 .await()
             Log.d("FirestoreManager", "CustomMonster saved successfully: ${customMonster.name}, id: $monsterId")
         } catch (e: Exception) {
@@ -205,7 +205,7 @@ class FirestoreManager {
             }
 
             val userCustomQuery = monstersCollection
-                .whereEqualTo("userId", userId)  // Elimina el filtro de source
+                .whereEqualTo("userId", userId)
 
             val publicCustomQuery = monstersCollection
                 .whereEqualTo("public", true)

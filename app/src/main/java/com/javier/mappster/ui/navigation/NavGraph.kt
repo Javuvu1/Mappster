@@ -279,7 +279,7 @@ fun NavGraph(navController: NavHostController) {
                 navArgument("monsterId") {
                     type = NavType.StringType
                     nullable = true
-                    defaultValue = null // Asegura que sea null si no se pasa
+                    defaultValue = null
                 }
             )
         ) { backStackEntry ->

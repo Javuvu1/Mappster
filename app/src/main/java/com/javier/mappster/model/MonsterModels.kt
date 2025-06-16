@@ -81,7 +81,7 @@ data class Monster(
     @Serializable(with = MonsterTypeSerializer::class)
     val type: MonsterType? = null,
     @Serializable(with = AlignmentListSerializer::class)
-    val alignment: List<String>? = null,  // Cambiado de List<Alignment> a List<String>
+    val alignment: List<String>? = null,
     val alignmentPrefix: String? = null,
     @Serializable(with = PassiveSerializer::class)
     val passive: Passive? = null,
@@ -451,11 +451,6 @@ object MonsterTypeSerializer : KSerializer<MonsterType> {
     }
 }
 
-//@Serializable
-//data class Alignment(
-//    val values: List<String>? = null
-//)
-
 object AlignmentListSerializer : KSerializer<List<String>> {
     override val descriptor: SerialDescriptor = listSerialDescriptor<String>()
 
@@ -725,7 +720,6 @@ object SpellcastingListSerializer : KSerializer<List<Spellcasting>> {
                         throw IllegalStateException("Expected a JsonObject in spellcasting list, but found: $element")
                     }
 
-                    // Helper function to safely extract a string from a JsonElement
                     fun extractString(fieldName: String, jsonElement: JsonElement?): String? {
                         return when (jsonElement) {
                             is JsonPrimitive -> jsonElement.contentOrNull
@@ -734,7 +728,6 @@ object SpellcastingListSerializer : KSerializer<List<Spellcasting>> {
                         }
                     }
 
-                    // Helper function to safely extract a list of strings from a JsonElement
                     fun extractStringList(fieldName: String, jsonElement: JsonElement?): List<String>? {
                         return when (jsonElement) {
                             is JsonArray -> jsonElement.map { item ->
@@ -749,7 +742,6 @@ object SpellcastingListSerializer : KSerializer<List<Spellcasting>> {
                         }
                     }
 
-                    // Helper function to safely extract an integer from a JsonElement
                     fun extractInt(fieldName: String, jsonElement: JsonElement?): Int? {
                         return when (jsonElement) {
                             is JsonPrimitive -> jsonElement.intOrNull
@@ -758,7 +750,6 @@ object SpellcastingListSerializer : KSerializer<List<Spellcasting>> {
                         }
                     }
 
-                    // Helper function to safely extract a DailySpell from a JsonElement
                     fun extractDailySpell(fieldName: String, jsonElement: JsonElement?): DailySpell? {
                         return when (jsonElement) {
                             is JsonPrimitive -> DailySpell(entry = jsonElement.contentOrNull)

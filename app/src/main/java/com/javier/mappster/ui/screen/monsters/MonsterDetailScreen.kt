@@ -49,31 +49,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.floor
 import kotlin.random.Random
 
-// Componente reutilizable para las tarjetas de detalle
-@Composable
-fun MonsterDetailCard(
-    title: String? = null,
-    content: @Composable ColumnScope.() -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            title?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            content()
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonsterDetailScreen(
@@ -827,7 +802,7 @@ fun buildDamageAnnotatedString(
 
     return buildAnnotatedString {
         var lastIndex = 0
-        var hitAdded = false // Reset for each call
+        var hitAdded = false
 
         matches.forEachIndexed { index, matchResult ->
             val start = matchResult.range.first
@@ -995,7 +970,6 @@ fun buildDiceRollBreakdown(
     }
 }
 
-// Nueva sección para Spellcasting
 @Composable
 fun MonsterSpellcasting(
     monster: Monster,
@@ -1239,7 +1213,6 @@ fun MonsterSpellcasting(
     }
 }
 
-// Nueva sección para Legendary Actions
 @Composable
 fun MonsterLegendary(
     monster: Monster,
@@ -2118,7 +2091,6 @@ fun MonsterStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
                         .padding(16.dp)
                 ) {
                     Column {
-                        // First row: STR, DEX, CON
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -2157,7 +2129,6 @@ fun MonsterStats(monster: Monster, onModifierClick: (String, Int) -> Unit) {
                             )
                         }
 
-                        // Second row: INT, WIS, CHA
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -2215,9 +2186,8 @@ private fun StatColumn(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(100.dp) // Aumenté un poco el ancho para acomodar textos más grandes
+        modifier = Modifier.width(100.dp)
     ) {
-        // Ability Score - Más grande y destacado
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -2236,7 +2206,6 @@ private fun StatColumn(
             modifier = Modifier.padding(vertical = 4.dp)
         )
 
-        // Save Modifier - Texto más grande
         val saveAnnotatedText = buildAnnotatedString {
             withStyle(
                 style = SpanStyle(
@@ -2272,7 +2241,6 @@ private fun StatColumn(
             modifier = Modifier.padding(vertical = 6.dp)
         )
 
-        // Ability Modifier - Texto más grande
         val abilityAnnotatedText = buildAnnotatedString {
             withStyle(
                 style = SpanStyle(
